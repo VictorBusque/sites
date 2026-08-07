@@ -1,0 +1,1025 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Víctor Busqué — Living Engineering Notes</title>
+    <link rel="stylesheet" href="css/site.css">
+    <script src="js/site.js" defer></script>
+    <style>
+        /* ── Landing-only styles ──────────────────────────── */
+
+        /* Hero */
+        .hero {
+            min-height: 86vh;
+            padding: 9vh 4vw 6vh;
+            display: grid;
+            grid-template-columns: 1.2fr .8fr;
+            gap: 5vw;
+            align-items: center;
+            border-bottom: 1px solid var(--line);
+            position: relative;
+            overflow: hidden;
+            isolation: isolate;
+        }
+        .hero .grid-bg {
+            position: absolute;
+            inset: -20% 0;
+            z-index: -1;
+            background-image: linear-gradient(#1111110a 1px, transparent 1px),
+                linear-gradient(90deg, #1111110a 1px, transparent 1px);
+            background-size: 72px 72px;
+            animation: grid-drift 26s linear infinite;
+            mask-image: radial-gradient(120% 120% at 20% 40%, #000 30%, transparent 75%);
+            -webkit-mask-image: radial-gradient(120% 120% at 20% 40%, #000 30%, transparent 75%);
+        }
+        .hero .ghost-num {
+            position: absolute;
+            right: -2vw;
+            top: 4vh;
+            z-index: -1;
+            font: italic 200px/1 "Instrument Serif";
+            color: #11111110;
+            will-change: transform;
+        }
+        .hero:before {
+            content: "ENGINEERING / NOTES";
+            position: absolute;
+            right: -92px;
+            top: 52%;
+            transform: rotate(90deg);
+            font: 9px "DM Mono";
+            letter-spacing: .25em;
+            color: #777;
+        }
+        .kicker {
+            font: 11px "DM Mono";
+            text-transform: uppercase;
+            letter-spacing: .16em;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .kicker::before {
+            content: "";
+            width: 26px;
+            height: 1px;
+            background: var(--orange);
+            transform-origin: 0 50%;
+            animation: grow-in var(--t-slow) var(--ease-out) both;
+        }
+        .hero h1 {
+            font-family: "Unbounded", sans-serif;
+            font-size: clamp(60px, 8vw, 136px);
+            letter-spacing: -.075em;
+            line-height: .78;
+            margin: 30px 0 40px;
+            font-weight: 500;
+        }
+        .hero h1 em {
+            font-family: "Instrument Serif";
+            font-weight: 400;
+            font-size: 1.15em;
+            letter-spacing: -.04em;
+        }
+        .hero p {
+            font-size: 18px;
+            line-height: 1.6;
+            max-width: 630px;
+            color: #45433f;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fade-rise var(--t-slow) var(--ease-out) .5s both;
+        }
+        .hero .scroll-cue {
+            margin-top: 44px;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            font: 10px "DM Mono";
+            letter-spacing: .18em;
+            color: #777;
+            opacity: 0;
+            animation: fade-rise var(--t-slow) var(--ease-out) .9s both;
+        }
+        .scroll-cue .wheel {
+            width: 20px;
+            height: 32px;
+            border: 1px solid #777;
+            border-radius: 12px;
+            position: relative;
+        }
+        .scroll-cue .wheel::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 6px;
+            width: 2px;
+            height: 6px;
+            margin-left: -1px;
+            background: var(--orange);
+            border-radius: 2px;
+            animation: cue 1.8s ease-in-out infinite;
+        }
+
+        /* Hero demo — the site's own pipeline, in motion */
+        .hero-demo {
+            height: 500px;
+            border: 1px solid var(--line);
+            background: #111;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 14px 14px 0 var(--acid);
+            opacity: 0;
+            transform: translateY(36px) scale(.97);
+            animation: demo-in 1s var(--ease-out) .45s both;
+        }
+        .hero-demo::before {
+            content: "00";
+            position: absolute;
+            right: -4px;
+            top: 30px;
+            font: 160px/1 "Instrument Serif";
+            font-style: italic;
+            color: #ffffff0a;
+            z-index: 0;
+            animation: floaty 7s var(--ease-swift) infinite;
+        }
+        .demo-head {
+            height: 48px;
+            border-bottom: 1px solid #ffffff2a;
+            display: flex;
+            align-items: center;
+            padding: 0 18px;
+            font: 10px "DM Mono";
+            letter-spacing: .12em;
+            color: #aaa;
+        }
+        .demo-head b {
+            color: var(--acid);
+            margin-left: auto;
+            font-weight: 500;
+        }
+        .node {
+            position: absolute;
+            border: 1px solid #ffffff80;
+            padding: 12px 15px;
+            background: #111;
+            font: 11px "DM Mono";
+            z-index: 3;
+        }
+        .n1 { left: 6%; top: 42%; }
+        .n2 { left: 37%; top: 18%; border-color: var(--blue); }
+        .n3 { right: 8%; top: 42%; border-color: var(--acid); }
+        .n4 { left: 38%; bottom: 12%; border-color: var(--orange); }
+
+        .node::after {
+            content: "";
+            position: absolute;
+            inset: -3px;
+            border: 1px solid currentColor;
+            border-radius: inherit;
+            animation: node-ping 2.6s var(--ease-out) infinite;
+        }
+        .n2::after { color: var(--blue); }
+        .n3::after { color: var(--acid); }
+        .n4::after { color: var(--orange); }
+
+        svg.flow {
+            position: absolute;
+            inset: 48px 0 0;
+            width: 100%;
+            height: calc(100% - 48px);
+            z-index: 1;
+        }
+        .path {
+            fill: none;
+            stroke: #777;
+            stroke-width: 1;
+            stroke-dasharray: 5 7;
+            animation: dash 12s linear infinite;
+        }
+        .path-glow {
+            fill: none;
+            stroke: #c7ff3d;
+            stroke-width: 2;
+            opacity: .5;
+            stroke-dasharray: 260;
+            stroke-dashoffset: 260;
+            filter: blur(1px);
+            animation: draw-glow 5s ease-in-out infinite;
+        }
+        .packet {
+            fill: var(--acid);
+            filter: drop-shadow(0 0 8px var(--acid));
+        }
+        .demo-caption {
+            position: absolute;
+            left: 18px;
+            bottom: 16px;
+            font: 10px "DM Mono";
+            color: #888;
+            z-index: 3;
+        }
+        .demo-caption::before {
+            content: "●";
+            color: var(--acid);
+            margin-right: 6px;
+            animation: blink 1.2s steps(2) infinite;
+        }
+
+        /* Sections */
+        .section { padding: 7vw 4vw 5vw; }
+        .section-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            margin-bottom: 20px;
+            border-left: 8px solid var(--orange);
+            padding-left: 24px;
+        }
+        .section h2 {
+            font-family: "Unbounded", sans-serif;
+            font-size: clamp(38px, 5vw, 74px);
+            letter-spacing: -.06em;
+            display: inline-block;
+        }
+        .section-top p {
+            max-width: 430px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        /* ── The atlas — classification navigator ────────── */
+        .atlas {
+            border: 1px solid var(--line);
+            background: var(--paper);
+            margin-top: 46px;
+        }
+        .atlas-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            flex-wrap: wrap;
+            padding: 13px 18px;
+            border-bottom: 1px solid var(--line);
+            background: var(--paper-2);
+            font: 10px "DM Mono";
+            letter-spacing: .16em;
+            color: #777;
+        }
+        .atlas-head b { color: var(--ink); font-weight: 500; }
+
+        .branches {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+        }
+        .branch {
+            border-right: 1px solid var(--line);
+            padding: 26px 20px 24px;
+        }
+        .branch:last-child { border-right: 0; }
+        .b-head {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid #11111122;
+        }
+        .b-no {
+            font: italic 40px/1 "Instrument Serif";
+            color: #1111111f;
+            transition: color var(--t-med) var(--ease-swift);
+        }
+        .b-name {
+            font-family: "Unbounded", sans-serif;
+            font-weight: 600;
+            font-size: clamp(15px, 1.7vw, 24px);
+            letter-spacing: -.05em;
+            line-height: 1;
+        }
+        .b-count {
+            margin-left: auto;
+            font: 9px "DM Mono";
+            letter-spacing: .14em;
+            color: #777;
+            white-space: nowrap;
+        }
+        .b-cats {
+            display: grid;
+            gap: 10px;
+            padding-top: 16px;
+        }
+        .branch[data-topic="AI"] { --branch-accent: #769a16; }
+        .branch[data-topic="SOFTWARE ENGINEERING"] { --branch-accent: var(--blue); }
+        .branch[data-topic="CLOUD"] { --branch-accent: var(--orange); }
+
+        .cat-tile {
+            display: block;
+            width: 100%;
+            text-align: left;
+            border: 1px solid #b9b6ac;
+            background: var(--paper);
+            padding: 13px 14px 12px;
+            cursor: pointer;
+            position: relative;
+            color: var(--ink);
+            -webkit-appearance: none;
+            appearance: none;
+            transition: border-color var(--t-fast) var(--ease-snap),
+                background var(--t-med) var(--ease-swift),
+                transform var(--t-med) var(--ease-out),
+                box-shadow var(--t-med) var(--ease-out);
+        }
+        .cat-tile:hover {
+            transform: translateY(-3px);
+            border-color: var(--ink);
+            box-shadow: 4px 4px 0 var(--branch-accent);
+        }
+        .cat-tile:active { transform: translateY(-1px) scale(.99); }
+        .c-name {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            font-family: "Unbounded", sans-serif;
+            font-weight: 500;
+            font-size: 13.5px;
+            letter-spacing: -.02em;
+            transition: color var(--t-fast) var(--ease-snap);
+        }
+        .cat-tile:hover .c-name { color: var(--branch-accent); }
+        .c-count {
+            font: 9px "DM Mono";
+            letter-spacing: .1em;
+            padding: 3px 8px;
+            border: 1px solid #b9b6ac;
+            border-radius: 99px;
+            color: #777;
+            transition: border-color var(--t-fast) var(--ease-snap),
+                background var(--t-fast) var(--ease-snap), color var(--t-fast) var(--ease-snap);
+        }
+        .c-count.has {
+            border-color: var(--branch-accent);
+            color: var(--branch-accent);
+        }
+        .c-eg {
+            display: block;
+            margin-top: 7px;
+            font: 9px "DM Mono";
+            letter-spacing: .12em;
+            line-height: 1.55;
+            color: #9a978e;
+        }
+        .cat-tile.is-active {
+            border-color: var(--branch-accent);
+            border-width: 1.5px;
+            background: var(--paper-2);
+            box-shadow: inset 0 -3px 0 var(--branch-accent);
+        }
+        .cat-tile.is-active .c-count {
+            background: var(--branch-accent);
+            border-color: var(--branch-accent);
+            color: var(--paper);
+        }
+
+        /* shared entries panel */
+        .atlas-panel {
+            border-top: 4px solid var(--line);
+            background: var(--paper-2);
+            padding: 22px 4vw 40px;
+            min-height: 210px;
+            transition: border-color var(--t-med) var(--ease-swift);
+        }
+        .panel-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            font: 10px "DM Mono";
+            letter-spacing: .16em;
+            color: #777;
+        }
+        .panel-head .crumb b { color: var(--ink); font-weight: 500; }
+        .panel-head .hint { color: #9a978e; }
+
+        .p-entries {
+            margin-top: 16px;
+            border-top: 1px solid #11111122;
+        }
+        .p-entry {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 6px 28px;
+            padding: 20px 4px;
+            border-bottom: 1px solid #11111122;
+            color: var(--ink);
+            transition: background var(--t-med) var(--ease-swift);
+        }
+        .e-title {
+            font-family: "Unbounded", sans-serif;
+            font-weight: 500;
+            font-size: clamp(15px, 1.6vw, 21px);
+            letter-spacing: -.03em;
+            line-height: 1.15;
+            transition: color var(--t-fast) var(--ease-snap);
+        }
+        .e-deck {
+            color: #5a5852;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .e-meta {
+            grid-row: 1 / span 2;
+            grid-column: 2;
+            align-self: center;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        .e-path { font: 9px "DM Mono"; letter-spacing: .16em; color: #777; }
+        .e-date { font: 9px "DM Mono"; letter-spacing: .14em; color: #777; }
+        .read-tag {
+            font: 9px "DM Mono";
+            letter-spacing: .16em;
+            color: var(--ink);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .read-tag::after {
+            content: "→";
+            transition: transform var(--t-med) var(--ease-out);
+        }
+        .p-entry:hover { background: #fdfcf7; }
+        .p-entry:hover .e-title { color: var(--blue); }
+        .p-entry:hover .read-tag::after { transform: translateX(6px); }
+
+        .panel-empty {
+            margin-top: 16px;
+            padding: 38px 18px;
+            border: 1px dashed #b9b6ac;
+            text-align: center;
+            font: 10px "DM Mono";
+            letter-spacing: .16em;
+            color: #777;
+        }
+        .panel-empty i {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--acid);
+            margin-right: 9px;
+            animation: blink 1.4s steps(2) infinite;
+        }
+        .panel-empty .sub {
+            display: block;
+            margin-top: 10px;
+            font-size: 9px;
+            letter-spacing: .14em;
+            color: #9a978e;
+        }
+
+        /* atlas re-render choreography */
+        .p-entries .p-entry { opacity: 0; }
+        .p-entries.playing .p-entry {
+            animation: fade-rise .5s var(--ease-out) both;
+            animation-delay: calc(var(--i) * 70ms);
+        }
+
+        /* ── Latest — chronological index ─────────────────── */
+        .recent { padding: 7vw 4vw 5vw; border-top: 1px solid var(--line); }
+        .index { margin-top: 40px; }
+        .index-row {
+            display: grid;
+            grid-template-columns: 110px 1.4fr 1fr 1fr auto;
+            gap: 22px;
+            align-items: center;
+            padding: 26px 18px;
+            border-bottom: 1px solid var(--line);
+            position: relative;
+            transition: background var(--t-med) var(--ease-swift);
+        }
+        .index-row::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--acid);
+            transform: scaleY(0);
+            transform-origin: 50% 100%;
+            transition: transform .5s var(--ease-out);
+        }
+        .index-row:hover::before { transform: scaleY(1); transform-origin: 50% 0; }
+        .index-row:hover { background: var(--paper-2); }
+        .ix-date { font: 10px "DM Mono"; letter-spacing: .14em; color: #777; }
+        .ix-title {
+            font-family: "Unbounded", sans-serif;
+            font-weight: 500;
+            font-size: clamp(16px, 2vw, 22px);
+            letter-spacing: -.03em;
+            transition: color var(--t-fast) var(--ease-snap);
+        }
+        .index-row:hover .ix-title { color: var(--blue); }
+        .ix-path { font: 10px "DM Mono"; letter-spacing: .14em; color: #777; }
+        .ix-tags { font: 10px "DM Mono"; color: #999; }
+        .ix-arrow { font-size: 18px; transition: transform var(--t-med) var(--ease-out); }
+        .index-row:hover .ix-arrow { transform: translateX(8px); }
+        .index-empty {
+            padding: 30px 18px;
+            border-bottom: 1px solid var(--line);
+            font: 10px "DM Mono";
+            letter-spacing: .16em;
+            color: #777;
+        }
+        .index-empty i {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--acid);
+            margin-right: 9px;
+            animation: blink 1.4s steps(2) infinite;
+        }
+        .index-empty .sub {
+            display: block;
+            margin-top: 10px;
+            font-size: 9px;
+            letter-spacing: .14em;
+            color: #9a978e;
+        }
+
+        /* ── About ────────────────────────────────────────── */
+        .manifesto {
+            display: grid;
+            grid-template-columns: .55fr 1.45fr;
+            border-top: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+        }
+        .manifesto > div { padding: 5vw 4vw; }
+        .manifesto .left { border-right: 1px solid var(--line); }
+        .manifesto h2 {
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .manifesto h2::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            background: var(--blue);
+            border-radius: 50%;
+            animation: ping 2.4s var(--ease-out) infinite;
+        }
+        .manifesto blockquote {
+            font: clamp(38px, 4.8vw, 76px)/1.06 "Instrument Serif";
+            max-width: 1000px;
+        }
+        .manifesto blockquote .hl {
+            background: var(--acid);
+            box-shadow: inset 0 -4px 0 #a3d92b;
+            padding: 0 6px;
+        }
+        .about-copy {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4vw;
+            padding: 5vw 4vw;
+            border-bottom: 1px solid var(--line);
+        }
+        .about-copy p {
+            font-size: 16px;
+            line-height: 1.65;
+            color: #45433f;
+        }
+        .about-copy p strong {
+            font-family: "Instrument Serif";
+            font-weight: 400;
+            font-style: italic;
+            font-size: 1.12em;
+            color: var(--ink);
+        }
+
+        /* Principles */
+        .principles {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            border-bottom: 1px solid var(--line);
+        }
+        .principle {
+            padding: 4vw;
+            border-right: 1px solid var(--line);
+            min-height: 300px;
+            position: relative;
+            transition: background var(--t-med) var(--ease-swift), transform var(--t-med) var(--ease-out);
+        }
+        .principle:last-child { border-right: 0; }
+        .principle:hover {
+            background: var(--paper-2);
+            transform: translateY(-6px);
+        }
+        .principle strong {
+            font: 80px "Instrument Serif";
+            font-style: italic;
+            color: var(--orange);
+            display: inline-block;
+            transition: transform var(--t-med) var(--ease-out);
+        }
+        .principle:nth-child(2) strong { color: var(--blue); }
+        .principle:nth-child(3) strong { color: #769a16; }
+        .principle:hover strong { transform: rotate(-6deg) scale(1.06); }
+        .principle h4 {
+            font-size: 20px;
+            margin: 18px 0 10px;
+        }
+        .principle p {
+            color: var(--muted);
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        /* Keyframes (landing) */
+        @keyframes grow-in { from { transform: scaleX(0); } }
+        @keyframes demo-in { to { opacity: 1; transform: none; } }
+        @keyframes grid-drift { to { background-position: 72px 0, 0 0; } }
+        @keyframes cue {
+            0% { transform: translateY(0); opacity: 1; }
+            70% { transform: translateY(12px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 0; }
+        }
+        @keyframes node-ping {
+            0% { transform: scale(1); opacity: .8; }
+            70%, 100% { transform: scale(1.35); opacity: 0; }
+        }
+        @keyframes dash { to { stroke-dashoffset: -200; } }
+        @keyframes draw-glow {
+            0%, 12% { stroke-dashoffset: 260; }
+            45%, 62% { stroke-dashoffset: 0; }
+            88%, 100% { stroke-dashoffset: -260; }
+        }
+
+        /* Responsive (landing) */
+        @media (max-width: 850px) {
+            .hero, .manifesto, .about-copy { grid-template-columns: 1fr; }
+            .hero-demo { height: 420px; box-shadow: 8px 8px 0 var(--acid); }
+            .manifesto .left { border-right: 0; border-bottom: 1px solid var(--line); }
+            .principles { grid-template-columns: 1fr; }
+            .principle { border-right: 0; border-bottom: 1px solid var(--line); min-height: auto; }
+            .hero:before { display: none; }
+            .section-top { flex-direction: column; align-items: flex-start; gap: 16px; }
+
+            .branches { grid-template-columns: 1fr; }
+            .branch { border-right: 0; border-bottom: 1px solid var(--line); }
+            .branch:last-child { border-bottom: 0; }
+            .p-entry { grid-template-columns: 1fr; gap: 6px; }
+            .e-meta { grid-row: auto; grid-column: 1; flex-direction: row; align-items: center; justify-content: space-between; }
+            .index-row { grid-template-columns: 1fr 1fr; gap: 8px 18px; padding: 22px 14px; }
+            .ix-title { grid-column: 1 / -1; grid-row: 1; }
+            .ix-date { grid-row: 2; }
+            .ix-path { grid-row: 2; justify-self: end; }
+            .ix-tags { grid-row: 3; grid-column: 1 / -1; }
+            .ix-arrow { display: none; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="progress" id="progress"></div>
+    <div class="cursor-dot" id="cDot"></div>
+    <div class="cursor-ring" id="cRing"></div>
+
+    <nav>
+        <a class="logo" href="#">VB<i></i></a>
+        <div class="links">
+            <a href="#notes">Notes</a>
+            <a href="#recent">Latest</a>
+            <a href="#about">About</a>
+        </div>
+        <div class="status">SANT QUIRZE · <b>2026</b></div>
+    </nav>
+
+    <section class="hero" id="top">
+        <div class="grid-bg" aria-hidden="true"></div>
+        <div class="ghost-num" id="ghostNum" aria-hidden="true">01</div>
+
+        <div>
+            <div class="kicker">Víctor Busqué — engineering notes</div>
+            <h1>
+                <span class="h-line"><span>Don't just</span></span>
+                <span class="h-line"><span>read it.</span></span>
+                <span class="h-line"><span><em>See it run.</em></span></span>
+            </h1>
+            <p>Every note teaches one idea with diagrams that move. Classified by topic — AI, software engineering,
+                cloud — and ordered newest first. Pick a category and walk the notes.</p>
+            <div class="scroll-cue"><span class="wheel"></span>SCROLL TO THE NOTES</div>
+        </div>
+
+        <div class="hero-demo" aria-label="Animated diagram: an idea travelling through diagram, motion and understanding">
+            <div class="demo-head">FIG. 00 — AN IDEA, IN MOTION <b>03.2s</b></div>
+            <svg class="flow" viewBox="0 0 600 430" aria-hidden="true">
+                <path class="path" d="M80 190 C180 190 180 95 280 95 S410 175 510 175 M280 95 C300 240 400 290 490 320" />
+                <path class="path-glow" d="M80 190 C180 190 180 95 280 95 S410 175 510 175" />
+                <circle class="packet" r="5">
+                    <animateMotion dur="5s" repeatCount="indefinite" path="M80 190 C180 190 180 95 280 95 S410 175 510 175" />
+                </circle>
+            </svg>
+            <div class="node n1">A QUESTION</div>
+            <div class="node n2">A DIAGRAM</div>
+            <div class="node n3">MOTION</div>
+            <div class="node n4">UNDERSTANDING</div>
+            <div class="demo-caption">Every note begins with a question and ends with something you can see move.</div>
+        </div>
+    </section>
+
+    <div class="marquee" aria-hidden="true">
+        <div class="marquee-track">
+            <span>See it run <i>◆</i></span><span>The diagram is the article <i>◆</i></span><span>Motion has meaning
+                <i>◆</i></span><span>Nothing is faked <i>◆</i></span><span>Ideas that move <i>◆</i></span>
+        </div>
+    </div>
+
+    <!-- ════ NOTES — the atlas ════ -->
+    <section class="section" id="notes">
+        <div class="section-top reveal">
+            <h2>The notes.</h2>
+            <p>Three branches, eight categories. The map is the classification; every entry is a real page under
+                <span class="mono">blog/</span>.</p>
+        </div>
+
+        <div class="atlas reveal" id="atlas">
+            <div class="atlas-head">
+                <span>NOTE MAP <b id="atlasReadout"></b></span>
+                <span class="hint">CLICK A CATEGORY · TAB OR ← → TO MOVE</span>
+            </div>
+
+            <div class="branches" id="branches" role="group" aria-label="Note branches"></div>
+
+            <div class="atlas-panel" id="panel">
+                <div class="panel-head">
+                    <span class="crumb" id="crumb"></span>
+                    <span class="hint" id="panelHint">CATEGORY QUEUE</span>
+                </div>
+                <div id="panelBody"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ════ LATEST — chronological index ════ -->
+    <section class="recent" id="recent">
+        <div class="section-top reveal">
+            <h2>Latest.</h2>
+            <p>Published notes, newest first. Only pages that exist under <span class="mono">blog/</span> are listed.
+            </p>
+        </div>
+        <div class="index" id="indexList"></div>
+    </section>
+
+    <!-- ════ ABOUT ════ -->
+    <section id="about">
+        <div class="manifesto mask">
+            <div class="left">
+                <h2>ABOUT</h2>
+            </div>
+            <div>
+                <blockquote>
+                    <span class="row"><span>A diagram should show</span></span>
+                    <span class="row"><span>what happens next,</span></span>
+                    <span class="row"><span>not just what exists.</span></span>
+                </blockquote>
+            </div>
+        </div>
+
+        <div class="about-copy reveal">
+            <p><strong>Víctor Busqué</strong> is a software engineer near Barcelona. He builds agent systems for a
+                living and writes down what he learns — one idea per note, taught with diagrams that move.</p>
+            <p>Every figure runs the real process: counters are computed state, not decoration. If a note claims
+                something happened, you can watch it happen. That is the whole contract.</p>
+        </div>
+
+        <div class="principles stagger" style="--d:0s">
+            <div class="principle"><strong>01</strong>
+                <h4>Motion has meaning.</h4>
+                <p>Animation explains sequence, concurrency, latency and state. Nothing moves just because it looks
+                    cool.</p>
+            </div>
+            <div class="principle"><strong>02</strong>
+                <h4>Nothing is faked.</h4>
+                <p>Every figure runs the real process. Press step and the algorithm obeys — the counters are the
+                    actual state, not decoration.</p>
+            </div>
+            <div class="principle"><strong>03</strong>
+                <h4>The diagram is the article.</h4>
+                <p>Visual models sit at the center of the story instead of being illustrations added after the prose.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-big mask">
+            <span class="row"><span>BUILD.</span></span>
+            <span class="row"><span>BREAK.</span></span>
+            <span class="row"><span><em>EXPLAIN.</em></span></span>
+        </div>
+        <div class="foot"><span>© 2026 VÍCTOR BUSQUÉ</span><span>AI · SOFTWARE ENGINEERING · CLOUD</span></div>
+    </footer>
+
+    <script>
+        /* ── The classification ──────────────────────────────
+           Mirrors AGENTS.md. Categories and their examples are
+           taxonomy only — the map's structure, not content.
+           ─────────────────────────────────────────────────── */
+        var TAXONOMY = [{
+            topic: 'AI', no: '01',
+            cats: [
+                { name: 'Basics', eg: 'LLM · Agent' },
+                { name: 'Advanced', eg: 'Tools · MCP · Skills · Plugins · Harness' },
+                { name: 'Models', eg: 'Tests · Experiments · Results' },
+                { name: 'Production', eg: 'Gateway · Memory · Guardrails · Sandboxing · Evaluation' },
+                { name: 'Personal', eg: 'Projects · Tricks · Stack · Learnings' }
+            ]
+        }, {
+            topic: 'SOFTWARE ENGINEERING', no: '02',
+            cats: [
+                { name: 'Python', eg: 'FastAPI · Litestar · Concurrency · Optimization' },
+                { name: 'Architecture', eg: 'Design Patterns · Microservices' }
+            ]
+        }, {
+            topic: 'CLOUD', no: '03',
+            cats: [
+                { name: 'AWS', eg: 'Lambda · S3 · DynamoDB · Bedrock AgentCore' }
+            ]
+        }];
+
+        /* ── Real entries only ───────────────────────────────
+           One object per published page in blog/. Nothing here
+           is invented: no entry, no count, no row. When a note
+           lands, add it below (slug is the href from this page,
+           date 'YYYY-MM', path 'Topic/Category'). It then appears
+           in both the atlas panel and the Latest index. */
+        var ENTRIES = [
+            /* e.g.
+            { slug: 'blog/slug.html', title: 'Title.', deck: 'One line.', date: '2026-02', path: 'AI/Advanced', tags: ['MCP', 'Tools'] }
+            */
+        ];
+
+        (function () {
+            'use strict';
+            var branchesEl = document.getElementById('branches');
+            var crumb = document.getElementById('crumb');
+            var panelBody = document.getElementById('panelBody');
+            var readout = document.getElementById('atlasReadout');
+            var indexList = document.getElementById('indexList');
+            var MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+            function esc(s) {
+                return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+            function fmtDate(d) {
+                var p = d.split('-');
+                return p.length === 2 ? MONTHS[(+p[1]) - 1] + ' ' + p[0] : d;
+            }
+            function retrigger(el) {
+                el.classList.remove('playing');
+                void el.offsetWidth;
+                el.classList.add('playing');
+            }
+
+            /* ── Atlas header readout (computed) ── */
+            var totalCats = 0;
+            TAXONOMY.forEach(function (b) { totalCats += b.cats.length; });
+            readout.textContent = ' / ' + TAXONOMY.length + ' BRANCHES · ' + totalCats + ' CATEGORIES';
+
+            /* ── Per-category entry counts ── */
+            var counts = {};
+            ENTRIES.forEach(function (e) {
+                counts[e.path] = (counts[e.path] || 0) + 1;
+            });
+
+            /* ── Build the map (static, all branches visible) ── */
+            branchesEl.innerHTML = TAXONOMY.map(function (b) {
+                var cats = b.cats.map(function (c) {
+                    var key = b.topic + '/' + c.name;
+                    var n = counts[key] || 0;
+                    return '<button class="cat-tile" type="button" data-key="' + esc(key) + '"' +
+                        ' aria-pressed="false">' +
+                        '<span class="c-name">' + esc(c.name) +
+                        '<span class="c-count' + (n ? ' has' : '') + '">' + n + '</span></span>' +
+                        '<span class="c-eg">' + esc(c.eg.toUpperCase()) + '</span></button>';
+                }).join('');
+                return '<div class="branch" data-topic="' + esc(b.topic) + '">' +
+                    '<div class="b-head"><span class="b-no">' + esc(b.no) + '</span>' +
+                    '<span class="b-name">' + esc(b.topic) + '</span>' +
+                    '<span class="b-count">' + b.cats.length + ' CAT' + (b.cats.length > 1 ? 'S' : '') + '</span></div>' +
+                    '<div class="b-cats">' + cats + '</div></div>';
+            }).join('');
+
+            var tiles = branchesEl.querySelectorAll('.cat-tile');
+            var selected = null;
+
+            function panelEmpty(text, sub) {
+                panelBody.innerHTML = '<div class="panel-empty"><i></i>' + esc(text) +
+                    (sub ? '<span class="sub">' + esc(sub) + '</span>' : '') + '</div>';
+            }
+            function renderPanel() {
+                if (!selected) {
+                    crumb.innerHTML = 'SELECT A CATEGORY';
+                    panelEmpty('The map is empty — nothing invented', 'Entries appear here as notes are published under blog/');
+                    return;
+                }
+                var list = ENTRIES.filter(function (e) { return e.path === selected; })
+                    .sort(function (a, b) { return b.date < a.date ? -1 : 1; });
+                var parts = selected.split('/');
+                crumb.innerHTML = '<b>' + esc(parts[0]) + '</b> / ' + esc(parts[1].toUpperCase()) +
+                    ' — ' + list.length + (list.length === 1 ? ' NOTE' : ' NOTES');
+                if (!list.length) {
+                    panelEmpty('No notes in ' + parts[1] + ' yet', 'The first note in this category is being written');
+                    return;
+                }
+                var html = list.map(function (e, i) {
+                    return '<a class="p-entry" style="--i:' + i + '" href="' + esc(e.slug) + '">' +
+                        '<span class="e-title">' + esc(e.title) + '</span>' +
+                        '<span class="e-deck">' + esc(e.deck) + '</span>' +
+                        '<span class="e-meta">' +
+                        '<span class="e-path">' + esc(selected.toUpperCase()) + '</span>' +
+                        '<span class="e-date">' + esc(fmtDate(e.date)) + '</span>' +
+                        '<span class="read-tag">READ</span>' +
+                        '</span></a>';
+                }).join('');
+                panelBody.innerHTML = '<div class="p-entries">' + html + '</div>';
+                retrigger(panelBody.querySelector('.p-entries'));
+            }
+
+            function select(key) {
+                selected = (selected === key) ? null : key;
+                tiles.forEach(function (t) {
+                    var on = t.dataset.key === selected;
+                    t.classList.toggle('is-active', on);
+                    t.setAttribute('aria-pressed', on ? 'true' : 'false');
+                });
+                renderPanel();
+            }
+
+            branchesEl.addEventListener('click', function (e) {
+                var tile = e.target.closest('.cat-tile');
+                if (tile) select(tile.dataset.key);
+            });
+
+            /* keyboard: arrow keys cycle the category tiles */
+            branchesEl.addEventListener('keydown', function (e) {
+                if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+                var idx = Array.prototype.indexOf.call(tiles, document.activeElement);
+                if (idx < 0) return;
+                e.preventDefault();
+                var next = e.key === 'ArrowRight' ? (idx + 1) % tiles.length
+                    : (idx - 1 + tiles.length) % tiles.length;
+                tiles[next].focus();
+                tiles[next].click();
+            });
+
+            /* ── Latest index — published only, newest first ── */
+            var sorted = ENTRIES.slice().sort(function (a, b) { return b.date < a.date ? -1 : 1; });
+            if (sorted.length) {
+                indexList.innerHTML = sorted.map(function (n) {
+                    return '<a class="index-row" href="' + esc(n.slug) + '">' +
+                        '<span class="ix-date">' + esc(fmtDate(n.date)) + '</span>' +
+                        '<span class="ix-title">' + esc(n.title) + '</span>' +
+                        '<span class="ix-path">' + esc(n.path.toUpperCase()) + '</span>' +
+                        '<span class="ix-tags">' + esc((n.tags || []).join(' · ')) + '</span>' +
+                        '<span class="ix-arrow">→</span></a>';
+                }).join('');
+            } else {
+                indexList.innerHTML = '<div class="index-empty"><i></i>NO NOTES PUBLISHED YET' +
+                    '<span class="sub">The atlas above is the queue — entries land here as they go live</span></div>';
+            }
+
+            renderPanel();
+        })();
+
+        /* hero ghost numeral parallax */
+        (function () {
+            var ghost = document.getElementById('ghostNum');
+            var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            var finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+            if (!reduceMotion && finePointer) {
+                var gy = 0, target = 0;
+                addEventListener('scroll', function () { target = scrollY * .12; }, { passive: true });
+                (function parallax() {
+                    gy += (target - gy) * .08;
+                    ghost.style.transform = 'translateY(' + gy + 'px)';
+                    requestAnimationFrame(parallax);
+                })();
+            }
+        })();
+    </script>
+</body>
+
+</html>

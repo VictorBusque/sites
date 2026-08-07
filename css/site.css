@@ -1,0 +1,674 @@
+/* ==========================================================================
+   site.css — shared design system
+   Víctor Busqué · Living Engineering Notes
+   Landing page specifics live inline in index.html; figure specifics live
+   inline in each blog post. This file is the shared skeleton.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=Unbounded:wght@400;500;600;700&family=Work+Sans:wght@400;500;600&display=swap');
+
+/* ── Tokens ─────────────────────────────────────────────── */
+:root {
+    --ink: #101010;
+    --paper: #f2f0e9;
+    --paper-2: #ece9de;
+    --acid: #c7ff3d;
+    --blue: #546cff;
+    --orange: #ff6b2c;
+    --muted: #716f68;
+    --line: #111111;
+
+    /* stages (dark diagram canvases) */
+    --stage: #121212;
+    --stage-2: #1a1a1a;
+    --grid: #ffffff0d;
+
+    /* motion system — premium editorial */
+    --ease-out: cubic-bezier(.16, 1, .3, 1);       /* entrances: decelerate */
+    --ease-in: cubic-bezier(.55, 0, .85, .36);     /* exits: accelerate */
+    --ease-snap: cubic-bezier(.2, 0, 0, 1);        /* micro-interactions */
+    --ease-swift: cubic-bezier(.4, 0, .2, 1);      /* on-screen state */
+    --t-fast: 180ms;
+    --t-med: 400ms;
+    --t-slow: 800ms;
+    --t-dramatic: 1100ms;
+}
+
+/* ── Base ───────────────────────────────────────────────── */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 84px;
+}
+
+body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Work Sans", sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+::selection {
+    background: var(--acid);
+    color: var(--ink);
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 3px;
+}
+
+.mono { font-family: "DM Mono", monospace; }
+.serif { font-family: "Instrument Serif", serif; }
+
+/* ── Scroll progress ────────────────────────────────────── */
+.progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 100%;
+    background: var(--acid);
+    transform-origin: 0 50%;
+    transform: scaleX(0);
+    z-index: 60;
+    pointer-events: none;
+}
+
+/* ── Cursor ─────────────────────────────────────────────── */
+.cursor-dot,
+.cursor-ring {
+    position: fixed;
+    top: 0;
+    left: 0;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 70;
+    transform: translate(-50%, -50%);
+}
+.cursor-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--acid);
+}
+.cursor-ring {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #10101055;
+    transition: width var(--t-fast) var(--ease-snap), height var(--t-fast) var(--ease-snap),
+        border-color var(--t-fast) var(--ease-snap), opacity var(--t-fast) var(--ease-snap);
+}
+.cursor-ring.is-hot {
+    width: 46px;
+    height: 46px;
+    border-color: var(--orange);
+}
+@media (hover: none), (pointer: coarse) {
+    .cursor-dot, .cursor-ring { display: none; }
+}
+
+/* ── Nav ────────────────────────────────────────────────── */
+nav {
+    height: 70px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    padding: 0 4vw;
+    position: sticky;
+    top: 0;
+    background: #f2f0e9e8;
+    backdrop-filter: blur(16px);
+    z-index: 50;
+}
+
+.logo {
+    font-family: "Unbounded", sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -.06em;
+    display: inline-flex;
+    align-items: center;
+}
+.logo i {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: var(--acid);
+    border-radius: 50%;
+    margin-left: 6px;
+    animation: blink 1.8s var(--ease-snap) infinite, ping 2.4s var(--ease-out) infinite;
+}
+
+nav .links {
+    margin-left: auto;
+    display: flex;
+    gap: 30px;
+    font-size: 13px;
+}
+nav .links a {
+    position: relative;
+    padding: 6px 0;
+    transition: color var(--t-fast) var(--ease-snap);
+}
+nav .links a::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 1px;
+    background: var(--ink);
+    transform: scaleX(0);
+    transform-origin: 100% 50%;
+    transition: transform var(--t-med) var(--ease-out);
+}
+nav .links a:hover::after {
+    transform: scaleX(1);
+    transform-origin: 0 50%;
+}
+
+.status {
+    margin-left: 30px;
+    padding-left: 30px;
+    border-left: 1px solid #11111133;
+    font: 10px "DM Mono";
+    color: #777;
+}
+.status b {
+    color: var(--ink);
+    font-weight: 500;
+}
+
+/* ── Marquee strip ──────────────────────────────────────── */
+.marquee {
+    border-bottom: 1px solid var(--line);
+    overflow: hidden;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 14px 0;
+}
+.marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee 30s linear infinite;
+    will-change: transform;
+}
+.marquee span {
+    font: 11px "DM Mono";
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    padding: 0 22px;
+}
+.marquee span i {
+    font-style: normal;
+    color: var(--acid);
+}
+
+/* ── Masked line reveals (scroll-triggered) ─────────────── */
+.mask .row {
+    display: block;
+    overflow: hidden;
+    padding-bottom: .06em;
+    margin-bottom: -.06em;
+}
+.mask .row > span {
+    display: block;
+    transform: translateY(112%);
+    transition: transform 1s var(--ease-out);
+    transition-delay: calc(var(--i, 0) * .12s);
+}
+.mask.seen .row > span {
+    transform: translateY(0);
+}
+
+/* ── Load-time line reveals (heroes) ────────────────────── */
+.h-line {
+    display: block;
+    overflow: hidden;
+    padding-bottom: .08em;
+    margin-bottom: -.08em;
+}
+.h-line > span {
+    display: block;
+    transform: translateY(112%);
+    animation: rise var(--t-dramatic) var(--ease-out) both;
+}
+.h-line:nth-child(1) > span { animation-delay: .1s; }
+.h-line:nth-child(2) > span { animation-delay: .22s; }
+.h-line:nth-child(3) > span { animation-delay: .34s; }
+
+/* ── Scroll reveals ─────────────────────────────────────── */
+.reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity var(--t-slow) var(--ease-out), transform var(--t-slow) var(--ease-out);
+    transition-delay: var(--d, 0s);
+}
+.reveal.seen {
+    opacity: 1;
+    transform: none;
+}
+.stagger > * {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity var(--t-slow) var(--ease-out), transform var(--t-slow) var(--ease-out);
+}
+.stagger.seen > * {
+    opacity: 1;
+    transform: none;
+}
+.stagger > *:nth-child(1) { transition-delay: .05s; }
+.stagger > *:nth-child(2) { transition-delay: .15s; }
+.stagger > *:nth-child(3) { transition-delay: .25s; }
+.stagger > *:nth-child(4) { transition-delay: .35s; }
+.stagger > *:nth-child(5) { transition-delay: .45s; }
+
+/* ── Buttons / tags ─────────────────────────────────────── */
+.btn {
+    display: inline-block;
+    font: 10px "DM Mono";
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    border: 1px solid var(--line);
+    padding: 12px 18px;
+    background: transparent;
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease-snap), color var(--t-fast) var(--ease-snap);
+}
+.btn:hover {
+    background: var(--ink);
+    color: var(--paper);
+}
+
+.tag {
+    border: 1px solid #aaa;
+    padding: 6px 9px;
+    font: 10px "DM Mono";
+    background: var(--paper);
+    transition: border-color var(--t-fast) var(--ease-snap), transform var(--t-fast) var(--ease-snap);
+    cursor: default;
+}
+
+/* ── Figure system ──────────────────────────────────────── */
+/*
+   Every figure is a dark animated canvas with a head bar and a caption.
+   Two kinds:
+     · looping figures — pure CSS choreography, get PAUSE / REPLAY controls
+     · scripted figures — driven by a draw(i) function registered in
+       window.__figScripts, get PREV / PLAY / NEXT / RESET controls.
+   See blog/template.html for the recipe.
+*/
+.fig {
+    margin: 11vh auto;
+    width: 100%;
+}
+.fig-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border: 1px solid var(--line);
+    border-bottom: 0;
+    background: var(--paper-2);
+    padding: 12px 16px;
+}
+.fig-no {
+    font: 10px "DM Mono";
+    letter-spacing: .14em;
+    color: var(--orange);
+}
+.fig-name {
+    font: 10px "DM Mono";
+    letter-spacing: .18em;
+}
+.fig-readout {
+    font: 10px "DM Mono";
+    color: #666;
+    margin-left: auto;
+    text-align: right;
+    max-width: 46%;
+    line-height: 1.5;
+}
+.fig-controls {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.fig-btn {
+    font: 9px "DM Mono";
+    letter-spacing: .12em;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease-snap), color var(--t-fast) var(--ease-snap),
+        transform var(--t-fast) var(--ease-snap);
+}
+.fig-btn:hover {
+    background: var(--ink);
+    color: var(--paper);
+}
+.fig-btn:active {
+    transform: scale(.94);
+}
+.fig-btn.is-active {
+    background: var(--ink);
+    color: var(--acid);
+}
+.fig-btn:disabled {
+    opacity: .3;
+    cursor: default;
+    transform: none;
+}
+
+.fig-body {
+    border: 1px solid var(--line);
+    background-color: var(--stage);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 32px 32px;
+    position: relative;
+    overflow: hidden;
+    min-height: 380px;
+    color: #fff;
+}
+.fig-body::after {
+    content: "";
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    border: 1px solid #ffffff12;
+    border-radius: 50%;
+    right: -100px;
+    bottom: -100px;
+    pointer-events: none;
+}
+
+/* pause / restart mechanics */
+.fig.is-paused .fig-body *,
+.fig.is-paused .fig-body *::before,
+.fig.is-paused .fig-body *::after {
+    animation-play-state: paused !important;
+}
+.fig.is-restarting .fig-body *,
+.fig.is-restarting .fig-body *::before,
+.fig.is-restarting .fig-body *::after {
+    animation: none !important;
+    transition: none !important;
+}
+
+.fig-caption {
+    margin-top: 16px;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--muted);
+    max-width: 760px;
+}
+.fig-caption b {
+    font-family: "DM Mono";
+    font-size: 9.5px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--orange);
+    font-weight: 500;
+    margin-right: 8px;
+}
+
+/* ── Blog post layout ───────────────────────────────────── */
+.post-hero {
+    border-bottom: 1px solid var(--line);
+    padding: 9vh 4vw 7vh;
+    position: relative;
+    overflow: hidden;
+}
+.post-hero .ghost {
+    position: absolute;
+    right: -1vw;
+    top: 2vh;
+    font: italic 160px/1 "Instrument Serif";
+    color: #1111110d;
+    pointer-events: none;
+    animation: floaty 9s var(--ease-swift) infinite;
+}
+.crumb {
+    font: 10px "DM Mono";
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: #777;
+    margin-bottom: 34px;
+}
+.crumb a {
+    border-bottom: 1px solid #777;
+    padding-bottom: 2px;
+    transition: color var(--t-fast) var(--ease-snap), border-color var(--t-fast) var(--ease-snap);
+}
+.crumb a:hover {
+    color: var(--ink);
+    border-color: var(--ink);
+}
+.post-hero h1 {
+    font-family: "Unbounded", sans-serif;
+    font-weight: 500;
+    font-size: clamp(46px, 7.5vw, 116px);
+    letter-spacing: -.07em;
+    line-height: .86;
+    margin: 0 0 34px;
+}
+.post-hero h1 em {
+    font-family: "Instrument Serif";
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -.04em;
+}
+.post-hero .dek {
+    font-size: 18px;
+    line-height: 1.6;
+    max-width: 620px;
+    color: #45433f;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fade-rise var(--t-slow) var(--ease-out) .55s both;
+}
+.post-meta {
+    margin-top: 40px;
+    display: flex;
+    gap: 26px;
+    flex-wrap: wrap;
+    font: 10px "DM Mono";
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #777;
+}
+.post-meta b {
+    color: var(--ink);
+    font-weight: 500;
+}
+
+.post-prose {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 5vh 4vw 0;
+}
+.post-prose > p {
+    font-size: 17px;
+    line-height: 1.72;
+    color: #33322e;
+    margin-bottom: 1.5em;
+}
+.post-prose > p strong {
+    font-weight: 600;
+}
+.post-prose h2 {
+    font-family: "Unbounded", sans-serif;
+    font-weight: 500;
+    font-size: clamp(25px, 3.4vw, 38px);
+    letter-spacing: -.045em;
+    line-height: 1.05;
+    margin: 11vh 0 20px;
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+}
+.post-prose h2 .sec-no {
+    font: 10px "DM Mono";
+    letter-spacing: .14em;
+    color: var(--orange);
+    align-self: center;
+}
+.post-prose .callout {
+    border-left: 4px solid var(--acid);
+    background: var(--paper-2);
+    padding: 22px 26px;
+    margin: 5vh 0;
+    font: italic 23px/1.45 "Instrument Serif";
+}
+.post-prose .callout em {
+    font-style: normal;
+}
+.post-prose .aside {
+    font: 11px/1.7 "DM Mono";
+    color: #777;
+    border-top: 1px solid #d8d4c6;
+    padding-top: 12px;
+    margin: 6vh 0;
+}
+
+/* ── Post navigation ────────────────────────────────────── */
+.post-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-top: 1px solid var(--line);
+    margin-top: 12vh;
+}
+.post-nav a {
+    padding: 44px 4vw;
+    position: relative;
+}
+.post-nav a + a {
+    border-left: 1px solid var(--line);
+    text-align: right;
+}
+.post-nav .dir {
+    font: 10px "DM Mono";
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: #777;
+}
+.post-nav .t {
+    font-family: "Unbounded", sans-serif;
+    font-weight: 500;
+    font-size: clamp(18px, 2.4vw, 26px);
+    letter-spacing: -.03em;
+    margin-top: 12px;
+    display: block;
+    transition: color var(--t-fast) var(--ease-snap);
+}
+.post-nav a:hover .t {
+    color: var(--blue);
+}
+
+/* ── Footer ─────────────────────────────────────────────── */
+footer {
+    padding: 6vw 4vw 3vw;
+    background: var(--ink);
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+footer::after {
+    content: "VB";
+    position: absolute;
+    right: -2vw;
+    bottom: -8vw;
+    font: 500 30vw/1 "Unbounded";
+    letter-spacing: -.12em;
+    color: #ffffff05;
+    pointer-events: none;
+    animation: floaty 10s var(--ease-swift) infinite;
+}
+.footer-big {
+    font-family: "Unbounded", sans-serif;
+    font-weight: 600;
+    font-size: clamp(65px, 10vw, 170px);
+    line-height: .78;
+    letter-spacing: -.07em;
+}
+.footer-big em {
+    font-family: "Instrument Serif";
+    font-weight: 400;
+    color: var(--acid);
+}
+.foot {
+    margin-top: 80px;
+    padding-top: 18px;
+    border-top: 1px solid #555;
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    font: 10px "DM Mono";
+    color: #999;
+}
+
+/* ── Keyframes ──────────────────────────────────────────── */
+@keyframes rise { to { transform: translateY(0); } }
+@keyframes fade-rise { to { opacity: 1; transform: none; } }
+@keyframes blink { 50% { opacity: .2; } }
+@keyframes ping {
+    0% { box-shadow: 0 0 0 0 #c7ff3d55; }
+    70% { box-shadow: 0 0 0 9px #c7ff3d00; }
+    100% { box-shadow: 0 0 0 0 #c7ff3d00; }
+}
+@keyframes marquee { to { transform: translateX(-50%); } }
+@keyframes floaty {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-14px); }
+}
+@keyframes pop {
+    0%, 12% { transform: scale(1); }
+    30% { transform: scale(1.18); }
+    40%, 100% { transform: scale(1); }
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 850px) {
+    nav .links { display: none; }
+    .status { display: none; }
+    .fig-body { min-height: 300px; }
+    .fig-head { flex-wrap: wrap; gap: 10px; }
+    .fig-readout { max-width: 100%; margin-left: 0; }
+    .post-nav { grid-template-columns: 1fr; }
+    .post-nav a + a { border-left: 0; border-top: 1px solid var(--line); text-align: left; }
+    .post-hero .ghost { font-size: 100px; }
+}
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+    }
+    .reveal, .stagger > *, .h-line > span, .post-hero .dek {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+    .fig.is-paused .fig-body *,
+    .fig.is-paused .fig-body *::before,
+    .fig.is-paused .fig-body *::after {
+        animation-play-state: initial !important;
+    }
+}
