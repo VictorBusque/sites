@@ -182,7 +182,7 @@ Full reference: [references/DESIGN.md](references/DESIGN.md).
   `--paper-2 #ece9de`, `--acid #c7ff3d`, `--blue #546cff`, `--orange #ff6b2c`,
   `--muted #716f68`, `--line #111`.
 - Type: Unbounded (display/headings), Instrument Serif (italic accents and
-  big numerals), Work Sans (body), DM Mono (labels/readouts).
+  big numerals), Newsreader (body), DM Mono (labels/readouts).
 - Dark figure canvases use `--stage #121212` with the 32px grid from the
   shared `.fig-body` — never invent a new stage background.
 - Page-specific styles may only add to this system (new keyframes for figures

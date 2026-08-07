@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+    <!-- Primary meta -->
+    <title>The next token — Víctor Busqué</title>
+    <meta name="description" content="An LLM is a next-token predictor. Watch a toy model learn its tokens, build its probability table, then run the loop that writes every answer — token by token.">
+    <meta name="author" content="Víctor Busqué">
+    <meta name="robots" content="noindex, follow">
+    <link rel="canonical" href="https://victorbusque.com/blog/next-token.html">
+
+    <!-- Favicons / PWA (absolute paths resolve from /blog/) -->
+    <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/img/favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#101010">
+    <meta name="apple-mobile-web-app-title" content="VB Notes">
+    <meta name="application-name" content="VB Notes">
+    <meta name="color-scheme" content="light dark">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Víctor Busqué — Living Engineering Notes">
+    <meta property="og:title" content="The next token — Víctor Busqué">
+    <meta property="og:description" content="An LLM is a next-token predictor. Watch a toy model learn its tokens, build its probability table, then run the loop.">
+    <meta property="og:url" content="https://victorbusque.com/blog/next-token.html">
+    <meta property="og:image" content="https://victorbusque.com/img/og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="The next token — Víctor Busqué">
+    <meta name="twitter:description" content="An LLM is a next-token predictor. Watch a toy model learn its tokens, build its probability table, then run the loop.">
+    <meta name="twitter:image" content="https://victorbusque.com/img/og.png">
+
+    <!-- Performance: preconnect to font CDN -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link rel="stylesheet" href="../css/site.css">
+    <script src="../js/site.js" defer></script>
+    <style>
+        /* ════════════════════════════════════════════════════════════════
+           NEXT TOKEN — page-specific figure styles.
+           Shared pieces (nav, footer, reveals, figure engine) live in
+           css/site.css / js/site.js — untouched.
+           ════════════════════════════════════════════════════════════════ */
+
+        /* ── FIG 01 · byte-pair merges ── */
+        .bpe-wrap { position: absolute; inset: 0; display: flex; }
+        .bpe-words {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 9px;
+            padding: 26px 18px 18px;
+        }
+        .bpe-row { display: flex; align-items: center; gap: 5px; }
+        .bpe-lab {
+            width: 92px;
+            font: 9px "DM Mono";
+            letter-spacing: .14em;
+            color: #777;
+            text-align: right;
+            padding-right: 12px;
+            flex-shrink: 0;
+        }
+        .bpe-lab b { color: var(--blue); font-weight: 500; }
+        .bpe-tile {
+            min-width: 20px;
+            height: 22px;
+            padding: 0 4px;
+            border: 1px solid #ffffff28;
+            display: grid;
+            place-items: center;
+            font: 10px "DM Mono";
+            color: #bbb;
+            transition: border-color .2s var(--ease-swift), color .2s var(--ease-swift), box-shadow .2s var(--ease-swift);
+        }
+        .bpe-tile.merged { border-color: #546cff55; color: #8fa0ff; }
+        .bpe-tile.fresh {
+            border-color: var(--acid);
+            color: #fff;
+            box-shadow: 0 0 12px #c7ff3d33;
+            animation: bpe-pop .45s var(--ease-out) both;
+        }
+        @keyframes bpe-pop { from { transform: scale(1.45); } }
+        .bpe-side {
+            width: 168px;
+            border-left: 1px solid #ffffff14;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 7px;
+            padding: 0 16px;
+            flex-shrink: 0;
+        }
+        .bpe-side-lab { font: 8.5px "DM Mono"; letter-spacing: .18em; color: #666; margin-bottom: 3px; }
+        .bpe-cand { font: 9px "DM Mono"; color: #888; border: 1px solid #ffffff22; padding: 3px 8px; white-space: nowrap; }
+        .bpe-cand.top { border-color: var(--acid); color: var(--acid); box-shadow: 0 0 10px #c7ff3d22; }
+        .bpe-cand.none { border-style: dashed; color: #555; }
+        .bpe-vocab {
+            margin-top: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            flex-wrap: wrap;
+            max-width: 92%;
+        }
+        .bpe-vlab { font: 8.5px "DM Mono"; letter-spacing: .16em; color: #666; margin-right: 4px; }
+        .bpe-vchip { border: 1px dashed #546cff55; color: #8fa0ff; font: 9px "DM Mono"; padding: 2px 7px; }
+
+        /* ── FIG 02 · the table grows ── */
+        .cnt-wrap { position: absolute; inset: 0; display: flex; flex-direction: column; }
+        .cnt-sents {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            padding: 22px 20px 14px;
+            border-bottom: 1px solid #ffffff12;
+            flex-shrink: 0;
+        }
+        .cnt-srow { display: flex; align-items: center; gap: 5px; }
+        .cnt-slab { width: 22px; font: 8.5px "DM Mono"; letter-spacing: .14em; color: #555; flex-shrink: 0; }
+        .cnt-t {
+            width: 30px;
+            height: 20px;
+            border: 1px solid #ffffff22;
+            display: grid;
+            place-items: center;
+            font: 9px "DM Mono";
+            color: #666;
+            opacity: .3;
+            transition: opacity .2s var(--ease-swift), border-color .2s var(--ease-swift), color .2s var(--ease-swift);
+        }
+        .cnt-t.seen { opacity: 1; color: #ddd; border-color: #ffffff44; }
+        .cnt-t.cur { border-color: var(--acid); color: var(--acid); box-shadow: 0 0 10px #c7ff3d22; }
+        .cnt-table { flex: 1; overflow-y: auto; padding: 12px 20px 18px; }
+        .cnt-empty { font: 9px "DM Mono"; letter-spacing: .16em; color: #555; text-align: center; padding: 30px 0; }
+        .cnt-row { display: flex; align-items: center; gap: 6px; padding: 2.5px 0; }
+        .cnt-ctx { width: 34px; height: 18px; border: 1px solid #546cff55; color: #aab4ff; font: 9px "DM Mono"; display: grid; place-items: center; }
+        .cnt-ctx.sep { border-color: transparent; color: #888; width: 8px; }
+        .cnt-nx { font: 9px "DM Mono"; color: #999; border: 1px solid #ffffff1e; padding: 1px 7px; white-space: nowrap; transition: border-color .2s var(--ease-swift), color .2s var(--ease-swift); }
+        .cnt-row.fresh .cnt-nx { border-color: var(--acid); color: var(--acid); }
+        .cnt-row.fresh .cnt-ctx { border-color: var(--acid); color: var(--acid); }
+
+        /* ── FIG 03 · the loop, run ── */
+        .prd-wrap {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            padding: 26px 18px;
+        }
+        .prd-stream { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; max-width: 96%; }
+        .prd-t {
+            width: 36px;
+            height: 26px;
+            border: 1px solid #ffffff28;
+            display: grid;
+            place-items: center;
+            font: 10px "DM Mono";
+            color: #bbb;
+            transition: border-color .2s var(--ease-swift), color .2s var(--ease-swift), box-shadow .2s var(--ease-swift);
+        }
+        .prd-t.ctx { border-color: var(--blue); color: #aab4ff; box-shadow: 0 0 10px #546cff2e; }
+        .prd-t.last { border-color: var(--acid); color: #fff; box-shadow: 0 0 12px #c7ff3d33; animation: bpe-pop .4s var(--ease-out) both; }
+        .prd-dist { display: flex; flex-direction: column; gap: 5px; width: min(430px, 92%); }
+        .prd-bar { display: flex; align-items: center; gap: 8px; }
+        .pb-tok { width: 56px; font: 9px "DM Mono"; color: #999; text-align: right; flex-shrink: 0; }
+        .pb-track { flex: 1; height: 12px; background: #ffffff0d; position: relative; overflow: hidden; }
+        .pb-fill {
+            display: block;
+            height: 100%;
+            background: #546cff66;
+            transform-origin: 0 50%;
+            animation: prd-grow .45s var(--ease-out) both;
+        }
+        .pb-fill.win { background: var(--acid); box-shadow: 0 0 10px #c7ff3d44; }
+        @keyframes prd-grow { from { transform: scaleX(0); } }
+        .pb-p { width: 46px; font: 9px "DM Mono"; color: #777; flex-shrink: 0; }
+
+        /* ── recipe code block ── */
+        .recipe {
+            display: block;
+            max-width: 100%;
+            overflow-x: auto;
+            background: #141414;
+            color: #d6d6d6;
+            border: 1px solid var(--line);
+            padding: 26px 28px;
+            font: 12px/1.8 "DM Mono";
+            margin: 6vh 0;
+        }
+        .recipe .cm { color: #6b6b6b; }
+
+        .md-link {
+            color: var(--ink);
+            text-decoration: none;
+            border-bottom: 1px solid var(--ink);
+            transition: color var(--t-fast) var(--ease-snap), border-color var(--t-fast) var(--ease-snap);
+        }
+        .md-link:hover { color: var(--blue); border-color: var(--blue); }
+
+        @media (max-width: 850px) {
+            .bpe-wrap { flex-direction: column; }
+            .bpe-words { padding: 20px 14px 10px; gap: 8px; }
+            .bpe-lab { width: 76px; font-size: 8px; }
+            .bpe-tile { min-width: 17px; height: 19px; font-size: 9px; padding: 0 3px; }
+            .bpe-side { width: auto; border-left: 0; border-top: 1px solid #ffffff14; flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 12px 14px; }
+            .bpe-side-lab { width: 100%; text-align: center; }
+            .cnt-sents { padding: 18px 14px 12px; }
+            .cnt-t { width: 26px; font-size: 8.5px; }
+            .cnt-table { padding: 10px 14px 16px; }
+            .cnt-ctx { width: 30px; font-size: 8.5px; }
+            .prd-t { width: 31px; height: 23px; font-size: 9px; }
+            .pb-tok { width: 44px; font-size: 8.5px; }
+        }
+        @media (max-width: 480px) {
+            .bpe-tile { min-width: 15px; height: 17px; font-size: 8.5px; }
+            .cnt-t { width: 23px; height: 18px; font-size: 8px; }
+            .prd-t { width: 28px; height: 21px; font-size: 8.5px; gap: 4px; }
+            .prd-stream { gap: 4px; }
+            .pb-p { width: 38px; font-size: 8.5px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="progress" id="progress"></div>
+    <div class="cursor-dot" id="cDot"></div>
+    <div class="cursor-ring" id="cRing"></div>
+
+    <nav>
+        <a class="logo" href="../index.html">VB<i></i></a>
+        <div class="links">
+            <a href="../index.html#notes">Notes</a>
+            <a href="../index.html#recent">Latest</a>
+            <a href="../about.html">About</a>
+        </div>
+        <div class="status">NOTE 01 / <b>DRAFT</b></div>
+    </nav>
+
+    <header class="post-hero">
+        <div class="ghost" aria-hidden="true">01</div>
+        <div class="crumb"><a href="../index.html">Index</a> / AI — BASICS</div>
+        <h1>
+            <span class="h-line"><span>Predict the</span></span>
+            <span class="h-line"><span>next <em>token.</em></span></span>
+        </h1>
+        <p class="dek">An LLM is a next-token predictor. Tokens in, probabilities out, one token at a time. This note
+            builds the smallest honest version of that machine — a model small enough to read — and runs it.</p>
+        <div class="post-meta"><span>DRAFT <b>2026</b></span><span>~<b>4</b> MIN</span><span><b>3</b> FIGURES</span><span>MODE: <b>LLM-BASICS</b></span><span><a class="md-link" href="next-token.md">MD VERSION →</a></span></div>
+    </header>
+
+    <article class="post-prose">
+
+        <h2><span class="sec-no">01</span>What an LLM does</h2>
+        <p>Every answer an LLM gives you is written one token at a time, and no token is chosen in the sense you might
+            think. The model looks at what it has written so far, computes a probability for every token it knows, and
+            picks one. Then it repeats with the longer text. That loop is the whole machine — the rest is scale.</p>
+
+        <div class="callout">An LLM is a next-token predictor. Chat, code, reasoning — all of it is that single step,
+            repeated.</div>
+
+        <h2><span class="sec-no">02</span>Tokens, not letters</h2>
+        <p>A model does not read letters, and it does not really read words. It reads <strong>tokens</strong> — chunks a
+            tokenizer learned to split text into. The classic learning rule is byte-pair encoding: count how often every
+            adjacent pair appears, merge the most common pair, repeat until nothing repeats. This figure runs that rule
+            on a toy corpus:</p>
+
+        <figure class="fig">
+            <div class="fig-head">
+                <span class="fig-no">FIG. 01</span>
+                <span class="fig-name">LEARNING TOKENS</span>
+                <span class="fig-readout"></span>
+                <div class="fig-controls"></div>
+            </div>
+            <div class="fig-body" data-script="bpe">
+                <div class="bpe-wrap"></div>
+            </div>
+            <figcaption class="fig-caption"><b>What to watch</b>The right rail shows the three most common pairs at each
+                state — the acid one is merged next. Fresh merges glow; merged tokens stay blue. Ten letters become
+                twenty-two tokens.</figcaption>
+        </figure>
+
+        <p>Every count is real: <span class="mono">"e"+"s"</span> appears nine times in this corpus, so it merges first.
+            The merges are greedy — whichever pair is most frequent wins, ties going to the pair seen first — and each
+            merge leaves the corpus one token shorter until every word is a single token.</p>
+
+        <div class="aside">The counts, the merge order and the vocabulary on this figure are all computed by the
+            byte-pair algorithm running on this page. The corpus is toy; the algorithm is the one real tokenizers use.
+        </div>
+
+        <h2><span class="sec-no">03</span>The table</h2>
+        <p>Once the text is tokens, the model needs something to predict with. It learns a table: given the tokens seen
+            so far, what comes next, and how often. This toy uses a trigram table — the next token depends on the last
+            two. Step through the corpus and watch the table get built:</p>
+
+        <figure class="fig">
+            <div class="fig-head">
+                <span class="fig-no">FIG. 02</span>
+                <span class="fig-name">THE TABLE GROWS</span>
+                <span class="fig-readout"></span>
+                <div class="fig-controls"></div>
+            </div>
+            <div class="fig-body" data-script="counts">
+                <div class="cnt-wrap"></div>
+            </div>
+            <figcaption class="fig-caption"><b>What to watch</b>Each new token lands as a count next to its two-token
+                context, and that row glows. The table on the right is the entire model — sixteen contexts, every
+                probability a real count divided by a real total.</figcaption>
+        </figure>
+
+        <p>A production LLM is the same shape with billions of rows, learned by attention layers over billions of
+            tokens. The toy's table fits on screen.</p>
+
+        <h2><span class="sec-no">04</span>The loop</h2>
+        <p>Running the model is a loop of three lines: take the last two tokens, read the row, pick the most likely next
+            token, append it. That is everything. Press play:</p>
+
+        <figure class="fig">
+            <div class="fig-head">
+                <span class="fig-no">FIG. 03</span>
+                <span class="fig-name">THE LOOP, RUN</span>
+                <span class="fig-readout"></span>
+                <div class="fig-controls"></div>
+            </div>
+            <div class="fig-body" data-script="predict" data-autoplay data-loop data-speed="1200">
+                <div class="prd-wrap"></div>
+            </div>
+            <figcaption class="fig-caption"><b>What to watch</b>The blue window is the context — two tokens, one table
+                row. The acid bar wins, the token joins the stream, the window slides. After sixteen tokens the
+                sequence repeats: the toy cannot stop.</figcaption>
+        </figure>
+
+        <pre class="recipe"><span class="cm">// the whole model: one lookup, one argmax</span>
+<span class="cm">// counts[ctx] = tokens that followed ctx during training</span>
+function next(ctx) {
+    var row = counts[ctx];          <span class="cm">// e.g. { met: 1, slept: 1 }</span>
+    var best = null, n = 0;
+    for (var tok in row)            <span class="cm">// pick the most frequent</span>
+        if (row[tok] > n) { n = row[tok]; best = tok; }
+    return best;                    <span class="cm">// one token — call it again</span>
+}</pre>
+
+        <p>The generated text reads almost like English — <em>the fox met a crow the crow sang a song the song went on
+                and on.</em> Then the context <span class="mono">the fox</span> comes back and the toy re-enters its
+            sixteen-token loop. It cannot stop, because the corpus never showed it an end. Fluency without
+            understanding is exactly what this loop buys, at every scale.</p>
+
+        <div class="aside">Ties in the table break toward the token that appears first in the corpus — deterministic, so
+            the same figure replays identically. The model, its table and the generated text are all computed by the
+            code on this page.</div>
+
+        <h2><span class="sec-no">05</span>The ceiling</h2>
+        <p>The loop also explains the failure modes. The toy loops because the corpus ended; a real model confabulates
+            because it only ever samples the table. A confident falsehood is not a malfunction of next-token prediction
+            — it <em>is</em> next-token prediction: the token that best fits the table, written whether or not it is
+            true.</p>
+
+        <div class="callout">Next-token prediction is not understanding. It is the best-fitting continuation, sampled
+            one token at a time.</div>
+
+    </article>
+
+    <nav class="post-nav">
+        <a href="../index.html"><span class="dir">← ALL NOTES</span><span class="t">The index.</span></a>
+        <a href="../index.html"><span class="dir">NEXT NOTE →</span><span class="t">Your next note.</span></a>
+    </nav>
+
+    <footer>
+        <div class="footer-big mask">
+            <span class="row"><span>BUILD.</span></span>
+            <span class="row"><span>BREAK.</span></span>
+            <span class="row"><span><em>EXPLAIN.</em></span></span>
+        </div>
+        <div class="foot"><span>© 2026 VÍCTOR BUSQUÉ</span><span>AI · BASICS · NEXT TOKEN</span></div>
+    </footer>
+
+    <script>
+        /* ────────────────────────────────────────────────────────────
+           NEXT TOKEN — real algorithms, rendered step by step.
+           site.js loads with defer, so we bootstrap the registry here
+           before registering the scripts below.
+           ──────────────────────────────────────────────────────────── */
+        window.__figScripts = window.__figScripts || {};
+
+        /* ── shared toy: corpus → stream + trigram table ── */
+        var TOY = (function () {
+            var SENT = ['the fox met a crow', 'the crow sang a song', 'the song went on and on', 'the fox slept'];
+            var stream = [];
+            SENT.forEach(function (s) {
+                s.split(' ').forEach(function (t) { stream.push(t); });
+            });
+            var table = {};
+            var ctxOrder = [];
+            for (var i = 2; i < stream.length; i++) {
+                var ck = stream[i - 2] + ' ' + stream[i - 1];
+                if (!table[ck]) { table[ck] = { order: [] }; ctxOrder.push(ck); }
+                var nx = stream[i];
+                if (!(nx in table[ck])) table[ck].order.push(nx);
+                table[ck][nx] = (table[ck][nx] || 0) + 1;
+            }
+            return { SENT: SENT, stream: stream, table: table, ctxOrder: ctxOrder };
+        })();
+
+        /* ── FIG 01 · byte-pair encoding, computed live ── */
+        (function () {
+            var TYPES = [
+                { w: 'est', n: 4 }, { w: 'er', n: 3 }, { w: 'low', n: 3 }, { w: 'new', n: 3 },
+                { w: 'newer', n: 2 }, { w: 'newest', n: 2 }, { w: 'widest', n: 3 }
+            ];
+            var TOTAL = 20;
+
+            function snapshot(words) {
+                return words.map(function (wd) { return { n: wd.n, toks: wd.toks.slice() }; });
+            }
+            function applyMerge(words, a, b, ab) {
+                return words.map(function (wd) {
+                    var toks = wd.toks, out = [], i = 0;
+                    while (i < toks.length) {
+                        if (i + 1 < toks.length && toks[i] === a && toks[i + 1] === b) { out.push(ab); i += 2; }
+                        else { out.push(toks[i]); i++; }
+                    }
+                    return { n: wd.n, toks: out };
+                });
+            }
+            function topPairs(words) {
+                var counts = {}, order = [];
+                words.forEach(function (wd) {
+                    for (var i = 0; i < wd.toks.length - 1; i++) {
+                        var k = wd.toks[i] + '|' + wd.toks[i + 1];
+                        if (!(k in counts)) { counts[k] = 0; order.push(k); }
+                        counts[k] += wd.n;
+                    }
+                });
+                var ranked = order.map(function (k) { return { k: k, c: counts[k] }; })
+                    .sort(function (x, y) { return (y.c - x.c) || (order.indexOf(x.k) - order.indexOf(y.k)); });
+                return ranked.slice(0, 3).map(function (r) {
+                    var p = r.k.split('|');
+                    return { a: p[0], b: p[1], ab: p[0] + p[1], c: r.c };
+                });
+            }
+
+            var words = TYPES.map(function (t) { return { n: t.n, toks: t.w.split('') }; });
+            var states = [], merges = [];
+            for (;;) {
+                var top = topPairs(words);
+                states.push({ words: snapshot(words), top: top });
+                if (!top.length || top[0].c < 2) break;
+                merges.push(top[0]);
+                words = applyMerge(words, top[0].a, top[0].b, top[0].ab);
+            }
+
+            __figScripts.bpe = {
+                steps: states.length,
+                draw: function (i, body) {
+                    var root = body.querySelector('.bpe-wrap');
+                    if (!root._built) {
+                        root.innerHTML =
+                            '<div class="bpe-words"></div>' +
+                            '<div class="bpe-side"><div class="bpe-side-lab">TOP PAIRS</div></div>';
+                        root._built = true;
+                    }
+                    var st = states[i];
+                    var fresh = i > 0 ? merges[i - 1].ab : null;
+
+                    var wordsHtml = '';
+                    TYPES.forEach(function (t, w) {
+                        wordsHtml += '<div class="bpe-row"><span class="bpe-lab">' + t.w.toUpperCase() + ' <b>×' + t.n + '</b></span>';
+                        st.words[w].toks.forEach(function (tok) {
+                            var cls = 'bpe-tile' + (tok === fresh ? ' fresh' : (tok.length > 1 ? ' merged' : ''));
+                            wordsHtml += '<span class="' + cls + '">' + tok + '</span>';
+                        });
+                        wordsHtml += '</div>';
+                    });
+                    var vocabHtml = '<span class="bpe-vlab">VOCAB ' + (10 + i) + '</span>';
+                    merges.slice(0, i).forEach(function (m) { vocabHtml += '<span class="bpe-vchip">' + m.ab + '</span>'; });
+                    root.querySelector('.bpe-words').innerHTML = wordsHtml + '<div class="bpe-vocab">' + vocabHtml + '</div>';
+
+                    var sideHtml = '';
+                    if (i === states.length - 1) {
+                        sideHtml = '<span class="bpe-cand none">NO PAIRS LEFT — 20 words, 12 merges</span>';
+                    } else {
+                        st.top.forEach(function (p, k) {
+                            sideHtml += '<span class="bpe-cand' + (k === 0 ? ' top' : '') + '">' + p.a + '+' + p.b + ' → ' + p.ab + ' · ' + p.c + '</span>';
+                        });
+                    }
+                    root.querySelector('.bpe-side').innerHTML = sideHtml;
+
+                    if (i === 0) return 'CORPUS — ' + TOTAL + ' WORDS · ALPHABET 10 · 0 MERGES';
+                    var m = merges[i - 1];
+                    return 'MERGE ' + i + '/12 — "' + m.a + '"+ "' + m.b + '" → "' + m.ab + '" · COUNT ' + m.c;
+                }
+            };
+        })();
+
+        /* ── FIG 02 · the trigram table grows as the corpus is read ── */
+        (function () {
+            var S = TOY.stream;
+
+            function countsUpTo(k) {
+                var t = {}, order = [];
+                for (var i = 2; i < k; i++) {
+                    var ck = S[i - 2] + ' ' + S[i - 1];
+                    if (!t[ck]) { t[ck] = { c: {}, o: [] }; order.push(ck); }
+                    var nx = S[i];
+                    if (!(nx in t[ck].c)) t[ck].o.push(nx);
+                    t[ck].c[nx] = (t[ck].c[nx] || 0) + 1;
+                }
+                return { t: t, order: order };
+            }
+
+            __figScripts.counts = {
+                steps: S.length + 1,
+                draw: function (k, body) {
+                    var root = body.querySelector('.cnt-wrap');
+                    if (!root._built) {
+                        root.innerHTML = '<div class="cnt-sents"></div><div class="cnt-table"></div>';
+                        root._built = true;
+                    }
+                    var sentsHtml = '';
+                    var pos = 0;
+                    TOY.SENT.forEach(function (s, si) {
+                        var toks = s.split(' ');
+                        sentsHtml += '<div class="cnt-srow"><span class="cnt-slab">S' + (si + 1) + '</span>';
+                        toks.forEach(function (t) {
+                            var cls = 'cnt-t';
+                            if (pos < k) cls += ' seen';
+                            if (pos === k - 1) cls += ' cur';
+                            sentsHtml += '<span class="' + cls + '">' + t + '</span>';
+                            pos++;
+                        });
+                        sentsHtml += '</div>';
+                    });
+                    root.querySelector('.cnt-sents').innerHTML = sentsHtml;
+
+                    var r = countsUpTo(k);
+                    var tbl = '';
+                    if (!r.order.length) {
+                        tbl = '<div class="cnt-empty">NO CONTEXTS YET — THE TOY NEEDS TWO TOKENS TO FORM ONE</div>';
+                    } else {
+                        r.order.forEach(function (ck) {
+                            var parts = ck.split(' ');
+                            var fresh = k >= 3 && ck === (S[k - 3] + ' ' + S[k - 2]);
+                            tbl += '<div class="cnt-row' + (fresh ? ' fresh' : '') + '">';
+                            tbl += '<span class="cnt-ctx">' + parts[0] + '</span><span class="cnt-ctx sep">+</span><span class="cnt-ctx">' + parts[1] + '</span>';
+                            r.t[ck].o.forEach(function (nx) {
+                                tbl += '<span class="cnt-nx">' + nx + ' ×' + r.t[ck].c[nx] + '</span>';
+                            });
+                            tbl += '</div>';
+                        });
+                    }
+                    root.querySelector('.cnt-table').innerHTML = tbl;
+
+                    if (k < 2) return 'TOKEN ' + k + '/' + S.length + ' — NEED TWO TOKENS FOR A CONTEXT';
+                    if (k === 2) return 'TOKEN 2/' + S.length + ' — "' + S[1] + '" · FIRST CONTEXT READY';
+                    return 'TOKEN ' + k + '/' + S.length + ' — "' + S[k - 1] + '" · CONTEXT "' + S[k - 3] + ' ' + S[k - 2] + '"';
+                }
+            };
+        })();
+
+        /* ── FIG 03 · the next-token loop, autoplayed ── */
+        (function () {
+            var T = TOY.table;
+            var firstApp = {};
+            TOY.stream.forEach(function (t, j) { if (!(t in firstApp)) firstApp[t] = j; });
+
+            function pick(ck) {
+                var row = T[ck];
+                if (!row) return null;
+                var total = 0, best = null, bn = -1, bo = 1e9;
+                row.order.forEach(function (nx) { total += row[nx]; });
+                row.order.forEach(function (nx) {
+                    var c = row[nx];
+                    if (c > bn || (c === bn && firstApp[nx] < bo)) { bn = c; best = nx; bo = firstApp[nx]; }
+                });
+                return { nx: best, count: bn, total: total, row: row };
+            }
+
+            function sim(k) {
+                var seq = ['the', 'fox'], info = [];
+                for (var s = 1; s <= k; s++) {
+                    var ck = seq[seq.length - 2] + ' ' + seq[seq.length - 1];
+                    var p = pick(ck);
+                    if (!p) { info.push({ ctx: ck, dead: true }); break; }
+                    info.push({ ctx: ck, nx: p.nx, count: p.count, total: p.total, cands: p.row });
+                    seq.push(p.nx);
+                }
+                return { seq: seq, info: info };
+            }
+
+            /* first step where the state (last two tokens) repeats — computed */
+            var LOOP_AT = null, LOOP_PERIOD = null;
+            (function () {
+                var seen = {};
+                for (var s = 1; s <= 26; s++) {
+                    var seq = sim(s).seq;
+                    var ck = seq[seq.length - 2] + ' ' + seq[seq.length - 1];
+                    if (ck in seen) { LOOP_AT = s; LOOP_PERIOD = s - seen[ck]; break; }
+                    seen[ck] = s;
+                }
+            })();
+
+            __figScripts.predict = {
+                steps: 26,
+                draw: function (k, body) {
+                    var root = body.querySelector('.prd-wrap');
+                    if (!root._built) {
+                        root.innerHTML = '<div class="prd-stream"></div><div class="prd-dist"></div>';
+                        root._built = true;
+                    }
+                    var r = sim(k);
+                    var seq = r.seq, cur = r.info[r.info.length - 1];
+
+                    var streamHtml = '';
+                    seq.forEach(function (t, idx) {
+                        var cls = 'prd-t';
+                        if (idx === seq.length - 1) cls += ' last';
+                        else if (seq.length === 2 || idx >= seq.length - 3) cls += ' ctx';
+                        streamHtml += '<span class="' + cls + '">' + t + '</span>';
+                    });
+                    root.querySelector('.prd-stream').innerHTML = streamHtml;
+
+                    var distHtml = '';
+                    if (cur && !cur.dead) {
+                        cur.cands.order.forEach(function (nx) {
+                            var c = cur.cands[nx];
+                            var win = nx === cur.nx;
+                            distHtml += '<div class="prd-bar"><span class="pb-tok">' + nx + '</span>' +
+                                '<span class="pb-track"><span class="pb-fill' + (win ? ' win' : '') + '" style="width:' + Math.round(c / cur.total * 100) + '%"></span></span>' +
+                                '<span class="pb-p">' + c + '/' + cur.total + '</span></div>';
+                        });
+                    }
+                    root.querySelector('.prd-dist').innerHTML = distHtml;
+
+                    if (k === 0) return 'SEED — "the fox" · TWO TOKENS IN, NOTHING PREDICTED YET';
+                    if (k === LOOP_AT) {
+                        return 'STEP ' + k + ' — LOOP CLOSED · PERIOD ' + LOOP_PERIOD + ' — FROM HERE THE TOY CYCLES';
+                    }
+                    return 'STEP ' + k + ' — "' + cur.ctx + '" → "' + cur.nx + '" · P=' + cur.count + '/' + cur.total;
+                }
+            };
+        })();
+    </script>
+</body>
+
+</html>

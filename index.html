@@ -4,9 +4,117 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Víctor Busqué — Living Engineering Notes</title>
+
+    <!-- Primary meta -->
+    <title>Víctor Busqué — Living Engineering Notes (AI · Software Engineering · Cloud)</title>
+    <meta name="description"
+        content="Víctor Busqué's engineering notes on AI, software engineering, and cloud. Every idea taught with diagrams that move. Don't just read it — see it run.">
+    <meta name="author" content="Víctor Busqué">
+    <meta name="keywords"
+        content="Víctor Busqué, engineering blog, AI engineering, LLM, agents, MCP, tools, Python, FastAPI, AWS, cloud, software engineering, machine learning, generative AI, agent systems">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="language" content="English">
+    <meta name="rating" content="general">
+    <link rel="canonical" href="https://victorbusque.com/">
+
+    <!-- Favicons / PWA -->
+    <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/img/favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#101010">
+    <meta name="apple-mobile-web-app-title" content="VB Notes">
+    <meta name="application-name" content="VB Notes">
+    <meta name="color-scheme" content="light dark">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Víctor Busqué — Living Engineering Notes">
+    <meta property="og:title" content="Víctor Busqué — Living Engineering Notes">
+    <meta property="og:description"
+        content="Engineering notes on AI, software engineering, and cloud. Every idea taught with diagrams that move. Don't just read it, see it run.">
+    <meta property="og:url" content="https://victorbusque.com/">
+    <meta property="og:image" content="https://victorbusque.com/img/og.png">
+    <meta property="og:image:secure_url" content="https://victorbusque.com/img/og.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Víctor Busqué — Living Engineering Notes: Don't just read it. See it run.">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Víctor Busqué — Living Engineering Notes">
+    <meta name="twitter:description"
+        content="Engineering notes on AI, software engineering, and cloud. Every idea taught with diagrams that move. Don't just read it, see it run.">
+    <meta name="twitter:image" content="https://victorbusque.com/img/og.png">
+    <meta name="twitter:image:alt" content="Víctor Busqué — Living Engineering Notes">
+
+    <!-- Performance: preconnect to font + image CDNs -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
     <link rel="stylesheet" href="css/site.css">
     <script src="js/site.js" defer></script>
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Person",
+          "@id": "https://victorbusque.com/#person",
+          "name": "Víctor Busqué",
+          "url": "https://victorbusque.com/",
+          "image": "https://victorbusque.com/img/og.png",
+          "jobTitle": "Software Engineer",
+          "description": "Software engineer in Barcelona building AI platforms and agents that run at production scale.",
+          "email": "mailto:victorbusque@gmail.com",
+          "address": { "@type": "PostalAddress", "addressLocality": "Barcelona", "addressCountry": "Spain" },
+          "sameAs": [
+            "https://linkedin.com/in/vbusque",
+            "https://victorbusque.com"
+          ],
+          "knowsAbout": ["Artificial Intelligence", "Large Language Models", "AI Agents", "MCP", "Python", "FastAPI", "Amazon Web Services", "Software Architecture"]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://victorbusque.com/#website",
+          "url": "https://victorbusque.com/",
+          "name": "Víctor Busqué — Living Engineering Notes",
+          "description": "Engineering notes on AI, software engineering, and cloud, taught with diagrams that move.",
+          "publisher": { "@id": "https://victorbusque.com/#person" },
+          "inLanguage": "en",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://victorbusque.com/#notes?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "Blog",
+          "@id": "https://victorbusque.com/#blog",
+          "url": "https://victorbusque.com/",
+          "name": "Living Engineering Notes",
+          "publisher": { "@id": "https://victorbusque.com/#person" },
+          "inLanguage": "en",
+          "about": ["AI", "Software Engineering", "Cloud"]
+        },
+        {
+          "@type": "WebPage",
+          "@id": "https://victorbusque.com/#webpage",
+          "url": "https://victorbusque.com/",
+          "name": "Víctor Busqué — Living Engineering Notes",
+          "isPartOf": { "@id": "https://victorbusque.com/#website" },
+          "about": { "@id": "https://victorbusque.com/#person" },
+          "description": "Engineering notes on AI, software engineering, and cloud, taught with diagrams that move.",
+          "inLanguage": "en",
+          "primaryImageOfPage": "https://victorbusque.com/img/og.png"
+        }
+      ]
+    }
+    </script>
     <style>
         /* ── Landing-only styles ──────────────────────────── */
 
@@ -23,6 +131,7 @@
             overflow: hidden;
             isolation: isolate;
         }
+
         .hero .grid-bg {
             position: absolute;
             inset: -20% 0;
@@ -34,6 +143,7 @@
             mask-image: radial-gradient(120% 120% at 20% 40%, #000 30%, transparent 75%);
             -webkit-mask-image: radial-gradient(120% 120% at 20% 40%, #000 30%, transparent 75%);
         }
+
         .hero .ghost-num {
             position: absolute;
             right: -2vw;
@@ -43,6 +153,7 @@
             color: #11111110;
             will-change: transform;
         }
+
         .hero:before {
             content: "ENGINEERING / NOTES";
             position: absolute;
@@ -53,6 +164,7 @@
             letter-spacing: .25em;
             color: #777;
         }
+
         .kicker {
             font: 11px "DM Mono";
             text-transform: uppercase;
@@ -61,6 +173,7 @@
             align-items: center;
             gap: 10px;
         }
+
         .kicker::before {
             content: "";
             width: 26px;
@@ -69,6 +182,7 @@
             transform-origin: 0 50%;
             animation: grow-in var(--t-slow) var(--ease-out) both;
         }
+
         .hero h1 {
             font-family: "Unbounded", sans-serif;
             font-size: clamp(60px, 8vw, 136px);
@@ -77,12 +191,14 @@
             margin: 30px 0 40px;
             font-weight: 500;
         }
+
         .hero h1 em {
             font-family: "Instrument Serif";
             font-weight: 400;
             font-size: 1.15em;
             letter-spacing: -.04em;
         }
+
         .hero p {
             font-size: 18px;
             line-height: 1.6;
@@ -92,6 +208,7 @@
             transform: translateY(20px);
             animation: fade-rise var(--t-slow) var(--ease-out) .5s both;
         }
+
         .hero .scroll-cue {
             margin-top: 44px;
             display: inline-flex;
@@ -103,6 +220,7 @@
             opacity: 0;
             animation: fade-rise var(--t-slow) var(--ease-out) .9s both;
         }
+
         .scroll-cue .wheel {
             width: 20px;
             height: 32px;
@@ -110,6 +228,7 @@
             border-radius: 12px;
             position: relative;
         }
+
         .scroll-cue .wheel::after {
             content: "";
             position: absolute;
@@ -136,6 +255,7 @@
             transform: translateY(36px) scale(.97);
             animation: demo-in 1s var(--ease-out) .45s both;
         }
+
         .hero-demo::before {
             content: "00";
             position: absolute;
@@ -147,6 +267,7 @@
             z-index: 0;
             animation: floaty 7s var(--ease-swift) infinite;
         }
+
         .demo-head {
             height: 48px;
             border-bottom: 1px solid #ffffff2a;
@@ -157,11 +278,13 @@
             letter-spacing: .12em;
             color: #aaa;
         }
+
         .demo-head b {
             color: var(--acid);
             margin-left: auto;
             font-weight: 500;
         }
+
         .node {
             position: absolute;
             border: 1px solid #ffffff80;
@@ -170,10 +293,29 @@
             font: 11px "DM Mono";
             z-index: 3;
         }
-        .n1 { left: 6%; top: 42%; }
-        .n2 { left: 37%; top: 18%; border-color: var(--blue); }
-        .n3 { right: 8%; top: 42%; border-color: var(--acid); }
-        .n4 { left: 38%; bottom: 12%; border-color: var(--orange); }
+
+        .n1 {
+            left: 6%;
+            top: 42%;
+        }
+
+        .n2 {
+            left: 37%;
+            top: 18%;
+            border-color: var(--blue);
+        }
+
+        .n3 {
+            right: 8%;
+            top: 42%;
+            border-color: var(--acid);
+        }
+
+        .n4 {
+            left: 38%;
+            bottom: 12%;
+            border-color: var(--orange);
+        }
 
         .node::after {
             content: "";
@@ -183,9 +325,18 @@
             border-radius: inherit;
             animation: node-ping 2.6s var(--ease-out) infinite;
         }
-        .n2::after { color: var(--blue); }
-        .n3::after { color: var(--acid); }
-        .n4::after { color: var(--orange); }
+
+        .n2::after {
+            color: var(--blue);
+        }
+
+        .n3::after {
+            color: var(--acid);
+        }
+
+        .n4::after {
+            color: var(--orange);
+        }
 
         svg.flow {
             position: absolute;
@@ -194,6 +345,7 @@
             height: calc(100% - 48px);
             z-index: 1;
         }
+
         .path {
             fill: none;
             stroke: #777;
@@ -201,6 +353,7 @@
             stroke-dasharray: 5 7;
             animation: dash 12s linear infinite;
         }
+
         .path-glow {
             fill: none;
             stroke: #c7ff3d;
@@ -211,10 +364,12 @@
             filter: blur(1px);
             animation: draw-glow 5s ease-in-out infinite;
         }
+
         .packet {
             fill: var(--acid);
             filter: drop-shadow(0 0 8px var(--acid));
         }
+
         .demo-caption {
             position: absolute;
             left: 18px;
@@ -223,6 +378,7 @@
             color: #888;
             z-index: 3;
         }
+
         .demo-caption::before {
             content: "●";
             color: var(--acid);
@@ -231,7 +387,10 @@
         }
 
         /* Sections */
-        .section { padding: 7vw 4vw 5vw; }
+        .section {
+            padding: 7vw 4vw 5vw;
+        }
+
         .section-top {
             display: flex;
             justify-content: space-between;
@@ -240,12 +399,14 @@
             border-left: 8px solid var(--orange);
             padding-left: 24px;
         }
+
         .section h2 {
             font-family: "Unbounded", sans-serif;
             font-size: clamp(38px, 5vw, 74px);
             letter-spacing: -.06em;
             display: inline-block;
         }
+
         .section-top p {
             max-width: 430px;
             color: var(--muted);
@@ -274,6 +435,7 @@
             max-height: calc(100vh - 110px);
             background: var(--paper);
         }
+
         .explorer-head {
             display: flex;
             align-items: center;
@@ -286,14 +448,24 @@
             color: #777;
             flex-shrink: 0;
         }
-        .ex-title { color: var(--ink); }
+
+        .ex-title {
+            color: var(--ink);
+        }
+
         .ex-title::after {
             content: "▋";
             margin-left: 3px;
             color: var(--acid);
             animation: blink 1.2s steps(2) infinite;
         }
-        .ex-actions { margin-left: auto; display: flex; gap: 6px; }
+
+        .ex-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 6px;
+        }
+
         .ex-btn {
             width: 26px;
             height: 26px;
@@ -308,9 +480,22 @@
                 border-color var(--t-fast) var(--ease-snap),
                 transform var(--t-fast) var(--ease-snap);
         }
-        .ex-btn svg { width: 12px; height: 12px; display: block; }
-        .ex-btn:hover { background: var(--ink); color: var(--acid); border-color: var(--ink); }
-        .ex-btn:active { transform: scale(.92); }
+
+        .ex-btn svg {
+            width: 12px;
+            height: 12px;
+            display: block;
+        }
+
+        .ex-btn:hover {
+            background: var(--ink);
+            color: var(--acid);
+            border-color: var(--ink);
+        }
+
+        .ex-btn:active {
+            transform: scale(.92);
+        }
 
         .tree {
             flex: 1;
@@ -338,9 +523,18 @@
             transition: background var(--t-fast) var(--ease-snap),
                 color var(--t-fast) var(--ease-snap);
         }
-        .trow:hover { background: #1010100d; }
-        .trow.d1 { padding-left: 30px; }
-        .trow.d2 { padding-left: 48px; }
+
+        .trow:hover {
+            background: #1010100d;
+        }
+
+        .trow.d1 {
+            padding-left: 30px;
+        }
+
+        .trow.d2 {
+            padding-left: 48px;
+        }
 
         .trow .chev {
             width: 12px;
@@ -351,10 +545,23 @@
             color: #999;
             transition: transform var(--t-med) var(--ease-out), color var(--t-med) var(--ease-swift);
         }
-        .trow .chev svg { width: 9px; height: 9px; }
-        .trow .chev.is-leaf { visibility: hidden; }
-        .trow.is-open > .chev { transform: rotate(90deg); }
-        .trow.is-active .chev { color: var(--acid); }
+
+        .trow .chev svg {
+            width: 9px;
+            height: 9px;
+        }
+
+        .trow .chev.is-leaf {
+            visibility: hidden;
+        }
+
+        .trow.is-open>.chev {
+            transform: rotate(90deg);
+        }
+
+        .trow.is-active .chev {
+            color: var(--acid);
+        }
 
         .trow .ic {
             width: 14px;
@@ -365,13 +572,22 @@
             color: #716f68;
             transition: color var(--t-med) var(--ease-swift);
         }
-        .trow .ic svg { width: 14px; height: 14px; display: block; }
-        .trow.is-active .ic { color: var(--acid); }
+
+        .trow .ic svg {
+            width: 14px;
+            height: 14px;
+            display: block;
+        }
+
+        .trow.is-active .ic {
+            color: var(--acid);
+        }
 
         .trow .fname {
             flex-shrink: 0;
             font-weight: 500;
         }
+
         .trow .sub {
             flex: 1 1 auto;
             min-width: 0;
@@ -383,7 +599,11 @@
             color: #9a978e;
             transition: color var(--t-med) var(--ease-swift);
         }
-        .trow.is-active .sub { color: #a8d92e; }
+
+        .trow.is-active .sub {
+            color: #a8d92e;
+        }
+
         .trow .cnt {
             margin-left: auto;
             flex-shrink: 0;
@@ -397,8 +617,16 @@
                 color var(--t-fast) var(--ease-snap),
                 background var(--t-fast) var(--ease-snap);
         }
-        .trow .cnt.has { border-color: var(--branch-accent); color: var(--branch-accent); }
-        .trow.is-active .cnt { border-color: var(--acid); color: var(--acid); }
+
+        .trow .cnt.has {
+            border-color: var(--branch-accent);
+            color: var(--branch-accent);
+        }
+
+        .trow.is-active .cnt {
+            border-color: var(--acid);
+            color: var(--acid);
+        }
 
         /* tree guides — vertical rules at each parent's icon column */
         .trow.d1::before,
@@ -412,15 +640,25 @@
             background: #1111111f;
             pointer-events: none;
         }
-        .trow.d2::before { box-shadow: 18px 0 0 #1111111f; }
+
+        .trow.d2::before {
+            box-shadow: 18px 0 0 #1111111f;
+        }
 
         /* selection + focus */
-        .trow.is-focus { box-shadow: inset 0 0 0 1px #546cff66; }
+        .trow.is-focus {
+            box-shadow: inset 0 0 0 1px #546cff66;
+        }
+
         .trow.is-active {
             background: var(--ink);
             color: var(--acid);
         }
-        .trow.is-active:hover { background: var(--ink); }
+
+        .trow.is-active:hover {
+            background: var(--ink);
+        }
+
         .trow.is-active::after {
             content: "";
             position: absolute;
@@ -439,9 +677,19 @@
             cursor: default;
             font-style: italic;
         }
-        .trow.trow-empty .fname { font-size: 10px; letter-spacing: .12em; }
-        .trow.trow-empty .ic { opacity: .45; }
-        .trow.trow-empty:hover { background: transparent; }
+
+        .trow.trow-empty .fname {
+            font-size: 10px;
+            letter-spacing: .12em;
+        }
+
+        .trow.trow-empty .ic {
+            opacity: .45;
+        }
+
+        .trow.trow-empty:hover {
+            background: transparent;
+        }
 
         /* expand / collapse — directional easing: open eases out, close eases in */
         .kids {
@@ -449,13 +697,19 @@
             grid-template-rows: 0fr;
             transition: grid-template-rows 300ms var(--ease-in);
         }
+
         .kids.open {
             grid-template-rows: 1fr;
             transition-timing-function: var(--ease-out);
             transition-duration: var(--t-med);
         }
-        .kids > .kids-in { overflow: hidden; min-height: 0; }
-        .kids.just-open > .kids-in > .trow {
+
+        .kids>.kids-in {
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        .kids.just-open>.kids-in>.trow {
             opacity: 0;
             transform: translateY(6px);
             animation: fade-rise .4s var(--ease-out) both;
@@ -482,7 +736,13 @@
             border-top: 1px solid var(--line);
             flex-shrink: 0;
         }
-        .ex-status .live { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .ex-status .live {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         .ex-status .live::before {
             content: "";
             display: inline-block;
@@ -493,7 +753,12 @@
             margin-right: 7px;
             animation: blink 1.6s steps(2) infinite;
         }
-        .ex-status b { color: var(--acid); font-weight: 500; white-space: nowrap; }
+
+        .ex-status b {
+            color: var(--acid);
+            font-weight: 500;
+            white-space: nowrap;
+        }
 
         /* ── Entries panel ── */
         .panel {
@@ -503,6 +768,7 @@
             display: flex;
             flex-direction: column;
         }
+
         .panel-head {
             display: flex;
             justify-content: space-between;
@@ -514,14 +780,25 @@
             letter-spacing: .16em;
             color: #777;
         }
-        .panel-head .crumb { margin-bottom: 0; }
-        .panel-head .crumb b { color: var(--ink); font-weight: 500; }
-        .panel-head .hint { color: #9a978e; }
+
+        .panel-head .crumb {
+            margin-bottom: 0;
+        }
+
+        .panel-head .crumb b {
+            color: var(--ink);
+            font-weight: 500;
+        }
+
+        .panel-head .hint {
+            color: #9a978e;
+        }
 
         .p-entries {
             margin-top: 16px;
             border-top: 1px solid #11111122;
         }
+
         .p-entry {
             display: grid;
             grid-template-columns: 1fr auto;
@@ -531,6 +808,7 @@
             color: var(--ink);
             transition: background var(--t-med) var(--ease-swift);
         }
+
         .e-title {
             font-family: "Unbounded", sans-serif;
             font-weight: 500;
@@ -539,11 +817,13 @@
             line-height: 1.15;
             transition: color var(--t-fast) var(--ease-snap);
         }
+
         .e-deck {
             color: #5a5852;
             font-size: 14px;
             line-height: 1.5;
         }
+
         .e-meta {
             grid-row: 1 / span 2;
             grid-column: 2;
@@ -553,8 +833,19 @@
             gap: 10px;
             align-items: flex-end;
         }
-        .e-path { font: 9px "DM Mono"; letter-spacing: .16em; color: #777; }
-        .e-date { font: 9px "DM Mono"; letter-spacing: .14em; color: #777; }
+
+        .e-path {
+            font: 9px "DM Mono";
+            letter-spacing: .16em;
+            color: #777;
+        }
+
+        .e-date {
+            font: 9px "DM Mono";
+            letter-spacing: .14em;
+            color: #777;
+        }
+
         .read-tag {
             font: 9px "DM Mono";
             letter-spacing: .16em;
@@ -563,13 +854,23 @@
             align-items: center;
             gap: 8px;
         }
+
         .read-tag::after {
             content: "→";
             transition: transform var(--t-med) var(--ease-out);
         }
-        .p-entry:hover { background: #fdfcf7; }
-        .p-entry:hover .e-title { color: var(--blue); }
-        .p-entry:hover .read-tag::after { transform: translateX(6px); }
+
+        .p-entry:hover {
+            background: #fdfcf7;
+        }
+
+        .p-entry:hover .e-title {
+            color: var(--blue);
+        }
+
+        .p-entry:hover .read-tag::after {
+            transform: translateX(6px);
+        }
 
         .panel-empty {
             margin-top: 16px;
@@ -580,6 +881,7 @@
             letter-spacing: .16em;
             color: #777;
         }
+
         .panel-empty i {
             display: inline-block;
             width: 7px;
@@ -589,6 +891,7 @@
             margin-right: 9px;
             animation: blink 1.4s steps(2) infinite;
         }
+
         .panel-empty .sub {
             display: block;
             margin-top: 10px;
@@ -598,15 +901,25 @@
         }
 
         /* entries re-render choreography */
-        .p-entries .p-entry { opacity: 0; }
+        .p-entries .p-entry {
+            opacity: 0;
+        }
+
         .p-entries.playing .p-entry {
             animation: fade-rise .5s var(--ease-out) both;
             animation-delay: calc(var(--i) * 70ms);
         }
 
         /* ── Latest — chronological index ─────────────────── */
-        .recent { padding: 7vw 4vw 5vw; border-top: 1px solid var(--line); }
-        .index { margin-top: 40px; }
+        .recent {
+            padding: 7vw 4vw 5vw;
+            border-top: 1px solid var(--line);
+        }
+
+        .index {
+            margin-top: 40px;
+        }
+
         .index-row {
             display: grid;
             grid-template-columns: 110px 1.4fr 1fr 1fr auto;
@@ -617,6 +930,7 @@
             position: relative;
             transition: background var(--t-med) var(--ease-swift);
         }
+
         .index-row::before {
             content: "";
             position: absolute;
@@ -629,9 +943,22 @@
             transform-origin: 50% 100%;
             transition: transform .5s var(--ease-out);
         }
-        .index-row:hover::before { transform: scaleY(1); transform-origin: 50% 0; }
-        .index-row:hover { background: var(--paper-2); }
-        .ix-date { font: 10px "DM Mono"; letter-spacing: .14em; color: #777; }
+
+        .index-row:hover::before {
+            transform: scaleY(1);
+            transform-origin: 50% 0;
+        }
+
+        .index-row:hover {
+            background: var(--paper-2);
+        }
+
+        .ix-date {
+            font: 10px "DM Mono";
+            letter-spacing: .14em;
+            color: #777;
+        }
+
         .ix-title {
             font-family: "Unbounded", sans-serif;
             font-weight: 500;
@@ -639,11 +966,31 @@
             letter-spacing: -.03em;
             transition: color var(--t-fast) var(--ease-snap);
         }
-        .index-row:hover .ix-title { color: var(--blue); }
-        .ix-path { font: 10px "DM Mono"; letter-spacing: .14em; color: #777; }
-        .ix-tags { font: 10px "DM Mono"; color: #999; }
-        .ix-arrow { font-size: 18px; transition: transform var(--t-med) var(--ease-out); }
-        .index-row:hover .ix-arrow { transform: translateX(8px); }
+
+        .index-row:hover .ix-title {
+            color: var(--blue);
+        }
+
+        .ix-path {
+            font: 10px "DM Mono";
+            letter-spacing: .14em;
+            color: #777;
+        }
+
+        .ix-tags {
+            font: 10px "DM Mono";
+            color: #999;
+        }
+
+        .ix-arrow {
+            font-size: 18px;
+            transition: transform var(--t-med) var(--ease-out);
+        }
+
+        .index-row:hover .ix-arrow {
+            transform: translateX(8px);
+        }
+
         .index-empty {
             padding: 30px 18px;
             border-bottom: 1px solid var(--line);
@@ -651,6 +998,7 @@
             letter-spacing: .16em;
             color: #777;
         }
+
         .index-empty i {
             display: inline-block;
             width: 7px;
@@ -660,6 +1008,7 @@
             margin-right: 9px;
             animation: blink 1.4s steps(2) infinite;
         }
+
         .index-empty .sub {
             display: block;
             margin-top: 10px;
@@ -669,24 +1018,83 @@
         }
 
         /* Keyframes (landing) */
-        @keyframes grow-in { from { transform: scaleX(0); } }
-        @keyframes accent-sweep { from { transform: scaleY(0); } }
-        @keyframes demo-in { to { opacity: 1; transform: none; } }
-        @keyframes grid-drift { to { background-position: 72px 0, 0 0; } }
+        @keyframes grow-in {
+            from {
+                transform: scaleX(0);
+            }
+        }
+
+        @keyframes accent-sweep {
+            from {
+                transform: scaleY(0);
+            }
+        }
+
+        @keyframes demo-in {
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        @keyframes grid-drift {
+            to {
+                background-position: 72px 0, 0 0;
+            }
+        }
+
         @keyframes cue {
-            0% { transform: translateY(0); opacity: 1; }
-            70% { transform: translateY(12px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 0; }
+            0% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+
+            70% {
+                transform: translateY(12px);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateY(0);
+                opacity: 0;
+            }
         }
+
         @keyframes node-ping {
-            0% { transform: scale(1); opacity: .8; }
-            70%, 100% { transform: scale(1.35); opacity: 0; }
+            0% {
+                transform: scale(1);
+                opacity: .8;
+            }
+
+            70%,
+            100% {
+                transform: scale(1.35);
+                opacity: 0;
+            }
         }
-        @keyframes dash { to { stroke-dashoffset: -200; } }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -200;
+            }
+        }
+
         @keyframes draw-glow {
-            0%, 12% { stroke-dashoffset: 260; }
-            45%, 62% { stroke-dashoffset: 0; }
-            88%, 100% { stroke-dashoffset: -260; }
+
+            0%,
+            12% {
+                stroke-dashoffset: 260;
+            }
+
+            45%,
+            62% {
+                stroke-dashoffset: 0;
+            }
+
+            88%,
+            100% {
+                stroke-dashoffset: -260;
+            }
         }
 
         /* Responsive (landing) */
@@ -697,30 +1105,108 @@
                 gap: 8vh 0;
                 padding-top: 8vh;
             }
-            .hero h1 { font-size: clamp(44px, 13.5vw, 68px); }
-            .hero p { font-size: 16px; }
-            .hero .ghost-num { font-size: 104px; right: -4vw; top: 1vh; }
-            .hero-demo { height: 360px; box-shadow: 8px 8px 0 var(--acid); }
-            .hero-demo .node { font-size: 12px; }
-            .hero-demo .demo-caption { font-size: 11px; left: 14px; }
-            
-            
-            
-            .hero:before { display: none; }
-            .section-top { flex-direction: column; align-items: flex-start; gap: 16px; }
 
-            .ide { grid-template-columns: 1fr; min-height: 0; }
-            .explorer { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--line); }
-            .tree { max-height: 320px; }
-            .panel { padding: 0 4vw 40px; }
-            .p-entry { grid-template-columns: 1fr; gap: 6px; }
-            .e-meta { grid-row: auto; grid-column: 1; flex-direction: row; align-items: center; justify-content: space-between; }
-            .index-row { grid-template-columns: 1fr 1fr; gap: 8px 18px; padding: 22px 14px; }
-            .ix-title { grid-column: 1 / -1; grid-row: 1; }
-            .ix-date { grid-row: 2; }
-            .ix-path { grid-row: 2; justify-self: end; }
-            .ix-tags { grid-row: 3; grid-column: 1 / -1; }
-            .ix-arrow { display: none; }
+            .hero h1 {
+                font-size: clamp(44px, 13.5vw, 68px);
+            }
+
+            .hero p {
+                font-size: 16px;
+            }
+
+            .hero .ghost-num {
+                font-size: 104px;
+                right: -4vw;
+                top: 1vh;
+            }
+
+            .hero-demo {
+                height: 360px;
+                box-shadow: 8px 8px 0 var(--acid);
+            }
+
+            .hero-demo .node {
+                font-size: 12px;
+            }
+
+            .hero-demo .demo-caption {
+                font-size: 11px;
+                left: 14px;
+            }
+
+
+
+            .hero:before {
+                display: none;
+            }
+
+            .section-top {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+
+            .ide {
+                grid-template-columns: 1fr;
+                min-height: 0;
+            }
+
+            .explorer {
+                position: static;
+                max-height: none;
+                border-right: 0;
+                border-bottom: 1px solid var(--line);
+            }
+
+            .tree {
+                max-height: 320px;
+            }
+
+            .panel {
+                padding: 0 4vw 40px;
+            }
+
+            .p-entry {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+
+            .e-meta {
+                grid-row: auto;
+                grid-column: 1;
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .index-row {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px 18px;
+                padding: 22px 14px;
+            }
+
+            .ix-title {
+                grid-column: 1 / -1;
+                grid-row: 1;
+            }
+
+            .ix-date {
+                grid-row: 2;
+            }
+
+            .ix-path {
+                grid-row: 2;
+                justify-self: end;
+            }
+
+            .ix-tags {
+                grid-row: 3;
+                grid-column: 1 / -1;
+            }
+
+            .ix-arrow {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -756,21 +1242,71 @@
             <div class="scroll-cue"><span class="wheel"></span>SCROLL TO THE NOTES</div>
         </div>
 
-        <div class="hero-demo" aria-label="Animated diagram: an idea travelling through diagram, motion and understanding">
-            <div class="demo-head">FIG. 00 — AN IDEA, IN MOTION <b>03.2s</b></div>
-            <svg class="flow" viewBox="0 0 600 430" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-                <path class="path" d="M80 190 C180 190 180 95 280 95 S410 175 510 175 M280 95 C300 240 400 290 490 320" />
-                <path class="path-glow" d="M80 190 C180 190 180 95 280 95 S410 175 510 175" />
-                <circle class="packet" r="5">
-                    <animateMotion dur="5s" repeatCount="indefinite" path="M80 190 C180 190 180 95 280 95 S410 175 510 175" />
-                </circle>
-            </svg>
-            <div class="node n1">A QUESTION</div>
-            <div class="node n2">A DIAGRAM</div>
-            <div class="node n3">MOTION</div>
-            <div class="node n4">UNDERSTANDING</div>
-            <div class="demo-caption">Every note begins with a question and ends with something you can see move.</div>
+        <div class="hero-demo" aria-label="An animated idea becoming understanding">
+            <div class="demo-head">
+                <span>FIG. 00</span>
+                <span>AN IDEA, MADE VISIBLE</span>
+                <span>03.2s</span>
+            </div>
+
+            ```
+            <div class="demo-stage">
+
+                <svg class="flow" viewBox="0 0 800 220" preserveAspectRatio="none" aria-hidden="true">
+                    <!-- quiet base line -->
+                    <path class="flow-base" d="M72 110 H728" />
+
+                    <!-- line revealed by the travelling signal -->
+                    <path class="flow-progress" pathLength="1" d="M72 110 H728" />
+
+                    <!-- exact node anchors -->
+                    <circle class="anchor a1" cx="72" cy="110" r="3" />
+                    <circle class="anchor a2" cx="290" cy="110" r="3" />
+                    <circle class="anchor a3" cx="510" cy="110" r="3" />
+                    <circle class="anchor a4" cx="728" cy="110" r="3" />
+
+                    <!-- travelling signal -->
+                    <circle class="signal" r="4">
+                        <animate attributeName="cx" values="72;290;510;728" keyTimes="0;0.333;0.666;1" dur="4.8s"
+                            repeatCount="indefinite" calcMode="spline" keySplines="
+                    .65 0 .35 1;
+                    .65 0 .35 1;
+                    .65 0 .35 1" />
+                        <animate attributeName="cy" values="110;110;110;110" dur="4.8s" repeatCount="indefinite" />
+                    </circle>
+                </svg>
+
+                <div class="node n1">
+                    <span class="node-mark"></span>
+                    <span class="node-label">QUESTION</span>
+                </div>
+
+                <div class="node n2">
+                    <span class="node-mark"></span>
+                    <span class="node-label">DIAGRAM</span>
+                </div>
+
+                <div class="node n3">
+                    <span class="node-mark"></span>
+                    <span class="node-label">MOTION</span>
+                </div>
+
+                <div class="node n4">
+                    <span class="node-mark"></span>
+                    <span class="node-label">UNDERSTANDING</span>
+                </div>
+
+            </div>
+
+            <div class="demo-caption">
+                <span>Question</span>
+                <p>Complex ideas become easier when you can watch them unfold.</p>
+            </div>
+            ```
+
         </div>
+
+
     </section>
 
     <div class="marquee" aria-hidden="true">
@@ -878,9 +1414,11 @@
            date 'YYYY-MM', path 'Topic/Category'). It then appears
            in both the explorer and the Latest index. */
         var ENTRIES = [
-            /* e.g.
-            { slug: 'blog/slug.html', title: 'Title.', deck: 'One line.', date: '2026-02', path: 'AI/Advanced', tags: ['MCP', 'Tools'] }
-            */
+            {
+                slug: 'blog/next-token.html', title: 'The next token.',
+                deck: 'An LLM is a next-token predictor. Watch a toy model learn its tokens, build its probability table, then run the loop that writes every answer.',
+                date: '2026-02', path: 'AI/Basics', tags: ['LLM', 'Tokenization']
+            }
         ];
 
         (function () {
@@ -1085,7 +1623,7 @@
                 if (!list.length) {
                     panelEmpty('No notes in ' + label + ' yet',
                         isCat ? 'The first note in this category is being written'
-                              : 'All categories in this branch are still being written');
+                            : 'All categories in this branch are still being written');
                     return;
                 }
                 var html = list.map(function (e, i) {

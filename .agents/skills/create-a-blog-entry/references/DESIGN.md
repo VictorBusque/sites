@@ -30,7 +30,7 @@ posts — readers learn it once.
 |---|---|
 | Unbounded | display and headings (letter-spacing ~ `-.07em`, weights 400–600) |
 | Instrument Serif | italic accents inside headlines, big ghost numerals, callouts |
-| Work Sans | body text |
+| Newsreader | body text |
 | DM Mono | labels, kickers, readouts, figure captions' kicker, meta |
 
 Headline pattern: stacked `.h-line` masked lines, `clamp(46px, 7.5vw, 116px)`,

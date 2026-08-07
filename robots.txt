@@ -1,4 +1,7 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://engineeringlog.example.com/sitemap.xml
+# Block the template from being indexed (it's a scaffold, not content)
+Disallow: /blog/template.html
+
+Sitemap: https://victorbusque.com/sitemap.xml

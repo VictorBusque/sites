@@ -9,7 +9,7 @@ with `defer`, so this is guaranteed).
 ## The two figure kinds
 
 | | Scripted | Looping |
-|---|---|---|
+| --- | --- | --- |
 | Markup | `<div class="fig-body" data-script="name">` | `<div class="fig-body">` |
 | Driver | `__figScripts.name.draw(i, body)` | pure CSS keyframes |
 | Controls | PREV / PLAY / NEXT / RESET | PAUSE / REPLAY |

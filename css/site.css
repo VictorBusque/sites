@@ -5,7 +5,7 @@
    inline in each blog post. This file is the shared skeleton.
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=Unbounded:wght@400;500;600;700&family=Work+Sans:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Unbounded:wght@400;500;600;700&display=swap');
 
 /* ── Tokens ─────────────────────────────────────────────── */
 :root {
@@ -49,7 +49,7 @@ html {
 body {
     background: var(--paper);
     color: var(--ink);
-    font-family: "Work Sans", sans-serif;
+    font-family: "Newsreader", Georgia, serif;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -542,8 +542,8 @@ nav .links a:hover::after {
     padding: 5vh 4vw 0;
 }
 .post-prose > p {
-    font-size: 17px;
-    line-height: 1.72;
+    font-size: 18px;
+    line-height: 1.74;
     color: #33322e;
     margin-bottom: 1.5em;
 }

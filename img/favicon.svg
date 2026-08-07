@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Víctor Busqué — VB monogram">
+  <title>Víctor Busqué</title>
+  <!-- ink rounded-square background -->
+  <rect width="512" height="512" rx="112" fill="#101010"/>
+  <!-- VB monogram, acid green, optically centred -->
+  <g transform="translate(11,0)" fill="#c7ff3d">
+    <!-- V — two bold strokes meeting at a pointed apex -->
+    <path d="M88,100 L166,412 L244,100 L200,100 L166,368 L132,100 Z"/>
+    <!-- B — vertical stem + two bellies -->
+    <path d="M276,100 L324,100 A78,78 0 0 1 324,256 A78,78 0 0 1 324,412 L276,412 Z"/>
+  </g>
+</svg>

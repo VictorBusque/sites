@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="Víctor Busqué — Living Engineering Notes">
+  <title>Víctor Busqué — Living Engineering Notes</title>
+  <defs>
+    <!-- subtle engineering grid -->
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M60 0H0V60" fill="none" stroke="#ffffff" stroke-opacity="0.045" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <!-- paper canvas -->
+  <rect width="1200" height="630" fill="#f2f0e9"/>
+  <!-- left ink panel -->
+  <rect width="1200" height="630" fill="#101010"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+
+  <!-- VB monogram badge -->
+  <g transform="translate(96,96)">
+    <rect width="170" height="170" rx="38" fill="#1a1a1a" stroke="#ffffff" stroke-opacity="0.10"/>
+    <g transform="translate(4,0) scale(0.332)" fill="#c7ff3d">
+      <path d="M88,100 L166,412 L244,100 L200,100 L166,368 L132,100 Z"/>
+      <path d="M276,100 L324,100 A78,78 0 0 1 324,256 A78,78 0 0 1 324,412 L276,412 Z"/>
+    </g>
+  </g>
+
+  <!-- kicker -->
+  <text x="96" y="330" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="20" letter-spacing="5" fill="#c7ff3d" font-weight="700">VÍCTOR BUSQUÉ · ENGINEERING NOTES</text>
+
+  <!-- headline -->
+  <text x="92" y="420" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="88" font-weight="800" fill="#f2f0e9" letter-spacing="-2">Don&#8217;t just read it.</text>
+  <text x="92" y="500" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-style="italic" font-size="88" font-weight="400" fill="#c7ff3d" letter-spacing="-2">See it run.</text>
+
+  <!-- subhead -->
+  <text x="96" y="556" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="22" fill="#9a978e">Notes on AI · Software Engineering · Cloud &#8212; every idea taught with diagrams that move.</text>
+
+  <!-- right rail: topic branches -->
+  <g font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="18" font-weight="600" letter-spacing="2">
+    <g transform="translate(988,300)">
+      <rect x="-8" y="-30" width="20" height="20" fill="#c7ff3d"/>
+      <text x="22" y="-14" fill="#f2f0e9">01 · AI</text>
+      <rect x="-8" y="6" width="20" height="20" fill="#546cff"/>
+      <text x="22" y="22" fill="#9a978e">02 · SOFTWARE ENG.</text>
+      <rect x="-8" y="42" width="20" height="20" fill="#ff6b2c"/>
+      <text x="22" y="58" fill="#9a978e">03 · CLOUD</text>
+    </g>
+  </g>
+</svg>
