@@ -252,146 +252,256 @@
             line-height: 1.5;
         }
 
-        /* ── The atlas — classification navigator ────────── */
-        .atlas {
+        /* ── The notes — IDE file-tree explorer ──────────── */
+        .ide {
+            display: grid;
+            grid-template-columns: 332px 1fr;
             border: 1px solid var(--line);
             background: var(--paper);
             margin-top: 46px;
+            min-height: 460px;
         }
-        .atlas-head {
+
+        /* ── Explorer pane (the tree) ── */
+        .explorer {
             display: flex;
-            justify-content: space-between;
-            gap: 18px;
-            flex-wrap: wrap;
-            padding: 13px 18px;
+            flex-direction: column;
+            min-width: 0;
+            border-right: 1px solid var(--line);
+            position: sticky;
+            top: 84px;
+            align-self: start;
+            max-height: calc(100vh - 110px);
+            background: var(--paper);
+        }
+        .explorer-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
             border-bottom: 1px solid var(--line);
             background: var(--paper-2);
             font: 10px "DM Mono";
-            letter-spacing: .16em;
+            letter-spacing: .2em;
             color: #777;
+            flex-shrink: 0;
         }
-        .atlas-head b { color: var(--ink); font-weight: 500; }
-
-        .branches {
+        .ex-title { color: var(--ink); }
+        .ex-title::after {
+            content: "▋";
+            margin-left: 3px;
+            color: var(--acid);
+            animation: blink 1.2s steps(2) infinite;
+        }
+        .ex-actions { margin-left: auto; display: flex; gap: 6px; }
+        .ex-btn {
+            width: 26px;
+            height: 26px;
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-        }
-        .branch {
-            border-right: 1px solid var(--line);
-            padding: 26px 20px 24px;
-        }
-        .branch:last-child { border-right: 0; }
-        .b-head {
-            display: flex;
-            align-items: baseline;
-            gap: 12px;
-            padding-bottom: 18px;
-            border-bottom: 1px solid #11111122;
-        }
-        .b-no {
-            font: italic 40px/1 "Instrument Serif";
-            color: #1111111f;
-            transition: color var(--t-med) var(--ease-swift);
-        }
-        .b-name {
-            font-family: "Unbounded", sans-serif;
-            font-weight: 600;
-            font-size: clamp(15px, 1.7vw, 24px);
-            letter-spacing: -.05em;
-            line-height: 1;
-        }
-        .b-count {
-            margin-left: auto;
-            font: 9px "DM Mono";
-            letter-spacing: .14em;
-            color: #777;
-            white-space: nowrap;
-        }
-        .b-cats {
-            display: grid;
-            gap: 10px;
-            padding-top: 16px;
-        }
-        .branch[data-topic="AI"] { --branch-accent: #769a16; }
-        .branch[data-topic="SOFTWARE ENGINEERING"] { --branch-accent: var(--blue); }
-        .branch[data-topic="CLOUD"] { --branch-accent: var(--orange); }
-
-        .cat-tile {
-            display: block;
-            width: 100%;
-            text-align: left;
+            place-items: center;
             border: 1px solid #b9b6ac;
             background: var(--paper);
-            padding: 13px 14px 12px;
-            cursor: pointer;
-            position: relative;
             color: var(--ink);
-            -webkit-appearance: none;
-            appearance: none;
-            transition: border-color var(--t-fast) var(--ease-snap),
-                background var(--t-med) var(--ease-swift),
-                transform var(--t-med) var(--ease-out),
-                box-shadow var(--t-med) var(--ease-out);
+            cursor: pointer;
+            transition: background var(--t-fast) var(--ease-snap),
+                color var(--t-fast) var(--ease-snap),
+                border-color var(--t-fast) var(--ease-snap),
+                transform var(--t-fast) var(--ease-snap);
         }
-        .cat-tile:hover {
-            transform: translateY(-3px);
-            border-color: var(--ink);
-            box-shadow: 4px 4px 0 var(--branch-accent);
-        }
-        .cat-tile:active { transform: translateY(-1px) scale(.99); }
-        .c-name {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            font-family: "Unbounded", sans-serif;
-            font-weight: 500;
-            font-size: 13.5px;
-            letter-spacing: -.02em;
-            transition: color var(--t-fast) var(--ease-snap);
-        }
-        .cat-tile:hover .c-name { color: var(--branch-accent); }
-        .c-count {
-            font: 9px "DM Mono";
-            letter-spacing: .1em;
-            padding: 3px 8px;
-            border: 1px solid #b9b6ac;
-            border-radius: 99px;
-            color: #777;
-            transition: border-color var(--t-fast) var(--ease-snap),
-                background var(--t-fast) var(--ease-snap), color var(--t-fast) var(--ease-snap);
-        }
-        .c-count.has {
-            border-color: var(--branch-accent);
-            color: var(--branch-accent);
-        }
-        .c-eg {
-            display: block;
-            margin-top: 7px;
-            font: 9px "DM Mono";
-            letter-spacing: .12em;
-            line-height: 1.55;
-            color: #9a978e;
-        }
-        .cat-tile.is-active {
-            border-color: var(--branch-accent);
-            border-width: 1.5px;
-            background: var(--paper-2);
-            box-shadow: inset 0 -3px 0 var(--branch-accent);
-        }
-        .cat-tile.is-active .c-count {
-            background: var(--branch-accent);
-            border-color: var(--branch-accent);
-            color: var(--paper);
+        .ex-btn svg { width: 12px; height: 12px; display: block; }
+        .ex-btn:hover { background: var(--ink); color: var(--acid); border-color: var(--ink); }
+        .ex-btn:active { transform: scale(.92); }
+
+        .tree {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0 12px;
+            scrollbar-width: thin;
+            scrollbar-color: #b9b6ac transparent;
+            outline: none;
         }
 
-        /* shared entries panel */
-        .atlas-panel {
-            border-top: 4px solid var(--line);
-            background: var(--paper-2);
-            padding: 22px 4vw 40px;
-            min-height: 210px;
-            transition: border-color var(--t-med) var(--ease-swift);
+        /* rows */
+        .trow {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            height: 30px;
+            padding: 0 12px 0 12px;
+            font: 11px "DM Mono";
+            letter-spacing: .05em;
+            color: var(--ink);
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            white-space: nowrap;
+            transition: background var(--t-fast) var(--ease-snap),
+                color var(--t-fast) var(--ease-snap);
+        }
+        .trow:hover { background: #1010100d; }
+        .trow.d1 { padding-left: 30px; }
+        .trow.d2 { padding-left: 48px; }
+
+        .trow .chev {
+            width: 12px;
+            height: 12px;
+            flex-shrink: 0;
+            display: grid;
+            place-items: center;
+            color: #999;
+            transition: transform var(--t-med) var(--ease-out), color var(--t-med) var(--ease-swift);
+        }
+        .trow .chev svg { width: 9px; height: 9px; }
+        .trow .chev.is-leaf { visibility: hidden; }
+        .trow.is-open > .chev { transform: rotate(90deg); }
+        .trow.is-active .chev { color: var(--acid); }
+
+        .trow .ic {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+            display: grid;
+            place-items: center;
+            color: #716f68;
+            transition: color var(--t-med) var(--ease-swift);
+        }
+        .trow .ic svg { width: 14px; height: 14px; display: block; }
+        .trow.is-active .ic { color: var(--acid); }
+
+        .trow .fname {
+            flex-shrink: 0;
+            font-weight: 500;
+        }
+        .trow .sub {
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 9px;
+            letter-spacing: .12em;
+            color: #9a978e;
+            transition: color var(--t-med) var(--ease-swift);
+        }
+        .trow.is-active .sub { color: #a8d92e; }
+        .trow .cnt {
+            margin-left: auto;
+            flex-shrink: 0;
+            font: 9px "DM Mono";
+            letter-spacing: .1em;
+            padding: 1px 7px;
+            border: 1px solid #b9b6ac;
+            border-radius: 99px;
+            color: #999;
+            transition: border-color var(--t-fast) var(--ease-snap),
+                color var(--t-fast) var(--ease-snap),
+                background var(--t-fast) var(--ease-snap);
+        }
+        .trow .cnt.has { border-color: var(--branch-accent); color: var(--branch-accent); }
+        .trow.is-active .cnt { border-color: var(--acid); color: var(--acid); }
+
+        /* tree guides — vertical rules at each parent's icon column */
+        .trow.d1::before,
+        .trow.d2::before {
+            content: "";
+            position: absolute;
+            left: 38px;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: #1111111f;
+            pointer-events: none;
+        }
+        .trow.d2::before { box-shadow: 18px 0 0 #1111111f; }
+
+        /* selection + focus */
+        .trow.is-focus { box-shadow: inset 0 0 0 1px #546cff66; }
+        .trow.is-active {
+            background: var(--ink);
+            color: var(--acid);
+        }
+        .trow.is-active:hover { background: var(--ink); }
+        .trow.is-active::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--branch-accent);
+            animation: accent-sweep .5s var(--ease-out) both;
+        }
+
+        /* empty leaves (folder with no notes yet) */
+        .trow.trow-empty {
+            height: 26px;
+            color: #9a978e;
+            cursor: default;
+            font-style: italic;
+        }
+        .trow.trow-empty .fname { font-size: 10px; letter-spacing: .12em; }
+        .trow.trow-empty .ic { opacity: .45; }
+        .trow.trow-empty:hover { background: transparent; }
+
+        /* expand / collapse — directional easing: open eases out, close eases in */
+        .kids {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 300ms var(--ease-in);
+        }
+        .kids.open {
+            grid-template-rows: 1fr;
+            transition-timing-function: var(--ease-out);
+            transition-duration: var(--t-med);
+        }
+        .kids > .kids-in { overflow: hidden; min-height: 0; }
+        .kids.just-open > .kids-in > .trow {
+            opacity: 0;
+            transform: translateY(6px);
+            animation: fade-rise .4s var(--ease-out) both;
+        }
+
+        /* load stagger for the visible roots */
+        .ide.seen .trow[data-depth="0"] {
+            opacity: 0;
+            transform: translateY(6px);
+            animation: fade-rise .5s var(--ease-out) both;
+        }
+
+        /* status bar */
+        .ex-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 9px 14px;
+            background: var(--ink);
+            color: #999;
+            font: 9px "DM Mono";
+            letter-spacing: .14em;
+            border-top: 1px solid var(--line);
+            flex-shrink: 0;
+        }
+        .ex-status .live { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ex-status .live::before {
+            content: "";
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--acid);
+            margin-right: 7px;
+            animation: blink 1.6s steps(2) infinite;
+        }
+        .ex-status b { color: var(--acid); font-weight: 500; white-space: nowrap; }
+
+        /* ── Entries panel ── */
+        .panel {
+            min-width: 0;
+            background: var(--paper);
+            padding: 0 34px 44px;
+            display: flex;
+            flex-direction: column;
         }
         .panel-head {
             display: flex;
@@ -399,10 +509,12 @@
             align-items: center;
             gap: 14px;
             flex-wrap: wrap;
+            padding: 18px 0 0;
             font: 10px "DM Mono";
             letter-spacing: .16em;
             color: #777;
         }
+        .panel-head .crumb { margin-bottom: 0; }
         .panel-head .crumb b { color: var(--ink); font-weight: 500; }
         .panel-head .hint { color: #9a978e; }
 
@@ -485,7 +597,7 @@
             color: #9a978e;
         }
 
-        /* atlas re-render choreography */
+        /* entries re-render choreography */
         .p-entries .p-entry { opacity: 0; }
         .p-entries.playing .p-entry {
             animation: fade-rise .5s var(--ease-out) both;
@@ -556,98 +668,9 @@
             color: #9a978e;
         }
 
-        /* ── About ────────────────────────────────────────── */
-        .manifesto {
-            display: grid;
-            grid-template-columns: .55fr 1.45fr;
-            border-top: 1px solid var(--line);
-            border-bottom: 1px solid var(--line);
-        }
-        .manifesto > div { padding: 5vw 4vw; }
-        .manifesto .left { border-right: 1px solid var(--line); }
-        .manifesto h2 {
-            font-size: 14px;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .manifesto h2::before {
-            content: "";
-            width: 8px;
-            height: 8px;
-            background: var(--blue);
-            border-radius: 50%;
-            animation: ping 2.4s var(--ease-out) infinite;
-        }
-        .manifesto blockquote {
-            font: clamp(38px, 4.8vw, 76px)/1.06 "Instrument Serif";
-            max-width: 1000px;
-        }
-        .manifesto blockquote .hl {
-            background: var(--acid);
-            box-shadow: inset 0 -4px 0 #a3d92b;
-            padding: 0 6px;
-        }
-        .about-copy {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 4vw;
-            padding: 5vw 4vw;
-            border-bottom: 1px solid var(--line);
-        }
-        .about-copy p {
-            font-size: 16px;
-            line-height: 1.65;
-            color: #45433f;
-        }
-        .about-copy p strong {
-            font-family: "Instrument Serif";
-            font-weight: 400;
-            font-style: italic;
-            font-size: 1.12em;
-            color: var(--ink);
-        }
-
-        /* Principles */
-        .principles {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            border-bottom: 1px solid var(--line);
-        }
-        .principle {
-            padding: 4vw;
-            border-right: 1px solid var(--line);
-            min-height: 300px;
-            position: relative;
-            transition: background var(--t-med) var(--ease-swift), transform var(--t-med) var(--ease-out);
-        }
-        .principle:last-child { border-right: 0; }
-        .principle:hover {
-            background: var(--paper-2);
-            transform: translateY(-6px);
-        }
-        .principle strong {
-            font: 80px "Instrument Serif";
-            font-style: italic;
-            color: var(--orange);
-            display: inline-block;
-            transition: transform var(--t-med) var(--ease-out);
-        }
-        .principle:nth-child(2) strong { color: var(--blue); }
-        .principle:nth-child(3) strong { color: #769a16; }
-        .principle:hover strong { transform: rotate(-6deg) scale(1.06); }
-        .principle h4 {
-            font-size: 20px;
-            margin: 18px 0 10px;
-        }
-        .principle p {
-            color: var(--muted);
-            line-height: 1.5;
-            font-size: 14px;
-        }
-
         /* Keyframes (landing) */
         @keyframes grow-in { from { transform: scaleX(0); } }
+        @keyframes accent-sweep { from { transform: scaleY(0); } }
         @keyframes demo-in { to { opacity: 1; transform: none; } }
         @keyframes grid-drift { to { background-position: 72px 0, 0 0; } }
         @keyframes cue {
@@ -668,17 +691,26 @@
 
         /* Responsive (landing) */
         @media (max-width: 850px) {
-            .hero, .manifesto, .about-copy { grid-template-columns: 1fr; }
-            .hero-demo { height: 420px; box-shadow: 8px 8px 0 var(--acid); }
-            .manifesto .left { border-right: 0; border-bottom: 1px solid var(--line); }
-            .principles { grid-template-columns: 1fr; }
-            .principle { border-right: 0; border-bottom: 1px solid var(--line); min-height: auto; }
+
+            .hero {
+                grid-template-columns: 1fr;
+                gap: 8vh 0;
+                padding-top: 8vh;
+            }
+            .hero h1 { font-size: clamp(44px, 13.5vw, 68px); }
+            .hero p { font-size: 16px; }
+            .hero .ghost-num { font-size: 104px; right: -4vw; top: 1vh; }
+            .hero-demo { height: 360px; box-shadow: 8px 8px 0 var(--acid); }
+            
+            
+            
             .hero:before { display: none; }
             .section-top { flex-direction: column; align-items: flex-start; gap: 16px; }
 
-            .branches { grid-template-columns: 1fr; }
-            .branch { border-right: 0; border-bottom: 1px solid var(--line); }
-            .branch:last-child { border-bottom: 0; }
+            .ide { grid-template-columns: 1fr; min-height: 0; }
+            .explorer { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--line); }
+            .tree { max-height: 320px; }
+            .panel { padding: 0 4vw 40px; }
             .p-entry { grid-template-columns: 1fr; gap: 6px; }
             .e-meta { grid-row: auto; grid-column: 1; flex-direction: row; align-items: center; justify-content: space-between; }
             .index-row { grid-template-columns: 1fr 1fr; gap: 8px 18px; padding: 22px 14px; }
@@ -701,7 +733,7 @@
         <div class="links">
             <a href="#notes">Notes</a>
             <a href="#recent">Latest</a>
-            <a href="#about">About</a>
+            <a href="about.html">About</a>
         </div>
         <div class="status">SANT QUIRZE · <b>2026</b></div>
     </nav>
@@ -746,26 +778,45 @@
         </div>
     </div>
 
-    <!-- ════ NOTES — the atlas ════ -->
+    <!-- ════ NOTES — the explorer ════ -->
     <section class="section" id="notes">
         <div class="section-top reveal">
             <h2>The notes.</h2>
-            <p>Three branches, eight categories. The map is the classification; every entry is a real page under
-                <span class="mono">blog/</span>.</p>
+            <p>One file tree, three roots. Folders are taxonomy, leaves are pages — every row is real, every entry
+                lives under <span class="mono">blog/</span>.</p>
         </div>
 
-        <div class="atlas reveal" id="atlas">
-            <div class="atlas-head">
-                <span>NOTE MAP <b id="atlasReadout"></b></span>
-                <span class="hint">CLICK A CATEGORY · TAB OR ← → TO MOVE</span>
-            </div>
-
-            <div class="branches" id="branches" role="group" aria-label="Note branches"></div>
-
-            <div class="atlas-panel" id="panel">
+        <div class="ide reveal" id="ide">
+            <aside class="explorer" id="explorer" aria-label="Notes file tree">
+                <div class="explorer-head">
+                    <span class="ex-title">EXPLORER</span>
+                    <span class="ex-actions">
+                        <button class="ex-btn" id="expandAll" type="button" title="Expand all folders"
+                            aria-label="Expand all folders">
+                            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M4 5.5L8 9.5l4-4M4 9.5L8 13.5l4-4" />
+                            </svg>
+                        </button>
+                        <button class="ex-btn" id="collapseAll" type="button" title="Collapse all folders"
+                            aria-label="Collapse all folders">
+                            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M4 10.5L8 6.5l4 4M4 6.5L8 2.5l4 4" />
+                            </svg>
+                        </button>
+                    </span>
+                </div>
+                <div class="tree" id="tree" role="tree" tabindex="0" aria-label="Notes"></div>
+                <div class="ex-status">
+                    <span class="live" id="treeReadout"></span>
+                    <b>blog/</b>
+                </div>
+            </aside>
+            <div class="panel" id="panel">
                 <div class="panel-head">
                     <span class="crumb" id="crumb"></span>
-                    <span class="hint" id="panelHint">CATEGORY QUEUE</span>
+                    <span class="hint">KEYBOARD · ↑↓ MOVE · ← → TOGGLE</span>
                 </div>
                 <div id="panelBody"></div>
             </div>
@@ -780,47 +831,6 @@
             </p>
         </div>
         <div class="index" id="indexList"></div>
-    </section>
-
-    <!-- ════ ABOUT ════ -->
-    <section id="about">
-        <div class="manifesto mask">
-            <div class="left">
-                <h2>ABOUT</h2>
-            </div>
-            <div>
-                <blockquote>
-                    <span class="row"><span>A diagram should show</span></span>
-                    <span class="row"><span>what happens next,</span></span>
-                    <span class="row"><span>not just what exists.</span></span>
-                </blockquote>
-            </div>
-        </div>
-
-        <div class="about-copy reveal">
-            <p><strong>Víctor Busqué</strong> is a software engineer near Barcelona. He builds agent systems for a
-                living and writes down what he learns — one idea per note, taught with diagrams that move.</p>
-            <p>Every figure runs the real process: counters are computed state, not decoration. If a note claims
-                something happened, you can watch it happen. That is the whole contract.</p>
-        </div>
-
-        <div class="principles stagger" style="--d:0s">
-            <div class="principle"><strong>01</strong>
-                <h4>Motion has meaning.</h4>
-                <p>Animation explains sequence, concurrency, latency and state. Nothing moves just because it looks
-                    cool.</p>
-            </div>
-            <div class="principle"><strong>02</strong>
-                <h4>Nothing is faked.</h4>
-                <p>Every figure runs the real process. Press step and the algorithm obeys — the counters are the
-                    actual state, not decoration.</p>
-            </div>
-            <div class="principle"><strong>03</strong>
-                <h4>The diagram is the article.</h4>
-                <p>Visual models sit at the center of the story instead of being illustrations added after the prose.
-                </p>
-            </div>
-        </div>
     </section>
 
     <footer>
@@ -864,7 +874,7 @@
            is invented: no entry, no count, no row. When a note
            lands, add it below (slug is the href from this page,
            date 'YYYY-MM', path 'Topic/Category'). It then appears
-           in both the atlas panel and the Latest index. */
+           in both the explorer and the Latest index. */
         var ENTRIES = [
             /* e.g.
             { slug: 'blog/slug.html', title: 'Title.', deck: 'One line.', date: '2026-02', path: 'AI/Advanced', tags: ['MCP', 'Tools'] }
@@ -873,12 +883,15 @@
 
         (function () {
             'use strict';
-            var branchesEl = document.getElementById('branches');
+            var treeEl = document.getElementById('tree');
             var crumb = document.getElementById('crumb');
             var panelBody = document.getElementById('panelBody');
-            var readout = document.getElementById('atlasReadout');
+            var readout = document.getElementById('treeReadout');
             var indexList = document.getElementById('indexList');
+            var expandAllBtn = document.getElementById('expandAll');
+            var collapseAllBtn = document.getElementById('collapseAll');
             var MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+            var ACCENT = { 'AI': '#769a16', 'SOFTWARE ENGINEERING': '#546cff', 'CLOUD': '#ff6b2c' };
 
             function esc(s) {
                 return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -893,37 +906,163 @@
                 el.classList.add('playing');
             }
 
-            /* ── Atlas header readout (computed) ── */
-            var totalCats = 0;
-            TAXONOMY.forEach(function (b) { totalCats += b.cats.length; });
-            readout.textContent = ' / ' + TAXONOMY.length + ' BRANCHES · ' + totalCats + ' CATEGORIES';
+            /* ── Icons — tiny inline SVGs, currentColor ── */
+            function chev() {
+                return '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" ' +
+                    'stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg>';
+            }
+            function folder(open) {
+                var d = open
+                    ? 'M1.5 3.5A1.5 1.5 0 0 1 3 2h2.9l1.6 2H13a1.5 1.5 0 0 1 1.5 1.5V6H4.9a1.5 1.5 0 0 0-1.42.98L1.2 13.2A1.5 1.5 0 0 1 1 12z'
+                    : 'M1.5 3.5A1.5 1.5 0 0 1 3 2h2.9l1.6 2H13a1.5 1.5 0 0 1 1.5 1.5V12a1.5 1.5 0 0 1-1.5 1.5H3A1.5 1.5 0 0 1 1.5 12z';
+                return '<svg viewBox="0 0 16 16" fill="currentColor"><path d="' + d + '"/></svg>';
+            }
+            function file() {
+                return '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1">' +
+                    '<path d="M4.3 1.4h5.4l2.9 2.9v9.9a.5.5 0 0 1-.5.5H4.3a.5.5 0 0 1-.5-.5V1.9a.5.5 0 0 1 .5-.5z"/>' +
+                    '<path d="M9.7 1.4v3h3"/></svg>';
+            }
 
-            /* ── Per-category entry counts ── */
-            var counts = {};
-            ENTRIES.forEach(function (e) {
-                counts[e.path] = (counts[e.path] || 0) + 1;
+            /* ── State ── */
+            var open = {};       /* folder key → bool */
+            var selected = null; /* topic or category key */
+            var focusedKey = null;
+
+            TAXONOMY.forEach(function (b) {
+                open[b.topic] = open[b.topic] !== false;          /* topics start open */
+                b.cats.forEach(function (c) {
+                    open[b.topic + '/' + c.name] = open[b.topic + '/' + c.name] === true; /* cats start closed */
+                });
             });
 
-            /* ── Build the map (static, all branches visible) ── */
-            branchesEl.innerHTML = TAXONOMY.map(function (b) {
-                var cats = b.cats.map(function (c) {
-                    var key = b.topic + '/' + c.name;
-                    var n = counts[key] || 0;
-                    return '<button class="cat-tile" type="button" data-key="' + esc(key) + '"' +
-                        ' aria-pressed="false">' +
-                        '<span class="c-name">' + esc(c.name) +
-                        '<span class="c-count' + (n ? ' has' : '') + '">' + n + '</span></span>' +
-                        '<span class="c-eg">' + esc(c.eg.toUpperCase()) + '</span></button>';
-                }).join('');
-                return '<div class="branch" data-topic="' + esc(b.topic) + '">' +
-                    '<div class="b-head"><span class="b-no">' + esc(b.no) + '</span>' +
-                    '<span class="b-name">' + esc(b.topic) + '</span>' +
-                    '<span class="b-count">' + b.cats.length + ' CAT' + (b.cats.length > 1 ? 'S' : '') + '</span></div>' +
-                    '<div class="b-cats">' + cats + '</div></div>';
-            }).join('');
+            function notesFor(path) {
+                return ENTRIES.filter(function (e) { return e.path === path; })
+                    .sort(function (a, b) { return b.date < a.date ? -1 : 1; });
+            }
+            function notesForTopic(topic) {
+                return ENTRIES.filter(function (e) { return e.path.split('/')[0] === topic; })
+                    .sort(function (a, b) { return b.date < a.date ? -1 : 1; });
+            }
 
-            var tiles = branchesEl.querySelectorAll('.cat-tile');
-            var selected = null;
+            /* ── Build the tree ── */
+            function folderRow(o) {
+                return '<div class="trow d' + o.depth + '" role="treeitem" tabindex="-1" data-key="' + esc(o.key) + '"' +
+                    ' data-kind="' + o.kind + '" data-depth="' + o.depth + '"' +
+                    (o.parent ? ' data-parent="' + esc(o.parent) + '"' : '') +
+                    ' aria-expanded="' + o.open + '" aria-selected="false"' +
+                    ' style="--branch-accent:' + esc(o.accent) + ';animation-delay:' + o.delay + 'ms"' +
+                    (o.title ? ' title="' + esc(o.title) + '"' : '') + '>' +
+                    '<span class="chev">' + chev() + '</span>' +
+                    '<span class="ic">' + folder(o.open) + '</span>' +
+                    '<span class="fname">' + esc(o.label) + '</span>' +
+                    (o.sub ? '<span class="sub">' + esc(o.sub) + '</span>' : '') +
+                    '<span class="cnt' + (o.count ? ' has' : '') + '">' + o.count + '</span></div>';
+            }
+            function noteRow(n, depth, i, accent) {
+                return '<a class="trow d' + depth + '" role="treeitem" tabindex="-1" href="' + esc(n.slug) + '"' +
+                    ' data-key="' + esc(n.slug) + '" data-kind="note" data-depth="' + depth + '"' +
+                    ' data-parent="' + esc(n.path) + '" aria-selected="false"' +
+                    ' style="--branch-accent:' + esc(accent) + ';animation-delay:' + (i * 40) + 'ms">' +
+                    '<span class="chev is-leaf"></span>' +
+                    '<span class="ic">' + file() + '</span>' +
+                    '<span class="fname">' + esc(n.title) + '</span></a>';
+            }
+            function emptyRow(depth) {
+                return '<div class="trow trow-empty d' + depth + '" role="treeitem" tabindex="-1"' +
+                    ' data-kind="empty" data-depth="' + depth + '" style="animation-delay:0ms">' +
+                    '<span class="chev is-leaf"></span>' +
+                    '<span class="ic">' + file() + '</span>' +
+                    '<span class="fname">NO NOTES YET</span></div>';
+            }
+
+            var g = 0;
+            function buildTree() {
+                var html = '';
+                TAXONOMY.forEach(function (b) {
+                    var topicKey = b.topic;
+                    var accent = ACCENT[b.topic] || '#716f68';
+                    html += folderRow({
+                        key: topicKey, kind: 'topic', depth: 0, delay: (g++) * 60,
+                        open: open[topicKey], label: b.topic,
+                        count: notesForTopic(topicKey).length, accent: accent
+                    });
+                    var catsHtml = '';
+                    b.cats.forEach(function (c, j) {
+                        var key = topicKey + '/' + c.name;
+                        var notes = notesFor(key);
+                        catsHtml += folderRow({
+                            key: key, kind: 'cat', depth: 1, delay: j * 40, parent: topicKey,
+                            open: open[key], label: c.name.toUpperCase(),
+                            sub: c.eg.toUpperCase(), count: notes.length,
+                            accent: accent, title: c.name + ' — ' + c.eg
+                        });
+                        var kids = notes.length
+                            ? notes.map(function (n, k) { return noteRow(n, 2, k, accent); }).join('')
+                            : emptyRow(2);
+                        catsHtml += '<div class="kids" data-key="' + esc(key) + '">' +
+                            '<div class="kids-in">' + kids + '</div></div>';
+                    });
+                    html += '<div class="kids" data-key="' + esc(topicKey) + '">' +
+                        '<div class="kids-in">' + catsHtml + '</div></div>';
+                });
+                treeEl.innerHTML = html;
+                applyOpenState();
+            }
+
+            function applyOpenState() {
+                treeEl.querySelectorAll('.kids').forEach(function (kids) {
+                    var key = kids.getAttribute('data-key');
+                    var row = kids.previousElementSibling;
+                    var val = !!open[key];
+                    kids.classList.toggle('open', val);
+                    kids.inert = !val;
+                    if (row) {
+                        row.classList.toggle('is-open', val);
+                        row.setAttribute('aria-expanded', val ? 'true' : 'false');
+                        var ic = row.querySelector('.ic');
+                        if (ic) ic.innerHTML = folder(val);
+                    }
+                });
+            }
+            function toggle(key, val) {
+                if (val === undefined) val = !open[key];
+                open[key] = val;
+                var kids = treeEl.querySelector('.kids[data-key="' + key + '"]');
+                if (!kids) return;
+                kids.classList.toggle('open', val);
+                kids.inert = !val;
+                var row = kids.previousElementSibling;
+                if (row) {
+                    row.classList.toggle('is-open', val);
+                    row.setAttribute('aria-expanded', val ? 'true' : 'false');
+                    row.querySelector('.ic').innerHTML = folder(val);
+                }
+                if (val) {
+                    kids.classList.remove('just-open');
+                    void kids.offsetWidth;
+                    kids.classList.add('just-open');
+                }
+            }
+
+            /* ── Selection + panel ── */
+            function select(key) {
+                selected = key;
+                treeEl.querySelectorAll('.trow').forEach(function (r) {
+                    var on = r.getAttribute('data-key') === key;
+                    r.classList.toggle('is-active', on);
+                    r.setAttribute('aria-selected', on ? 'true' : 'false');
+                });
+                renderPanel();
+            }
+            function setFocus(key, doScroll) {
+                focusedKey = key;
+                treeEl.querySelectorAll('.trow.is-focus').forEach(function (r) { r.classList.remove('is-focus'); });
+                var row = treeEl.querySelector('.trow[data-key="' + key + '"]');
+                if (row) {
+                    row.classList.add('is-focus');
+                    if (doScroll) row.scrollIntoView({ block: 'nearest' });
+                }
+            }
 
             function panelEmpty(text, sub) {
                 panelBody.innerHTML = '<div class="panel-empty"><i></i>' + esc(text) +
@@ -931,17 +1070,20 @@
             }
             function renderPanel() {
                 if (!selected) {
-                    crumb.innerHTML = 'SELECT A CATEGORY';
-                    panelEmpty('The map is empty — nothing invented', 'Entries appear here as notes are published under blog/');
+                    crumb.innerHTML = 'SELECT A FOLDER';
+                    panelEmpty('The tree is taxonomy — nothing invented', 'Pick a folder to see what lives inside it');
                     return;
                 }
-                var list = ENTRIES.filter(function (e) { return e.path === selected; })
-                    .sort(function (a, b) { return b.date < a.date ? -1 : 1; });
                 var parts = selected.split('/');
-                crumb.innerHTML = '<b>' + esc(parts[0]) + '</b> / ' + esc(parts[1].toUpperCase()) +
+                var isCat = parts.length === 2;
+                var list = isCat ? notesFor(selected) : notesForTopic(parts[0]);
+                var label = isCat ? parts[1] : parts[0];
+                crumb.innerHTML = '<b>' + esc(parts[0]) + '</b>' + (isCat ? ' / ' + esc(label.toUpperCase()) : '') +
                     ' — ' + list.length + (list.length === 1 ? ' NOTE' : ' NOTES');
                 if (!list.length) {
-                    panelEmpty('No notes in ' + parts[1] + ' yet', 'The first note in this category is being written');
+                    panelEmpty('No notes in ' + label + ' yet',
+                        isCat ? 'The first note in this category is being written'
+                              : 'All categories in this branch are still being written');
                     return;
                 }
                 var html = list.map(function (e, i) {
@@ -949,7 +1091,7 @@
                         '<span class="e-title">' + esc(e.title) + '</span>' +
                         '<span class="e-deck">' + esc(e.deck) + '</span>' +
                         '<span class="e-meta">' +
-                        '<span class="e-path">' + esc(selected.toUpperCase()) + '</span>' +
+                        '<span class="e-path">' + esc(e.path.toUpperCase()) + '</span>' +
                         '<span class="e-date">' + esc(fmtDate(e.date)) + '</span>' +
                         '<span class="read-tag">READ</span>' +
                         '</span></a>';
@@ -958,32 +1100,108 @@
                 retrigger(panelBody.querySelector('.p-entries'));
             }
 
-            function select(key) {
-                selected = (selected === key) ? null : key;
-                tiles.forEach(function (t) {
-                    var on = t.dataset.key === selected;
-                    t.classList.toggle('is-active', on);
-                    t.setAttribute('aria-pressed', on ? 'true' : 'false');
+            /* ── Interactions ── */
+            function isFolder(row) {
+                var k = row.getAttribute('data-kind');
+                return k === 'topic' || k === 'cat';
+            }
+            function visibleRows() {
+                return Array.prototype.filter.call(treeEl.querySelectorAll('.trow'), function (r) {
+                    var kids = r.closest('.kids');
+                    while (kids) {
+                        if (!kids.classList.contains('open')) return false;
+                        kids = kids.parentElement ? kids.parentElement.closest('.kids') : null;
+                    }
+                    return true;
                 });
-                renderPanel();
             }
 
-            branchesEl.addEventListener('click', function (e) {
-                var tile = e.target.closest('.cat-tile');
-                if (tile) select(tile.dataset.key);
+            treeEl.addEventListener('click', function (e) {
+                var row = e.target.closest('.trow');
+                if (!row) return;
+                treeEl.focus();
+                var key = row.getAttribute('data-key');
+                setFocus(key);
+                if (!isFolder(row)) return;   /* notes are links, empty rows are inert */
+                select(key);
+                toggle(key);
             });
 
-            /* keyboard: arrow keys cycle the category tiles */
-            branchesEl.addEventListener('keydown', function (e) {
-                if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-                var idx = Array.prototype.indexOf.call(tiles, document.activeElement);
-                if (idx < 0) return;
-                e.preventDefault();
-                var next = e.key === 'ArrowRight' ? (idx + 1) % tiles.length
-                    : (idx - 1 + tiles.length) % tiles.length;
-                tiles[next].focus();
-                tiles[next].click();
+            treeEl.addEventListener('keydown', function (e) {
+                var rows = visibleRows();
+                if (!rows.length) return;
+                var idx = -1;
+                rows.forEach(function (r, i) { if (r.getAttribute('data-key') === focusedKey) idx = i; });
+                var row = idx >= 0 ? rows[idx] : null;
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    idx = row ? Math.min(idx + 1, rows.length - 1) : 0;
+                    setFocus(rows[idx].getAttribute('data-key'), true);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    idx = row ? Math.max(idx - 1, 0) : rows.length - 1;
+                    setFocus(rows[idx].getAttribute('data-key'), true);
+                } else if (e.key === 'ArrowRight') {
+                    if (!row || !isFolder(row)) return;
+                    e.preventDefault();
+                    var k = row.getAttribute('data-key');
+                    if (!open[k]) {
+                        select(k);
+                        toggle(k, true);
+                    } else if (idx + 1 < rows.length) {
+                        setFocus(rows[idx + 1].getAttribute('data-key'), true);
+                    }
+                } else if (e.key === 'ArrowLeft') {
+                    if (!row || !isFolder(row)) return;
+                    e.preventDefault();
+                    var k2 = row.getAttribute('data-key');
+                    if (open[k2]) {
+                        toggle(k2, false);
+                    } else {
+                        var p = row.getAttribute('data-parent');
+                        if (p) setFocus(p, true);
+                    }
+                } else if (e.key === 'Enter' || e.key === ' ') {
+                    if (!row) return;
+                    e.preventDefault();
+                    if (row.getAttribute('data-kind') === 'note') {
+                        window.location.href = row.getAttribute('href');
+                        return;
+                    }
+                    if (isFolder(row)) {
+                        select(row.getAttribute('data-key'));
+                        toggle(row.getAttribute('data-key'));
+                    }
+                }
             });
+
+            treeEl.addEventListener('focus', function () {
+                if (!focusedKey) {
+                    var rows = visibleRows();
+                    if (rows.length) setFocus(rows[0].getAttribute('data-key'));
+                }
+            });
+
+            expandAllBtn.addEventListener('click', function () {
+                TAXONOMY.forEach(function (b) {
+                    open[b.topic] = true;
+                    b.cats.forEach(function (c) { open[b.topic + '/' + c.name] = true; });
+                });
+                applyOpenState();
+            });
+            collapseAllBtn.addEventListener('click', function () {
+                TAXONOMY.forEach(function (b) {
+                    open[b.topic] = false;
+                    b.cats.forEach(function (c) { open[b.topic + '/' + c.name] = false; });
+                });
+                applyOpenState();
+            });
+
+            /* ── Status readout (computed) ── */
+            var totalCats = 0;
+            TAXONOMY.forEach(function (b) { totalCats += b.cats.length; });
+            readout.textContent = TAXONOMY.length + ' BRANCHES · ' + totalCats + ' CATEGORIES · ' + ENTRIES.length + ' NOTES';
 
             /* ── Latest index — published only, newest first ── */
             var sorted = ENTRIES.slice().sort(function (a, b) { return b.date < a.date ? -1 : 1; });
@@ -998,9 +1216,10 @@
                 }).join('');
             } else {
                 indexList.innerHTML = '<div class="index-empty"><i></i>NO NOTES PUBLISHED YET' +
-                    '<span class="sub">The atlas above is the queue — entries land here as they go live</span></div>';
+                    '<span class="sub">The explorer above is the queue — entries land here as they go live</span></div>';
             }
 
+            buildTree();
             renderPanel();
         })();
 

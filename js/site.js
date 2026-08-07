@@ -55,6 +55,45 @@
     /* ── Marquee: duplicate for a seamless loop ──────────── */
     document.querySelectorAll('.marquee-track').forEach(function (t) { t.innerHTML += t.innerHTML; });
 
+    /* ── Mobile nav menu ────────────────────────────────── */
+    (function () {
+        var nav = document.querySelector('nav');
+        if (!nav || nav.querySelector('.nav-toggle')) return;
+        var links = nav.querySelector('.links');
+        if (!links) return;
+
+        if (!links.id) links.id = 'nav-links';
+        Array.prototype.forEach.call(links.children, function (a, i) {
+            a.style.setProperty('--i', i);
+        });
+
+        var btn = document.createElement('button');
+        btn.className = 'nav-toggle';
+        btn.type = 'button';
+        btn.setAttribute('aria-label', 'Menu');
+        btn.setAttribute('aria-expanded', 'false');
+        btn.setAttribute('aria-controls', links.id);
+        btn.innerHTML = '<span class="nav-toggle-icon" aria-hidden="true"><i></i><i></i><i></i></span>';
+        nav.appendChild(btn);
+
+        function setOpen(open) {
+            nav.classList.toggle('is-open', open);
+            btn.classList.toggle('is-open', open);
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            btn.setAttribute('aria-label', open ? 'Close menu' : 'Menu');
+            links.inert = !open;
+        }
+        btn.addEventListener('click', function () {
+            setOpen(!nav.classList.contains('is-open'));
+        });
+        nav.addEventListener('click', function (e) {
+            if (e.target.closest('a')) setOpen(false);
+        });
+        addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && nav.classList.contains('is-open')) setOpen(false);
+        });
+    })();
+
     /* ── Custom cursor ───────────────────────────────────── */
     if (finePointer && !reduceMotion) {
         var dot = document.getElementById('cDot');

@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Víctor Busqué — About</title>
+    <link rel="stylesheet" href="css/site.css">
+    <script src="js/site.js" defer></script>
+    <style>
+        /* ── About-page-only styles ───────────────────────── */
+
+        /* Contact bar */
+        .contact {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 26px;
+            margin-top: 34px;
+            font: 11px "DM Mono";
+            letter-spacing: .1em;
+            color: #555;
+            opacity: 0;
+            animation: fade-rise var(--t-slow) var(--ease-out) .7s both;
+        }
+        .contact a {
+            position: relative;
+            padding: 4px 0;
+            transition: color var(--t-fast) var(--ease-snap);
+        }
+        .contact a::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            height: 1px;
+            background: var(--ink);
+            transform: scaleX(0);
+            transform-origin: 100% 50%;
+            transition: transform var(--t-med) var(--ease-out);
+        }
+        .contact a:hover { color: var(--blue); }
+        .contact a:hover::after { transform: scaleX(1); transform-origin: 0 50%; }
+        .contact .loc {
+            color: #888;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .contact .loc::before {
+            content: "●";
+            color: var(--orange);
+            animation: blink 1.8s steps(2) infinite;
+        }
+
+        /* Prose sections */
+        .cv-section {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 9vh 4vw 4vh;
+        }
+        .cv-section h2 {
+            font-family: "Unbounded", sans-serif;
+            font-weight: 500;
+            font-size: clamp(26px, 3.4vw, 42px);
+            letter-spacing: -.05em;
+            display: flex;
+            align-items: baseline;
+            gap: 18px;
+            margin-bottom: 26px;
+        }
+        .cv-section h2 .sec-no {
+            font: 10px "DM Mono";
+            letter-spacing: .14em;
+            color: var(--orange);
+            align-self: center;
+        }
+        .cv-section .lede {
+            font-size: 17px;
+            line-height: 1.72;
+            color: #33322e;
+            max-width: 780px;
+            margin-bottom: 1.4em;
+        }
+        .cv-section .lede strong {
+            font-family: "Instrument Serif";
+            font-weight: 400;
+            font-style: italic;
+            font-size: 1.1em;
+            color: var(--ink);
+        }
+
+        /* ── Credibility strip ───────────────────────────── */
+        .proof {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border-top: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+            margin-top: 5vh;
+        }
+        .proof-group {
+            padding: 36px 34px 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: background var(--t-med) var(--ease-swift);
+        }
+        .proof-group + .proof-group { border-left: 1px solid var(--line); }
+        .proof-group:hover { background: var(--paper-2); }
+        .group-lab {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font: 9px "DM Mono";
+            letter-spacing: .2em;
+            color: var(--orange);
+            margin-bottom: 6px;
+        }
+        .group-lab::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            background: var(--orange);
+        }
+        .stat {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            padding: 13px 0;
+            border-top: 1px solid var(--line);
+        }
+        .stat-num {
+            font: italic 36px/1 "Instrument Serif";
+            color: var(--ink);
+            min-width: 116px;
+        }
+        .stat-lab {
+            font: 9px "DM Mono";
+            letter-spacing: .16em;
+            color: #777;
+        }
+        .proof-note {
+            margin-top: 18px;
+            font: 10px "DM Mono";
+            letter-spacing: .14em;
+            color: #9a978e;
+        }
+
+        /* ── Figure stages ───────────────────────────────── */
+
+        /* FIG 01 · the same idea, three ways */
+        .la-stage {
+            position: absolute;
+            inset: 0;
+            --u: 24;
+        }
+        .la-lab {
+            position: absolute;
+            left: 20px;
+            top: 16px;
+            font: 9px "DM Mono";
+            letter-spacing: .16em;
+            color: #777;
+            z-index: 4;
+        }
+        .la-lab b { color: var(--acid); font-weight: 500; }
+        .la-left {
+            position: absolute;
+            left: 0;
+            right: 130px;
+            top: 0;
+            bottom: 0;
+        }
+        .la-scene {
+            position: absolute;
+            inset: 44px 0 0;
+            display: grid;
+            place-items: center;
+            opacity: 0;
+            transform: translateY(14px);
+            transition: opacity .55s var(--ease-swift), transform .55s var(--ease-out);
+            pointer-events: none;
+        }
+        .la-scene.show { opacity: 1; transform: none; }
+
+        /* text medium */
+        .la-text-lines {
+            display: grid;
+            gap: 9px;
+            max-width: 420px;
+        }
+        .la-text-lines span {
+            font: 11px/1.65 "DM Mono";
+            color: #777;
+        }
+        .la-text-lines span:nth-child(2n) { color: #5a5a5a; }
+
+        /* diagram + animation media share this geometry */
+        .la-svg { width: 100%; height: 100%; }
+        .ln-t {
+            font: 9px "DM Mono";
+            letter-spacing: .16em;
+            fill: #999;
+            text-anchor: middle;
+        }
+
+        /* tabs (FIG 01 is tab-driven, not scripted) */
+        .fig-manual .fig-controls { display: none; }
+        .fig-manual .fig-readout { margin-left: 0; }
+        .la-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-left: auto;
+        }
+        .la-tab {
+            font: 9px "DM Mono";
+            letter-spacing: .14em;
+            border: 1px solid var(--line);
+            background: var(--paper);
+            padding: 8px 12px;
+            cursor: pointer;
+            color: var(--ink);
+            transition: background var(--t-fast) var(--ease-snap), color var(--t-fast) var(--ease-snap),
+                border-color var(--t-fast) var(--ease-snap);
+        }
+        .la-tab:hover { border-color: var(--blue); }
+        .la-tab.is-active {
+            background: var(--ink);
+            color: var(--acid);
+            border-color: var(--ink);
+        }
+
+        /* prompt caching across requests (diagram medium — static) */
+        .la-scene-d .kvd-msg { fill: #161616; stroke-width: 1; }
+        .la-scene-d .kvd-msg.new { stroke: var(--orange); }
+        .la-scene-d .kvd-msg.cached { stroke: var(--acid); fill: #c7ff3d12; }
+        .la-scene-d .kvd-t { font: 9px "DM Mono"; fill: #ccc; text-anchor: middle; }
+        .la-scene-d .kvd-tag { font: 8px "DM Mono"; letter-spacing: .12em; text-anchor: middle; }
+        .la-scene-d .kvd-tag.new { fill: var(--orange); }
+        .la-scene-d .kvd-tag.cached { fill: var(--acid); }
+        .la-scene-d .kvd-box {
+            fill: transparent;
+            stroke: var(--acid);
+            stroke-width: 1;
+            stroke-dasharray: 4 4;
+        }
+        .la-scene-d .kvd-pair { fill: #546cff88; }
+        .la-scene-d .kvd-note { font: 8px "DM Mono"; fill: #666; text-anchor: middle; letter-spacing: .06em; }
+        .la-scene-d .kvd-div { stroke: #ffffff26; stroke-width: 1; stroke-dasharray: 2 5; }
+
+        /* prompt caching across requests (animation medium) — 3 requests, 6.6s loop */
+        .la-scene-a .kv-msg-t { font: 9px "DM Mono"; fill: #bbb; text-anchor: middle; }
+        .la-scene-a .kv-msg rect { stroke-width: 1; fill: #161616; }
+        .la-scene-a .kv-msg.m-sys rect, .la-scene-a .kv-msg.m-u1 rect {
+            animation: kv-flash1 6.6s infinite;
+        }
+        .la-scene-a .kv-msg.m-u2 { animation: kv-in2 6.6s infinite; }
+        .la-scene-a .kv-msg.m-u2 rect { animation: kv-flash2 6.6s infinite; }
+        .la-scene-a .kv-msg.m-u3 { animation: kv-in3 6.6s infinite; }
+        .la-scene-a .kv-msg.m-u3 rect { animation: kv-flash3 6.6s infinite; }
+        .la-scene-a .kv-pair { fill: transparent; animation: kv-pair1 6.6s infinite; }
+        .la-scene-a .kv-pair.p-u2 { animation: kv-pair2 6.6s infinite; }
+        .la-scene-a .kv-pair.p-u3 { animation: kv-pair3 6.6s infinite; }
+        .la-scene-a .kv-sweep { fill: var(--acid); opacity: 0; }
+        .la-scene-a .kv-sweep.s2 { animation: kv-sweep2 6.6s infinite; }
+        .la-scene-a .kv-sweep.s3 { animation: kv-sweep3 6.6s infinite; }
+        .la-scene-a .kv-tag { font: 8px "DM Mono"; letter-spacing: .12em; text-anchor: middle; opacity: 0; }
+        .la-scene-a .kv-tag.new { fill: var(--orange); }
+        .la-scene-a .kv-tag.cached { fill: var(--acid); }
+        .la-scene-a .kv-tag.new1 { animation: kv-tag1 6.6s infinite; }
+        .la-scene-a .kv-tag.new2 { animation: kv-tag2 6.6s infinite; }
+        .la-scene-a .kv-tag.new3 { animation: kv-tag3 6.6s infinite; }
+        .la-scene-a .kv-tag.cached2 { animation: kv-cached2 6.6s infinite; }
+        .la-scene-a .kv-tag.cached3 { animation: kv-cached3 6.6s infinite; }
+        .la-scene-a .kv-reqlab { font: 9px "DM Mono"; letter-spacing: .16em; text-anchor: middle; opacity: 0; }
+        .la-scene-a .kv-reqlab.r1 { fill: #888; animation: kv-lab1 6.6s infinite; }
+        .la-scene-a .kv-reqlab.r2 { fill: var(--acid); animation: kv-lab2 6.6s infinite; }
+        .la-scene-a .kv-reqlab.r3 { fill: var(--acid); animation: kv-lab3 6.6s infinite; }
+
+        /* price: what is expensive, what is cheap (animation medium) */
+        .la-scene-a .kv-ptag { font: 7.5px "DM Mono"; letter-spacing: .08em; text-anchor: middle; opacity: 0; }
+        .la-scene-a .kv-ptag.new { fill: var(--orange); }
+        .la-scene-a .kv-ptag.cached { fill: var(--acid); }
+        .la-scene-a .pt-new-1 { animation: kv-ph1 6.6s infinite; }
+        .la-scene-a .pt-cached-1 { animation: kv-ptc1 6.6s infinite; }
+        .la-scene-a .pt-new-2 { animation: kv-ph2 6.6s infinite; }
+        .la-scene-a .pt-cached-2 { animation: kv-ptc2 6.6s infinite; }
+        .la-scene-a .pt-new-3 { animation: kv-ph3 6.6s infinite; }
+
+        .la-scene-a .kv-bar { transform-box: fill-box; transform-origin: center bottom; }
+        .la-scene-a .kv-bar.no { fill: var(--orange); animation: kv-barno 6.6s infinite; }
+        .la-scene-a .kv-bar.ca { animation: kv-barca 6.6s infinite, kv-barfca 6.6s infinite; }
+        .la-scene-a .kv-price { font: 8px "DM Mono"; text-anchor: middle; opacity: 0; }
+        .la-scene-a .kv-price.no { fill: #fff; }
+        .la-scene-a .kv-price.ca { fill: var(--acid); }
+        .la-scene-a .ph1 { animation: kv-ph1 6.6s infinite; }
+        .la-scene-a .ph2 { animation: kv-ph2 6.6s infinite; }
+        .la-scene-a .ph3 { animation: kv-ph3 6.6s infinite; }
+        .la-scene-a .kv-lbl { font: 7px "DM Mono"; letter-spacing: .06em; text-anchor: middle; }
+        .la-scene-a .kv-lbl.no { fill: var(--orange); }
+        .la-scene-a .kv-lbl.ca { fill: #aaa; }
+        .la-scene-a .kv-legend { font: 7.5px "DM Mono"; fill: #777; letter-spacing: .1em; }
+        .la-scene-a .kv-saved { font: 9px "DM Mono"; letter-spacing: .14em; text-anchor: end; fill: var(--acid); opacity: 0; }
+
+        /* understanding meter */
+        .la-meter {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 130px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            border-left: 1px solid #ffffff14;
+        }
+        .la-m-label {
+            font: 8px "DM Mono";
+            letter-spacing: .18em;
+            color: #666;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+        .la-m-track {
+            position: relative;
+            width: 26px;
+            height: 170px;
+            border: 1px solid #ffffff26;
+        }
+        .la-m-fill {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: calc(var(--u) * 1%);
+            background: var(--acid);
+            box-shadow: 0 0 14px #c7ff3d44;
+            transition: height .8s var(--ease-out);
+        }
+        .la-m-tick {
+            position: absolute;
+            left: 0;
+            width: 8px;
+            height: 1px;
+            background: #ffffff30;
+        }
+        .la-m-val {
+            font: 11px "DM Mono";
+            color: var(--acid);
+            letter-spacing: .1em;
+        }
+        @keyframes kv-flash1 {
+            0% { stroke: var(--orange); fill: #ff6b2c14; }
+            12%, 100% { stroke: var(--acid); fill: #c7ff3d12; }
+        }
+        @keyframes kv-flash2 {
+            0%, 33.33% { stroke: #ffffff2e; fill: #161616; }
+            36%, 44% { stroke: var(--orange); fill: #ff6b2c14; }
+            47%, 100% { stroke: var(--acid); fill: #c7ff3d12; }
+        }
+        @keyframes kv-flash3 {
+            0%, 66.66% { stroke: #ffffff2e; fill: #161616; }
+            69%, 77% { stroke: var(--orange); fill: #ff6b2c14; }
+            80%, 100% { stroke: var(--acid); fill: #c7ff3d12; }
+        }
+        @keyframes kv-in2 {
+            0%, 33.33% { opacity: .22; }
+            36%, 100% { opacity: 1; }
+        }
+        @keyframes kv-in3 {
+            0%, 66.66% { opacity: .22; }
+            69%, 100% { opacity: 1; }
+        }
+        @keyframes kv-pair1 {
+            0%, 12% { fill: transparent; }
+            18%, 100% { fill: #546cff88; }
+        }
+        @keyframes kv-pair2 {
+            0%, 47% { fill: transparent; }
+            53%, 100% { fill: #546cff88; }
+        }
+        @keyframes kv-pair3 {
+            0%, 80% { fill: transparent; }
+            86%, 100% { fill: #546cff88; }
+        }
+        @keyframes kv-sweep2 {
+            0%, 33.33% { opacity: 0; }
+            40%, 62% { opacity: .14; }
+            66.66%, 100% { opacity: 0; }
+        }
+        @keyframes kv-sweep3 {
+            0%, 66.66% { opacity: 0; }
+            73%, 95% { opacity: .14; }
+            100% { opacity: 0; }
+        }
+        @keyframes kv-tag1 {
+            0%, 10% { opacity: 1; }
+            16%, 100% { opacity: 0; }
+        }
+        @keyframes kv-tag2 {
+            0%, 33.33% { opacity: 0; }
+            38%, 50% { opacity: 1; }
+            58%, 100% { opacity: 0; }
+        }
+        @keyframes kv-tag3 {
+            0%, 66.66% { opacity: 0; }
+            71%, 83% { opacity: 1; }
+            91%, 100% { opacity: 0; }
+        }
+        @keyframes kv-cached2 {
+            0%, 33.33% { opacity: 0; }
+            38%, 62% { opacity: 1; }
+            66.66%, 100% { opacity: 0; }
+        }
+        @keyframes kv-cached3 {
+            0%, 66.66% { opacity: 0; }
+            71%, 95% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        @keyframes kv-lab1 {
+            0%, 30% { opacity: 1; }
+            34%, 100% { opacity: 0; }
+        }
+        @keyframes kv-lab2 {
+            0%, 33.33% { opacity: 0; }
+            38%, 62% { opacity: 1; }
+            66.66%, 100% { opacity: 0; }
+        }
+        @keyframes kv-lab3 {
+            0%, 66.66% { opacity: 0; }
+            71%, 96% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        @keyframes kv-ph1 {
+            0%, 28% { opacity: 1; }
+            33%, 100% { opacity: 0; }
+        }
+        @keyframes kv-ph2 {
+            0%, 33.33% { opacity: 0; }
+            38%, 63% { opacity: 1; }
+            66.66%, 100% { opacity: 0; }
+        }
+        @keyframes kv-ph3 {
+            0%, 66.66% { opacity: 0; }
+            71%, 96% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        @keyframes kv-ptc1 {
+            0%, 30% { opacity: 0; }
+            36%, 100% { opacity: 1; }
+        }
+        @keyframes kv-ptc2 {
+            0%, 66.66% { opacity: 0; }
+            71%, 100% { opacity: 1; }
+        }
+        @keyframes kv-barno {
+            0%, 30% { transform: scaleY(.5); }
+            36%, 63% { transform: scaleY(.75); }
+            70%, 100% { transform: scaleY(1); }
+        }
+        @keyframes kv-barca {
+            0%, 30% { transform: scaleY(.5); }
+            36%, 63% { transform: scaleY(.30); }
+            70%, 100% { transform: scaleY(.325); }
+        }
+        @keyframes kv-barfca {
+            0%, 30% { fill: #ff6b2c88; }
+            36%, 100% { fill: var(--acid); }
+        }
+
+        /* FIG 02 · the loop I run */
+        .lb-svg { width: 100%; height: 100%; }
+        .lb-ring {
+            fill: none;
+            stroke: #ffffff20;
+            stroke-width: 1;
+            stroke-dasharray: 3 7;
+        }
+        .lb-pill {
+            fill: #161616;
+            stroke: #ffffff2e;
+            stroke-width: 1;
+            transition: fill .4s var(--ease-swift), stroke .4s var(--ease-swift);
+        }
+        .lb-pill-t {
+            font: 9.5px "DM Mono";
+            letter-spacing: .14em;
+            fill: #888;
+            text-anchor: middle;
+            transition: fill .4s var(--ease-swift);
+        }
+        .lb-node.lit .lb-pill {
+            fill: #1c1c1c;
+            stroke: var(--acid);
+        }
+        .lb-node.lit .lb-pill-t { fill: var(--acid); }
+        .lb-sub {
+            font: 8.5px "DM Mono";
+            fill: #555;
+            text-anchor: middle;
+            letter-spacing: .06em;
+        }
+        .lb-node.lit .lb-sub { fill: #aaa; }
+        .lb-spin {
+            transform-box: view-box;
+            transform-origin: 300px 215px;
+            animation: lb-orbit 4s linear infinite;
+        }
+        .lb-packet {
+            fill: var(--acid);
+            filter: drop-shadow(0 0 6px var(--acid));
+        }
+        .lb-center {
+            fill: #121212;
+            stroke: #ffffff2e;
+            stroke-width: 1;
+        }
+        .lb-center-t {
+            font: 8px "DM Mono";
+            letter-spacing: .14em;
+            fill: #aaa;
+            text-anchor: middle;
+        }
+        .lb-node { animation: lb-node 4s infinite; }
+        .lb-node.n1 { animation-delay: 0s; }
+        .lb-node.n2 { animation-delay: -1s; }
+        .lb-node.n3 { animation-delay: -2s; }
+        .lb-node.n4 { animation-delay: -3s; }
+        @keyframes lb-orbit { to { transform: rotate(360deg); } }
+        @keyframes lb-node {
+            0%, 18% { }
+            24%, 46% { opacity: 1; }
+            52%, 100% { opacity: .45; }
+        }
+        @keyframes lb-node-lit {
+            0%, 18% { }
+            24%, 46% { }
+            52%, 100% { }
+        }
+
+        /* Responsive */
+        @media (max-width: 850px) {
+            .proof { grid-template-columns: 1fr; }
+            .proof-group + .proof-group { border-left: 0; border-top: 1px solid var(--line); }
+            .la-left { right: 100px; }
+            .la-meter { width: 100px; }
+            .la-m-track { height: 120px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="progress" id="progress"></div>
+    <div class="cursor-dot" id="cDot"></div>
+    <div class="cursor-ring" id="cRing"></div>
+
+    <nav>
+        <a class="logo" href="index.html">VB<i></i></a>
+        <div class="links">
+            <a href="index.html#notes">Notes</a>
+            <a href="index.html#recent">Latest</a>
+            <a href="about.html" aria-current="page">About</a>
+        </div>
+        <div class="status">SANT QUIRZE · <b>ABOUT</b></div>
+    </nav>
+
+    <header class="post-hero">
+        <div class="ghost" aria-hidden="true">A</div>
+        <div class="crumb"><a href="index.html">Index</a> / ABOUT</div>
+        <h1>
+            <span class="h-line"><span>Víctor</span></span>
+            <span class="h-line"><span><em>Busqué.</em></span></span>
+        </h1>
+        <p class="dek">Software engineer in Barcelona. I build AI platforms and agents that run at production scale —
+            and I learn by making things run.</p>
+        <div class="post-meta">
+            <span>BARCELONA · <b>SPAIN</b></span>
+            <span><b>8+</b> YEARS · NLP &amp; GEN AI</span>
+            <span>FOCUS <b>AGENT SYSTEMS</b></span>
+        </div>
+        <div class="contact">
+            <a href="mailto:victorbusque@gmail.com">victorbusque@gmail.com</a>
+            <a href="https://linkedin.com/in/vbusque">linkedin.com/in/vbusque</a>
+            <a href="https://victorbusque.com">victorbusque.com</a>
+            <span class="loc">Barcelona, Spain</span>
+        </div>
+    </header>
+
+    <!-- ════ 01 · WHO I AM ════ -->
+    <section class="cv-section" id="who">
+        <h2 class="reveal"><span class="sec-no">01</span>Who I am</h2>
+        <p class="lede reveal">I'm Víctor Busqué, a software engineer in Barcelona. For the last eight years I've
+            worked on NLP and generative AI in production — LLM gateways, agent runtimes, platforms that hundreds of
+            engineers depend on. That part of my life is a job. This site is something else.</p>
+        <p class="lede reveal">I'm an <strong>avid visual learner</strong>. I love reading, but I understand the most
+            when there's a simulation, a visual demonstration, an animation that shows the thing clearly. I built this
+            blog to learn that way — and to present things in the form that's easiest for me to ingest. If it helps
+            someone else too, even better.</p>
+    </section>
+
+    <!-- ════ 02 · HOW I LEARN ════ -->
+    <section class="cv-section" id="learn">
+        <h2 class="reveal"><span class="sec-no">02</span>How I learn</h2>
+        <p class="lede reveal">Take one idea — prompt caching. I can read about it, look at a diagram, or watch it
+            happen across requests. Same idea, three media. Switch the tabs and watch where it sticks.</p>
+
+        <figure class="fig fig-manual reveal">
+            <div class="fig-head">
+                <span class="fig-no">FIG. 01</span>
+                <span class="fig-name">THE SAME IDEA, THREE WAYS</span>
+                <div class="la-tabs" role="tablist" aria-label="Choose a medium">
+                    <button class="la-tab is-active" type="button" role="tab" data-m="0" aria-selected="true">TEXT</button>
+                    <button class="la-tab" type="button" role="tab" data-m="1" aria-selected="false">DIAGRAM</button>
+                    <button class="la-tab" type="button" role="tab" data-m="2" aria-selected="false">ANIMATION</button>
+                </div>
+                <span class="fig-readout"></span>
+                <div class="fig-controls"></div>
+            </div>
+            <div class="fig-body">
+                <div class="la-stage">
+                    <span class="la-lab"><b>MEDIUM</b></span>
+                    <div class="la-left">
+                        <div class="la-scene la-scene-t">
+                            <div class="la-text-lines">
+                                <span>An agent conversation resends the</span>
+                                <span>whole history with every request.</span>
+                                <span>The first time, every token is</span>
+                                <span>new: keys and values are computed</span>
+                                <span>in full — the full price (×1.0).</span>
+                                <span>Providers keep them in a KV cache.</span>
+                                <span>Next request, the repeated prefix</span>
+                                <span>is served from cache at ×0.1 —</span>
+                                <span>a fraction of the price. New</span>
+                                <span>messages are not cached yet:</span>
+                                <span>full price once, then cached</span>
+                                <span>for the one after.</span>
+                            </div>
+                        </div>
+                        <div class="la-scene la-scene-d">
+                            <svg class="la-svg" viewBox="0 0 520 260" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <text class="ln-t" x="260" y="34">REQUEST 1 — EVERYTHING NEW</text>
+                                <text class="kvd-tag new" x="136" y="52">ALL NEW · ×1.0</text>
+                                <rect class="kvd-msg new" x="64" y="60" width="60" height="28" rx="4"/>
+                                <text class="kvd-t" x="94" y="78">SYS</text>
+                                <rect class="kvd-msg new" x="148" y="60" width="60" height="28" rx="4"/>
+                                <text class="kvd-t" x="178" y="78">USER 1</text>
+                                <text class="kvd-note" x="260" y="108">paid ×1.0 · computed once · then cached</text>
+                                <text class="ln-t" x="66" y="118" style="text-anchor:start;font-size:8px">KV CACHE</text>
+                                <rect class="kvd-pair" x="130" y="112" width="9" height="10"/>
+                                <rect class="kvd-pair" x="143" y="112" width="9" height="10"/>
+                                <rect class="kvd-pair" x="156" y="112" width="9" height="10"/>
+                                <rect class="kvd-pair" x="169" y="112" width="9" height="10"/>
+                                <line class="kvd-div" x1="60" y1="146" x2="460" y2="146"/>
+                                <text class="ln-t" x="260" y="166">REQUEST 2 — PREFIX REUSED</text>
+                                <rect class="kvd-box" x="58" y="182" width="156" height="34" rx="4"/>
+                                <text class="kvd-tag cached" x="136" y="176">CACHED · ×0.1</text>
+                                <rect class="kvd-msg cached" x="64" y="186" width="60" height="26" rx="4"/>
+                                <text class="kvd-t" x="94" y="203">SYS</text>
+                                <rect class="kvd-msg cached" x="148" y="186" width="60" height="26" rx="4"/>
+                                <text class="kvd-t" x="178" y="203">USER 1</text>
+                                <text class="kvd-tag new" x="262" y="176">NEW · ×1.0</text>
+                                <rect class="kvd-msg new" x="232" y="186" width="60" height="26" rx="4"/>
+                                <text class="kvd-t" x="262" y="203">USER 2</text>
+                                <text class="kvd-note" x="262" y="244">USER 2 paid ×1.0 → cached at ×0.1 next time</text>
+                                <text class="ln-t" x="66" y="238" style="text-anchor:start;font-size:8px">KV CACHE</text>
+                                <rect class="kvd-pair" x="130" y="232" width="9" height="9"/>
+                                <rect class="kvd-pair" x="143" y="232" width="9" height="9"/>
+                                <rect class="kvd-pair" x="156" y="232" width="9" height="9"/>
+                                <rect class="kvd-pair" x="169" y="232" width="9" height="9"/>
+                                <rect class="kvd-pair" x="182" y="232" width="9" height="9"/>
+                                <rect class="kvd-pair" x="195" y="232" width="9" height="9"/>
+                            </svg>
+                        </div>
+                        <div class="la-scene la-scene-a">
+                            <svg class="la-svg" viewBox="0 0 520 260" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <text class="kv-reqlab r1" x="260" y="52">REQ 1 · NOTHING CACHED — FULL PRICE</text>
+                                <text class="kv-reqlab r2" x="260" y="52">REQ 2 · PREFIX CACHED — CHEAPER</text>
+                                <text class="kv-reqlab r3" x="260" y="52">REQ 3 · PREFIX GROWS — CHEAPER</text>
+
+                                <rect class="kv-sweep s2" x="64" y="116" width="144" height="34" rx="4"/>
+                                <rect class="kv-sweep s3" x="64" y="116" width="228" height="34" rx="4"/>
+
+                                <text class="kv-tag new new1" x="136" y="106">ALL NEW · FULL PRICE</text>
+                                <text class="kv-tag cached cached2" x="136" y="106">CACHED · DISCOUNTED</text>
+                                <text class="kv-tag new new2" x="262" y="106">NEW · FULL PRICE</text>
+                                <text class="kv-tag cached cached3" x="178" y="106">CACHED · DISCOUNTED</text>
+                                <text class="kv-tag new new3" x="346" y="106">NEW · FULL PRICE</text>
+
+                                <g class="kv-msg m-sys">
+                                    <rect x="64" y="116" width="60" height="34" rx="4"/>
+                                    <text class="kv-msg-t" x="94" y="138">SYS</text>
+                                </g>
+                                <g class="kv-msg m-u1">
+                                    <rect x="148" y="116" width="60" height="34" rx="4"/>
+                                    <text class="kv-msg-t" x="178" y="138">USER 1</text>
+                                </g>
+                                <g class="kv-msg m-u2">
+                                    <rect x="232" y="116" width="60" height="34" rx="4"/>
+                                    <text class="kv-msg-t" x="262" y="138">USER 2</text>
+                                </g>
+                                <g class="kv-msg m-u3">
+                                    <rect x="316" y="116" width="60" height="34" rx="4"/>
+                                    <text class="kv-msg-t" x="346" y="138">USER 3</text>
+                                </g>
+
+                                <text class="kv-ptag new pt-new-1" x="94" y="162">×1.0</text>
+                                <text class="kv-ptag cached pt-cached-1" x="94" y="162">×0.1</text>
+                                <text class="kv-ptag new pt-new-1" x="178" y="162">×1.0</text>
+                                <text class="kv-ptag cached pt-cached-1" x="178" y="162">×0.1</text>
+                                <text class="kv-ptag new pt-new-2" x="262" y="162">×1.0</text>
+                                <text class="kv-ptag cached pt-cached-2" x="262" y="162">×0.1</text>
+                                <text class="kv-ptag new pt-new-3" x="346" y="162">×1.0</text>
+
+                                <text class="ln-t" x="66" y="188" style="text-anchor:start;font-size:8px">KV CACHE</text>
+                                <rect class="kv-pair" x="70" y="196" width="9" height="12"/>
+                                <rect class="kv-pair" x="83" y="196" width="9" height="12"/>
+                                <rect class="kv-pair" x="154" y="196" width="9" height="12"/>
+                                <rect class="kv-pair" x="167" y="196" width="9" height="12"/>
+                                <rect class="kv-pair p-u2" x="238" y="196" width="9" height="12"/>
+                                <rect class="kv-pair p-u2" x="251" y="196" width="9" height="12"/>
+                                <rect class="kv-pair p-u3" x="322" y="196" width="9" height="12"/>
+                                <rect class="kv-pair p-u3" x="335" y="196" width="9" height="12"/>
+
+                                <text class="ln-t" x="392" y="60" style="text-anchor:start;font-size:8px">COST</text>
+                                <text class="kv-saved ph1" x="508" y="70">SAVED 0%</text>
+                                <text class="kv-saved ph2" x="508" y="70">SAVED 60%</text>
+                                <text class="kv-saved ph3" x="508" y="70">SAVED 68%</text>
+                                <rect class="kv-bar no" x="398" y="65" width="30" height="120"/>
+                                <rect class="kv-bar ca" x="452" y="65" width="30" height="120"/>
+                                <text class="kv-price no ph1" x="413" y="200">4.0</text>
+                                <text class="kv-price no ph2" x="413" y="200">6.0</text>
+                                <text class="kv-price no ph3" x="413" y="200">8.0</text>
+                                <text class="kv-price ca ph1" x="467" y="200">4.0</text>
+                                <text class="kv-price ca ph2" x="467" y="200">2.4</text>
+                                <text class="kv-price ca ph3" x="467" y="200">2.6</text>
+                                <text class="kv-lbl no" x="413" y="216">WITHOUT</text>
+                                <text class="kv-lbl no" x="413" y="226">CACHE</text>
+                                <text class="kv-lbl ca" x="467" y="216">WITH</text>
+                                <text class="kv-lbl ca" x="467" y="226">CACHE</text>
+
+                                <rect x="66" y="232" width="8" height="8" fill="#c7ff3d"/>
+                                <text class="kv-legend" x="80" y="239">CACHED × 0.1</text>
+                                <rect x="196" y="232" width="8" height="8" fill="#ff6b2c"/>
+                                <text class="kv-legend" x="210" y="239">NEW × 1.0</text>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="la-meter">
+                        <span class="la-m-label">UNDERSTANDING</span>
+                        <div class="la-m-track">
+                            <i class="la-m-fill"></i>
+                            <span class="la-m-tick" style="top:75%"></span>
+                            <span class="la-m-tick" style="top:50%"></span>
+                            <span class="la-m-tick" style="top:25%"></span>
+                        </div>
+                        <span class="la-m-val">24%</span>
+                    </div>
+                </div>
+            </div>
+            <figcaption class="fig-caption"><b>What to watch</b>The meter on the right, and the cost panel beside the
+                animation. Watch each request: what you would pay without the cache versus what you pay with it — and
+                how each new message becomes cheap the moment it joins the cache.</figcaption>
+        </figure>
+
+        <div class="aside">The meter is the point of this site: I don't really get an idea until I can switch to the
+            medium that runs and watch it myself.</div>
+    </section>
+
+    <!-- ════ 03 · WHY THE BLOG ════ -->
+    <section class="cv-section" id="blog">
+        <h2 class="reveal"><span class="sec-no">03</span>Why the blog exists</h2>
+        <p class="lede reveal">So this is the loop I run. I take a question, build a figure that runs the real process,
+            and step through it until it's mine. That's why nothing here is faked — if I can't make it run, I can't
+            explain it.</p>
+
+        <figure class="fig reveal">
+            <div class="fig-head">
+                <span class="fig-no">FIG. 02</span>
+                <span class="fig-name">THE LOOP I RUN</span>
+                <span class="fig-readout">CSS LOOP · PERIOD 4.0s</span>
+                <div class="fig-controls"></div>
+            </div>
+            <div class="fig-body">
+                <svg class="lb-svg" viewBox="0 0 600 430" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <circle class="lb-ring" cx="300" cy="215" r="142"/>
+                    <g class="lb-node n1">
+                        <rect class="lb-pill" x="311" y="126" width="120" height="36" rx="18"/>
+                        <text class="lb-pill-t" x="371" y="149">QUESTION</text>
+                        <text class="lb-sub" x="371" y="184">
+                            <tspan x="371" dy="0">how do agents call tools?</tspan>
+                        </text>
+                    </g>
+                    <g class="lb-node n2">
+                        <rect class="lb-pill" x="169" y="126" width="120" height="36" rx="18"/>
+                        <text class="lb-pill-t" x="229" y="149">BUILD</text>
+                        <text class="lb-sub" x="229" y="184">
+                            <tspan x="229" dy="0">the figure runs the</tspan>
+                            <tspan x="229" dy="12">real process</tspan>
+                        </text>
+                    </g>
+                    <g class="lb-node n3">
+                        <rect class="lb-pill" x="169" y="268" width="120" height="36" rx="18"/>
+                        <text class="lb-pill-t" x="229" y="291">STEP THROUGH</text>
+                        <text class="lb-sub" x="229" y="326">
+                            <tspan x="229" dy="0">press next forty</tspan>
+                            <tspan x="229" dy="12">times</tspan>
+                        </text>
+                    </g>
+                    <g class="lb-node n4">
+                        <rect class="lb-pill" x="311" y="268" width="120" height="36" rx="18"/>
+                        <text class="lb-pill-t" x="371" y="291">IT'S MINE</text>
+                        <text class="lb-sub" x="371" y="326">
+                            <tspan x="371" dy="0">now I can</tspan>
+                            <tspan x="371" dy="12">explain it</tspan>
+                        </text>
+                    </g>
+                    <circle class="lb-center" cx="300" cy="215" r="52"/>
+                    <text class="lb-center-t" x="300" y="206">LEARN BY</text>
+                    <text class="lb-center-t" x="300" y="222">MAKING IT</text>
+                    <text class="lb-center-t" x="300" y="238">RUN</text>
+                    <g class="lb-spin">
+                        <circle class="lb-packet" cx="300" cy="73" r="6"/>
+                    </g>
+                </svg>
+            </div>
+            <figcaption class="fig-caption"><b>What to watch</b>The dot orbits the loop. Question, build, step through,
+                it's mine — then the next question. Each pill lights as the dot passes it.</figcaption>
+        </figure>
+    </section>
+
+    <!-- ════ 04 · WHAT BACKS ME UP ════ -->
+    <section class="cv-section" id="proof" style="padding-bottom:2vh">
+        <h2 class="reveal"><span class="sec-no">04</span>What backs me up</h2>
+        <p class="lede reveal">My experience has brought me to a NASDAQ-listed fintech from Uruguay. Large-scale
+            operations mean scalability, robustness, security are not optional. Here are some numbers of what I've
+            delivered thus far.</p>
+        <div class="proof reveal" id="proofStrip">
+            <div class="proof-group">
+                <span class="group-lab">AGENTIC PLATFORM</span>
+                <div class="stat"><span class="stat-num" data-count="500" data-suf="+">0+</span><span class="stat-lab">ENGINEERS SERVED</span></div>
+                <div class="stat"><span class="stat-num" data-count="10" data-suf="+">0+</span><span class="stat-lab">AGENTS AUTOMATING WORK</span></div>
+                <div class="stat"><span class="stat-num" data-count="5000" data-suf="+">0+</span><span class="stat-lab">AGENT INVOCATIONS / MONTH</span></div>
+            </div>
+            <div class="proof-group">
+                <span class="group-lab">AI INFRASTRUCTURE</span>
+                <div class="stat"><span class="stat-num" data-count="2.57" data-dec="2" data-suf="M">0M</span><span class="stat-lab">REQUESTS / MONTH</span></div>
+                <div class="stat"><span class="stat-num" data-count="200" data-suf="B">0B</span><span class="stat-lab">TOKENS / MONTH</span></div>
+            </div>
+        </div>
+        <p class="proof-note">Counted, not estimated — from the platforms I ran.</p>
+    </section>
+
+    <nav class="post-nav">
+        <a href="index.html#notes"><span class="dir">← ALL NOTES</span><span class="t">The map.</span></a>
+        <a href="index.html"><span class="dir">BACK TO INDEX →</span><span class="t">The landing page.</span></a>
+    </nav>
+
+    <footer>
+        <div class="footer-big mask">
+            <span class="row"><span>BUILD.</span></span>
+            <span class="row"><span>BREAK.</span></span>
+            <span class="row"><span><em>EXPLAIN.</em></span></span>
+        </div>
+        <div class="foot"><span>© 2026 VÍCTOR BUSQUÉ</span><span>ABOUT</span></div>
+    </footer>
+
+    <script>
+        /* ────────────────────────────────────────────────────────────
+           About figures — rendered by the shared engine.
+           site.js runs after this (defer), so we bootstrap the
+           registry here before registering the scripts below.
+           ──────────────────────────────────────────────────────────── */
+        window.__figScripts = window.__figScripts || {};
+
+        /* FIG 01 · the same idea, three ways — driven by tabs
+           (this figure is interactive by design, so it does not
+           register with the engine; the engine's PAUSE/REPLAY
+           controls are hidden for it via .fig-manual) */
+        (function () {
+            var fig = document.querySelector('.fig-manual');
+            if (!fig) return;
+            var stage = fig.querySelector('.la-stage');
+            var tabs = fig.querySelectorAll('.la-tab');
+            var readout = fig.querySelector('.fig-readout');
+            var MSGS = [
+                'TEXT — a repeated prefix is served from the KV cache',
+                'DIAGRAM — request 1 pays ×1.0, request 2 reuses at ×0.1',
+                'ANIMATION — watch the price fall: cached ×0.1, new ×1.0'
+            ];
+            var VAL = [24, 54, 93];
+            function render(m) {
+                if (m === 2) {
+                    fig.classList.add('is-restarting');
+                    void fig.offsetWidth;
+                    fig.classList.remove('is-restarting');
+                }
+                stage.classList.remove('is-0', 'is-1', 'is-2');
+                stage.classList.add('is-' + m);
+                stage.style.setProperty('--u', VAL[m]);
+                fig.querySelector('.la-m-val').textContent = VAL[m] + '%';
+                var scenes = stage.querySelectorAll('.la-scene');
+                [].forEach.call(scenes, function (s, k) { s.classList.toggle('show', k === m); });
+                [].forEach.call(tabs, function (t, k) {
+                    var on = k === m;
+                    t.classList.toggle('is-active', on);
+                    t.setAttribute('aria-selected', on ? 'true' : 'false');
+                });
+                readout.textContent = MSGS[m];
+            }
+            [].forEach.call(tabs, function (t, k) {
+                t.addEventListener('click', function () { render(k); });
+            });
+            render(0);
+        })();
+
+        /* ── Proof counters ─────────────────────────────────
+           Count up from zero when the strip scrolls into view.
+           Real values; skipped under reduced motion. */
+        (function () {
+            var strip = document.getElementById('proofStrip');
+            if (!strip) return;
+            var items = strip.querySelectorAll('.stat-num[data-count]');
+            var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            var done = false;
+            function start() {
+                done = true;
+                items.forEach(function (el) {
+                    var target = parseFloat(el.dataset.count);
+                    var dec = +(el.dataset.dec || 0);
+                    var pre = el.dataset.pre || '';
+                    var suf = el.dataset.suf || '';
+                    if (reduce) { el.textContent = pre + target.toFixed(dec) + suf; return; }
+                    var t0 = null;
+                    (function frame(t) {
+                        if (!t0) t0 = t;
+                        var p = Math.min(1, (t - t0) / 1300);
+                        var e = 1 - Math.pow(1 - p, 3);
+                        el.textContent = pre + (target * e).toFixed(dec) + suf;
+                        if (p < 1) requestAnimationFrame(frame);
+                    })(null);
+                });
+            }
+            var io = new IntersectionObserver(function (es) {
+                es.forEach(function (e) { if (e.isIntersecting && !done) { start(); io.disconnect(); } });
+            }, { threshold: .4 });
+            io.observe(strip);
+        })();
+    </script>
+</body>
+
+</html>

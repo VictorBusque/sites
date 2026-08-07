@@ -191,6 +191,46 @@ nav .links a:hover::after {
     font-weight: 500;
 }
 
+/* Nav toggle — injected by site.js, only visible on small screens.
+   The burger morphs into an X; the menu drops from the nav. */
+.nav-toggle {
+    display: none;
+    margin-left: auto;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    border: 1px solid var(--line);
+    background: transparent;
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease-snap),
+        transform var(--t-fast) var(--ease-snap);
+}
+.nav-toggle:hover { background: var(--ink); }
+.nav-toggle:active { transform: scale(.92); }
+.nav-toggle-icon {
+    position: relative;
+    display: block;
+    width: 16px;
+    height: 10px;
+}
+.nav-toggle-icon i {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 1.6px;
+    background: var(--ink);
+    transition: transform var(--t-med) var(--ease-out),
+        opacity var(--t-fast) var(--ease-snap),
+        background var(--t-fast) var(--ease-snap);
+}
+.nav-toggle-icon i:nth-child(1) { top: 0; }
+.nav-toggle-icon i:nth-child(2) { top: 4px; }
+.nav-toggle-icon i:nth-child(3) { top: 8px; }
+.nav-toggle:hover .nav-toggle-icon i { background: var(--acid); }
+.nav-toggle.is-open .nav-toggle-icon i:nth-child(1) { transform: translateY(4px) rotate(45deg); }
+.nav-toggle.is-open .nav-toggle-icon i:nth-child(2) { opacity: 0; }
+.nav-toggle.is-open .nav-toggle-icon i:nth-child(3) { transform: translateY(-4px) rotate(-45deg); }
+
 /* ── Marquee strip ──────────────────────────────────────── */
 .marquee {
     border-bottom: 1px solid var(--line);
@@ -644,8 +684,52 @@ footer::after {
 
 /* ── Responsive ─────────────────────────────────────────── */
 @media (max-width: 850px) {
-    nav .links { display: none; }
+    .nav-toggle { display: grid; }
     .status { display: none; }
+
+    /* dropdown panel — closes fast (accelerate), opens staggered (decelerate) */
+    nav .links {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin: 0;
+        padding: 8px 4vw 16px;
+        flex-direction: column;
+        gap: 0;
+        background: var(--paper);
+        border-bottom: 1px solid var(--line);
+        box-shadow: 0 30px 46px -34px #11111180;
+        transform-origin: 50% 0;
+        transform: scaleY(0);
+        visibility: hidden;
+        transition: transform var(--t-med) var(--ease-in),
+            visibility 0s linear var(--t-med);
+    }
+    nav.is-open .links {
+        transform: scaleY(1);
+        visibility: visible;
+        transition: transform var(--t-med) var(--ease-out),
+            visibility 0s;
+    }
+    nav .links a {
+        padding: 13px 2px;
+        font-size: 15px;
+        border-bottom: 1px solid #11111114;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity var(--t-fast) var(--ease-out),
+            transform var(--t-fast) var(--ease-out);
+    }
+    nav .links a:last-child { border-bottom: 0; }
+    nav .links a::after { bottom: 6px; }
+    nav.is-open .links a {
+        opacity: 1;
+        transform: none;
+        transition: opacity var(--t-med) var(--ease-out),
+            transform var(--t-med) var(--ease-out);
+        transition-delay: calc(60ms + var(--i, 0) * 60ms);
+    }
     .fig-body { min-height: 300px; }
     .fig-head { flex-wrap: wrap; gap: 10px; }
     .fig-readout { max-width: 100%; margin-left: 0; }
@@ -662,6 +746,7 @@ footer::after {
         transition-duration: .01ms !important;
         scroll-behavior: auto !important;
     }
+    nav .links { transition-delay: 0s; }
     .reveal, .stagger > *, .h-line > span, .post-hero .dek {
         opacity: 1 !important;
         transform: none !important;

@@ -126,8 +126,8 @@
         <a class="logo" href="../index.html">VB<i></i></a>
         <div class="links">
             <a href="../index.html#notes">Notes</a>
-            <a href="../index.html#format">Format</a>
-            <a href="../index.html#about">About</a>
+            <a href="../index.html#recent">Latest</a>
+            <a href="../about.html">About</a>
         </div>
         <div class="status">TEMPLATE / <b>DRAFT</b></div>
     </nav>
@@ -184,6 +184,7 @@
 <span class="cm">&lt;/div&gt;</span>
 
 <span class="cm">&lt;script&gt;</span>
+    <span class="cm">window.__figScripts = window.__figScripts || {};</span>
     __figScripts.my_figure = {
         steps: 12,                                 <span class="cm">// frames 0..11</span>
         draw: function (i, body) {
@@ -308,9 +309,10 @@
     <script>
         /* ────────────────────────────────────────────────────────────
            Example scripts — real logic, rendered step by step.
-           Register into __figScripts before site.js runs (it runs
-           after this script, which is why the figures come alive).
+           site.js runs after this (defer), so we bootstrap the
+           registry here before registering the scripts below.
            ──────────────────────────────────────────────────────────── */
+        window.__figScripts = window.__figScripts || {};
 
         /* FIG 01 · the walker — 8 cells, one marker */
         __figScripts.walker = {
