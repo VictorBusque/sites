@@ -113,6 +113,19 @@
 
         @media (max-width: 850px) {
             .ex-grid { grid-template-columns: 1fr; }
+
+            /* figures adapt to narrow canvases — rows shrink, lanes reflow */
+            .w-cell { width: 32px; height: 36px; }
+            .w-axis span { width: 32px; }
+            .a-lane { flex-wrap: wrap; row-gap: 8px; gap: 5px; }
+            .a-lane .lab { width: 100%; text-align: left; padding-right: 0; }
+            .a-cell { width: 26px; height: 28px; font-size: 9px; }
+        }
+        @media (max-width: 480px) {
+            .w-cell { width: 29px; height: 33px; }
+            .w-axis span { width: 29px; }
+            .a-lane { gap: 4px; }
+            .a-cell { width: 22px; height: 24px; font-size: 8.5px; }
         }
     </style>
 </head>
@@ -289,6 +302,9 @@
         <p>Copy this page as your starting point. Keep <span class="mono">css/site.css</span> and <span class="mono">js/site.js</span>
             untouched; replace the hero, the prose, and the figures. Every component on this page is a working
             example — delete what you do not need, keep what you do.</p>
+        <p>Every figure on this page also adapts to narrow screens: shrink the window to 390px and the walker's cells
+            shrink and the race lanes reflow. Full-bleed SVG figures get the same treatment with a tighter
+            <span class="mono">data-vb-narrow</span> frame — see the figure engine reference.</p>
 
     </article>
 

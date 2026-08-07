@@ -83,6 +83,16 @@ hero and card grids at 1050px. Keep new figure stages flexible: cell sizes in
 `clamp` or percentages, labels that shrink, and figure bodies that accept
 `min-height` reductions without clipping content.
 
+Figures on narrow screens follow the same rule as the page grids: they
+**reframe, they don't shrink**. Full-bleed SVG stages declare a tighter mobile
+`viewBox` via `data-vb-narrow` (swapped by `js/site.js` below 850px), get
+mobile font bumps in the page's media query (≥ 8px rendered), and a side rail
+(meter, legend) moves above or below the diagram so the SVG keeps full width.
+A full-bleed figure's `.fig-body` gets `aspect-ratio` set to the narrow frame
+so the canvas matches it exactly. HTML/CSS figures shrink fixed cell sizes and
+wrap rows in a media query. See `references/FIGURE-ENGINE.md` and
+`blog/template.html` for working examples.
+
 ## Reduced motion
 
 A global `@media (prefers-reduced-motion: reduce)` block in `css/site.css`

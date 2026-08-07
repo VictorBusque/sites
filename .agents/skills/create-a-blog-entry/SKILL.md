@@ -117,6 +117,12 @@ Figure markup contract:
 Page-specific figure styles (the `.my-stage` / `.w-*` / `.b-*` blocks) go in
 the page's inline `<style>` — that keeps `css/site.css` shared and stable.
 
+Full-bleed `<svg>` stages: add `data-vb-narrow="minX minY w h"` and the mobile
+type bumps in the page's media query so the figure reframes instead of
+shrinking (see [references/FIGURE-ENGINE.md](references/FIGURE-ENGINE.md#responsive-framing)).
+HTML/CSS stages: shrink fixed sizes / wrap rows in a media query — the
+template's walker and search race are working examples.
+
 ### 4. Register the story on the landing page
 
 Add a card to `index.html`'s `#notes` section, following the existing cards:
@@ -209,5 +215,7 @@ Full reference: [references/MOTION.md](references/MOTION.md).
       errors; `data-autoplay` figures start only when visible
 - [ ] Landing card added, `data-fig` sequential, template card removed once a
       real note exists
+- [ ] Mobile check at 390px: every figure legible (SVG labels ≥ 8px rendered),
+      rails stacked, nothing clips or overflows
 - [ ] Copy follows the tone rules; no fake stats, no slang, no emoji
 - [ ] `prefers-reduced-motion: reduce` still renders readable content

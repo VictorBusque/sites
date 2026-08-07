@@ -545,9 +545,46 @@
         @media (max-width: 850px) {
             .proof { grid-template-columns: 1fr; }
             .proof-group + .proof-group { border-left: 0; border-top: 1px solid var(--line); }
-            .la-left { right: 100px; }
-            .la-meter { width: 100px; }
-            .la-m-track { height: 120px; }
+
+            /* ── FIG 01 · mobile reframe ─────────────────────────────
+               The meter moves under the diagram so the SVG gets the full
+               width; the viewBox swaps to a tighter frame (data-vb-narrow,
+               js/site.js) and SVG type grows so labels stay legible. */
+            .la-left { right: 0; bottom: 84px; }
+            .la-meter {
+                top: auto;
+                left: 0;
+                width: 100%;
+                height: 84px;
+                flex-direction: row;
+                justify-content: flex-start;
+                gap: 12px;
+                padding: 0 16px;
+                border-left: 0;
+                border-top: 1px solid #ffffff14;
+            }
+            .la-m-label { writing-mode: initial; text-orientation: initial; font-size: 9px; }
+            .la-m-track { width: 42vw; max-width: 170px; height: 20px; }
+            .la-m-fill { bottom: 0; height: 100%; width: calc(var(--u) * 1%); transition: width .8s var(--ease-out); }
+            .la-m-tick { top: auto !important; width: 1px; height: 8px; }
+            .la-m-track .la-m-tick:nth-child(2) { left: 75%; }
+            .la-m-track .la-m-tick:nth-child(3) { left: 50%; }
+            .la-m-track .la-m-tick:nth-child(4) { left: 25%; }
+            .la-m-val { font-size: 12px; min-width: 42px; }
+
+            .la-scene-t .la-text-lines span { font-size: 13px; }
+            .la-scene-d .ln-t, .la-scene-d .kvd-t { font-size: 13px; }
+            .la-scene-d .kvd-tag, .la-scene-d .kvd-note { font-size: 11.5px; }
+            .la-scene-a .ln-t, .la-scene-a .kv-reqlab, .la-scene-a .kv-msg-t,
+            .la-scene-a .kv-saved { font-size: 13px; }
+            .la-scene-a .kv-tag, .la-scene-a .kv-price { font-size: 11.5px; }
+            .la-scene-a .kv-ptag, .la-scene-a .kv-legend, .la-scene-a .kv-lbl { font-size: 11px; }
+
+            /* ── FIG 02 · mobile reframe ───────────────────────────── */
+            #figLoop .fig-body { min-height: 0; aspect-ratio: 420 / 290; }
+            .lb-pill-t { font-size: 11px; }
+            .lb-sub { font-size: 10px; }
+            .lb-center-t { font-size: 10px; }
         }
     </style>
 </head>
@@ -640,7 +677,7 @@
                             </div>
                         </div>
                         <div class="la-scene la-scene-d">
-                            <svg class="la-svg" viewBox="0 0 520 260" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <svg class="la-svg" viewBox="0 0 520 260" data-vb-narrow="30 25 440 230" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <text class="ln-t" x="260" y="34">REQUEST 1 — EVERYTHING NEW</text>
                                 <text class="kvd-tag new" x="136" y="52">ALL NEW · ×1.0</text>
                                 <rect class="kvd-msg new" x="64" y="60" width="60" height="28" rx="4"/>
@@ -675,7 +712,7 @@
                             </svg>
                         </div>
                         <div class="la-scene la-scene-a">
-                            <svg class="la-svg" viewBox="0 0 520 260" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <svg class="la-svg" viewBox="0 0 520 260" data-vb-narrow="40 35 480 220" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <text class="kv-reqlab r1" x="260" y="52">REQ 1 · NOTHING CACHED — FULL PRICE</text>
                                 <text class="kv-reqlab r2" x="260" y="52">REQ 2 · PREFIX CACHED — CHEAPER</text>
                                 <text class="kv-reqlab r3" x="260" y="52">REQ 3 · PREFIX GROWS — CHEAPER</text>
@@ -760,7 +797,7 @@
                     </div>
                 </div>
             </div>
-            <figcaption class="fig-caption"><b>What to watch</b>The meter on the right, and the cost panel beside the
+            <figcaption class="fig-caption"><b>What to watch</b>The meter and the cost panel beside the
                 animation. Watch each request: what you would pay without the cache versus what you pay with it — and
                 how each new message becomes cheap the moment it joins the cache.</figcaption>
         </figure>
@@ -776,7 +813,7 @@
             and step through it until it's mine. That's why nothing here is faked — if I can't make it run, I can't
             explain it.</p>
 
-        <figure class="fig reveal">
+        <figure class="fig reveal" id="figLoop">
             <div class="fig-head">
                 <span class="fig-no">FIG. 02</span>
                 <span class="fig-name">THE LOOP I RUN</span>
@@ -784,7 +821,7 @@
                 <div class="fig-controls"></div>
             </div>
             <div class="fig-body">
-                <svg class="lb-svg" viewBox="0 0 600 430" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <svg class="lb-svg" viewBox="0 0 600 430" data-vb-narrow="85 66 420 290" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <circle class="lb-ring" cx="300" cy="215" r="142"/>
                     <g class="lb-node n1">
                         <rect class="lb-pill" x="311" y="126" width="120" height="36" rx="18"/>

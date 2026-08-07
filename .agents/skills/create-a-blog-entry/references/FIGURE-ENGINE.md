@@ -111,6 +111,40 @@ exact.
   `is-paused` / `is-restarting` classes on the `.fig`; the shared stylesheet
   freezes animations. Do not add your own pause logic.
 
+## Responsive framing
+
+A full-bleed `<svg>` stage that is a scaled copy of the desktop scene looks
+small on phones. The engine provides one hook — a tighter mobile frame — and
+the page CSS provides the rest:
+
+1. **Narrow frame.** Add `data-vb-narrow="minX minY w h"` to the `<svg>`.
+   Below the 850px breakpoint the engine swaps the `viewBox` to this frame
+   (reframed and zoomed, never shrunk) and restores it on resize. Choose the
+   tightest frame that keeps every meaningful element inside.
+
+   ```html
+   <svg class="my-svg" viewBox="0 0 600 430" data-vb-narrow="85 66 420 290" …>
+   ```
+
+2. **Type bumps.** SVG text still scales with the canvas, so bump font sizes in
+   the page's `@media (max-width: 850px)` block. Rendered size ≈ css font-size
+   × (rendered svg width ÷ viewBox width); aim for ≥ 8px rendered. Override
+   only `font-size` — positions stay in viewBox units.
+
+3. **Free the width.** If a side rail (meter, legend, cost panel) shares the
+   canvas, move it above or below the diagram on mobile so the SVG gets the
+   full width. The shared breakpoint stacks grids already — do the same inside
+   the figure.
+
+4. **Match the canvas.** For a full-bleed SVG, set the fig-body to the frame's
+   aspect ratio so there is no letterbox: `#myFig .fig-body { min-height: 0;
+   aspect-ratio: 420 / 290; }` (page CSS, higher specificity wins over the
+   shared 300px minimum).
+
+HTML/CSS figures (cells, orbs) don't need frames — shrink fixed sizes in a
+media query and let rows wrap. See `blog/template.html` for working examples
+of both approaches.
+
 ## Verification
 
 Run from the repo root with node:
@@ -143,4 +177,5 @@ const s=fs.readFileSync('blog/<slug>.html','utf8');
 Then open the page and check, by hand: controls appear on every figure, no
 console errors, `data-autoplay` figures start on scroll into view, PREV works
 backwards with no stale state, and `prefers-reduced-motion: reduce` renders
-readable static content.
+readable static content. Finally resize to 390px wide and check every figure
+is legible (SVG labels ≥ 8px rendered), rails stacked, nothing overflowing.

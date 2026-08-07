@@ -120,6 +120,28 @@
         }
     }
 
+    /* ── Responsive figure framing ───────────────────────────
+       Full-bleed SVGs may declare a tighter mobile frame with
+       data-vb-narrow="minX minY w h". Below 850px the engine swaps
+       the viewBox (reframed/zoomed, never shrunken) and restores it
+       on resize. Font bumps and canvas aspect live in each page's
+       media query. */
+    (function () {
+        var mq = window.matchMedia('(max-width: 850px)');
+        var svgs = document.querySelectorAll('[data-vb-narrow]');
+        svgs.forEach(function (s) {
+            if (s._vbWide === undefined) s._vbWide = s.getAttribute('viewBox');
+        });
+        function applyVB() {
+            svgs.forEach(function (s) {
+                s.setAttribute('viewBox', mq.matches ? s.getAttribute('data-vb-narrow') : s._vbWide);
+            });
+        }
+        applyVB();
+        if (mq.addEventListener) mq.addEventListener('change', applyVB);
+        else if (mq.addListener) mq.addListener(applyVB);
+    })();
+
     /* ── Figure engine ───────────────────────────────────── */
     var scripts = window.__figScripts = window.__figScripts || {};
 
