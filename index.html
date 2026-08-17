@@ -6,12 +6,12 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
 
     <!-- Primary meta -->
-    <title>Víctor Busqué — Living Engineering Notes (AI · Software Engineering · Cloud)</title>
+    <title>Víctor Busqué — Living Notes</title>
     <meta name="description"
-        content="Víctor Busqué's engineering notes on AI, software engineering, and cloud. Every idea told as a scrollytelling story. Don't just read it — scroll through it.">
+        content="A living notebook of scroll-story essays. Engineering at the core, curiosity at the edges — every idea told as a scrollytelling story. Don't just read it — scroll through it.">
     <meta name="author" content="Víctor Busqué">
     <meta name="keywords"
-        content="Víctor Busqué, engineering blog, AI engineering, LLM, agents, MCP, tools, Python, FastAPI, AWS, cloud, software engineering, machine learning, generative AI, agent systems">
+        content="Víctor Busqué, scroll stories, explorable explanations, essays, engineering, AI, LLM, agents, systems, Python, cloud, curiosity">
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <meta name="language" content="English">
     <meta name="rating" content="general">
@@ -29,26 +29,27 @@
 
     <!-- Open Graph -->
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Víctor Busqué — Living Engineering Notes">
-    <meta property="og:title" content="Víctor Busqué — Living Engineering Notes">
+    <meta property="og:site_name" content="Víctor Busqué — Living Notes">
+    <meta property="og:title" content="Víctor Busqué — Living Notes">
     <meta property="og:description"
-        content="Engineering notes on AI, software engineering, and cloud. Every idea told as a scrollytelling story. Don't just read it, scroll through it.">
+        content="A living notebook of scroll-story essays — engineering at the core, curiosity at the edges. Don't just read it, scroll through it.">
     <meta property="og:url" content="https://victorbusque.com/">
     <meta property="og:image" content="https://victorbusque.com/img/og.png">
     <meta property="og:image:secure_url" content="https://victorbusque.com/img/og.png">
     <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="Víctor Busqué — Living Engineering Notes: Don't just read it. Scroll through it.">
+    <meta property="og:image:alt"
+        content="Víctor Busqué — Living Engineering Notes: Don't just read it. Scroll through it.">
     <meta property="og:locale" content="en_US">
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Víctor Busqué — Living Engineering Notes">
+    <meta name="twitter:title" content="Víctor Busqué — Living Notes">
     <meta name="twitter:description"
-        content="Engineering notes on AI, software engineering, and cloud. Every idea told as a scrollytelling story. Don't just read it, scroll through it.">
+        content="A living notebook of scroll-story essays — engineering at the core, curiosity at the edges. Don't just read it, scroll through it.">
     <meta name="twitter:image" content="https://victorbusque.com/img/og.png">
-    <meta name="twitter:image:alt" content="Víctor Busqué — Living Engineering Notes">
+    <meta name="twitter:image:alt" content="Víctor Busqué — Living Notes">
 
     <!-- Performance: preconnect to font + image CDNs -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -82,8 +83,8 @@
           "@type": "WebSite",
           "@id": "https://victorbusque.com/#website",
           "url": "https://victorbusque.com/",
-          "name": "Víctor Busqué — Living Engineering Notes",
-          "description": "Engineering notes on AI, software engineering, and cloud, told as scrollytelling stories.",
+          "name": "Víctor Busqué — Living Notes",
+          "description": "A living notebook of scroll-story essays — engineering at the core, curiosity at the edges.",
           "publisher": { "@id": "https://victorbusque.com/#person" },
           "inLanguage": "en",
           "potentialAction": {
@@ -96,10 +97,10 @@
           "@type": "Blog",
           "@id": "https://victorbusque.com/#blog",
           "url": "https://victorbusque.com/",
-          "name": "Living Engineering Notes",
+          "name": "Living Notes",
           "publisher": { "@id": "https://victorbusque.com/#person" },
           "inLanguage": "en",
-          "about": ["AI", "Software Engineering", "Cloud"]
+          "about": ["Engineering", "Artificial Intelligence", "Systems", "Essays"]
         },
         {
           "@type": "WebPage",
@@ -108,7 +109,7 @@
           "name": "Víctor Busqué — Living Engineering Notes",
           "isPartOf": { "@id": "https://victorbusque.com/#website" },
           "about": { "@id": "https://victorbusque.com/#person" },
-          "description": "Engineering notes on AI, software engineering, and cloud, told as scrollytelling stories.",
+          "description": "Scroll-story essays — engineering at the core, curiosity at the edges.",
           "inLanguage": "en",
           "primaryImageOfPage": "https://victorbusque.com/img/og.png"
         }
@@ -134,12 +135,17 @@
             --stage: #181510;
             --stage-2: #1e1a14;
         }
-        html { background: #0c0b08; }
+
+        html {
+            background: #0c0b08;
+        }
+
         body {
             background:
                 radial-gradient(1100px 480px at 50% -6%, #221d14 0%, transparent 62%),
                 var(--paper);
         }
+
         /* film grain — the one atmospheric layer, over everything */
         body::after {
             content: "";
@@ -151,23 +157,60 @@
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
             background-size: 180px 180px;
         }
-        ::selection { background: var(--acid); color: #14110c; }
-        nav { background: rgba(18, 15, 11, .86); }
-        .cursor-ring { border-color: #eae3d244; }
-        .status { color: #8d8776; border-left-color: #eae3d226; }
-        nav .links a { border-bottom-color: rgba(234, 227, 210, .1); }
-        .marquee { background: #0c0b08; }
-        .marquee span { color: #8d8776; }
-        .marquee span i { color: var(--acid); }
-        footer { background: #0c0b08; }
-        .foot { color: #8d8776; border-top-color: #2c2820; }
-        @keyframes ping {
-            0% { box-shadow: 0 0 0 0 #57d38c55; }
-            70% { box-shadow: 0 0 0 9px #57d38c00; }
-            100% { box-shadow: 0 0 0 0 #57d38c00; }
+
+        ::selection {
+            background: var(--acid);
+            color: #14110c;
         }
+
+        nav {
+            background: rgba(18, 15, 11, .86);
+        }
+
+        .cursor-ring {
+            border-color: #eae3d244;
+        }
+
+        .status {
+            color: #8d8776;
+            border-left-color: #eae3d226;
+        }
+
+        nav .links a {
+            border-bottom-color: rgba(234, 227, 210, .1);
+        }
+
+        footer {
+            background: #0c0b08;
+        }
+
+        .foot {
+            color: #8d8776;
+            border-top-color: #2c2820;
+        }
+
+        @keyframes ping {
+            0% {
+                box-shadow: 0 0 0 0 #57d38c55;
+            }
+
+            70% {
+                box-shadow: 0 0 0 9px #57d38c00;
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 #57d38c00;
+            }
+        }
+
         @media (prefers-reduced-motion: reduce) {
-            .d-cell, .d-strip .ph, .d-ticks i { animation: none !important; opacity: 1 !important; }
+
+            .d-cell,
+            .d-strip .ph,
+            .d-ticks i {
+                animation: none !important;
+                opacity: 1 !important;
+            }
         }
 
         /* Hero */
@@ -392,14 +435,33 @@
         }
 
         @keyframes d-type {
-            0% { opacity: 0; transform: translateY(9px) scale(.85); }
-            6% { opacity: 1; transform: none; }
-            100% { opacity: 1; transform: none; }
+            0% {
+                opacity: 0;
+                transform: translateY(9px) scale(.85);
+            }
+
+            6% {
+                opacity: 1;
+                transform: none;
+            }
+
+            100% {
+                opacity: 1;
+                transform: none;
+            }
         }
 
         @keyframes caret-blink {
-            0%, 49% { opacity: 1; }
-            50%, 100% { opacity: .12; }
+
+            0%,
+            49% {
+                opacity: 1;
+            }
+
+            50%,
+            100% {
+                opacity: .12;
+            }
         }
 
         /* the loop, cycling */
@@ -427,23 +489,58 @@
             background: currentColor;
         }
 
-        .d-strip .ph-pick { --phc: var(--orange); }
-        .d-strip .ph-append { --phc: var(--acid); }
-        .d-strip .sep { color: #403a2f; }
-        .js .d-strip .ph { animation: d-ph 4.4s infinite both; }
-        .js .d-strip .ph-score { animation-delay: .3s; }
-        .js .d-strip .ph-pick { animation-delay: .6s; }
-        .js .d-strip .ph-append { animation-delay: .9s; }
+        .d-strip .ph-pick {
+            --phc: var(--orange);
+        }
+
+        .d-strip .ph-append {
+            --phc: var(--acid);
+        }
+
+        .d-strip .sep {
+            color: #403a2f;
+        }
+
+        .js .d-strip .ph {
+            animation: d-ph 4.4s infinite both;
+        }
+
+        .js .d-strip .ph-score {
+            animation-delay: .3s;
+        }
+
+        .js .d-strip .ph-pick {
+            animation-delay: .6s;
+        }
+
+        .js .d-strip .ph-append {
+            animation-delay: .9s;
+        }
 
         @keyframes d-ph {
-            0% { color: #5c564a; }
-            8% { color: var(--phc); }
-            78% { color: var(--phc); }
-            88%, 100% { color: #5c564a; }
+            0% {
+                color: #5c564a;
+            }
+
+            8% {
+                color: var(--phc);
+            }
+
+            78% {
+                color: var(--phc);
+            }
+
+            88%,
+            100% {
+                color: #5c564a;
+            }
         }
 
         /* the step meter */
-        .d-ticks { display: flex; gap: 5px; }
+        .d-ticks {
+            display: flex;
+            gap: 5px;
+        }
 
         .d-ticks i {
             width: 15px;
@@ -451,17 +548,49 @@
             background: #3f3a2f;
         }
 
-        .js .d-ticks i { animation: d-tick 8s infinite both; }
-        .js .d-ticks i:nth-child(1) { animation-delay: 1s; }
-        .js .d-ticks i:nth-child(2) { animation-delay: 1.5s; }
-        .js .d-ticks i:nth-child(3) { animation-delay: 2s; }
-        .js .d-ticks i:nth-child(4) { animation-delay: 2.5s; }
+        .js .d-ticks i {
+            animation: d-tick 8s infinite both;
+        }
+
+        .js .d-ticks i:nth-child(1) {
+            animation-delay: 1s;
+        }
+
+        .js .d-ticks i:nth-child(2) {
+            animation-delay: 1.5s;
+        }
+
+        .js .d-ticks i:nth-child(3) {
+            animation-delay: 2s;
+        }
+
+        .js .d-ticks i:nth-child(4) {
+            animation-delay: 2.5s;
+        }
 
         @keyframes d-tick {
-            0%, 1% { background: #3f3a2f; box-shadow: none; }
-            3% { background: var(--acid); box-shadow: 0 0 6px color-mix(in srgb, var(--acid) 45%, transparent); }
-            80% { background: var(--acid); box-shadow: 0 0 6px color-mix(in srgb, var(--acid) 45%, transparent); }
-            84%, 100% { background: #3f3a2f; box-shadow: none; }
+
+            0%,
+            1% {
+                background: #3f3a2f;
+                box-shadow: none;
+            }
+
+            3% {
+                background: var(--acid);
+                box-shadow: 0 0 6px color-mix(in srgb, var(--acid) 45%, transparent);
+            }
+
+            80% {
+                background: var(--acid);
+                box-shadow: 0 0 6px color-mix(in srgb, var(--acid) 45%, transparent);
+            }
+
+            84%,
+            100% {
+                background: #3f3a2f;
+                box-shadow: none;
+            }
         }
 
         .demo-caption {
@@ -508,525 +637,24 @@
             line-height: 1.5;
         }
 
-        /* ── The notes — IDE file-tree explorer ──────────── */
-        .ide {
-            display: grid;
-            grid-template-columns: 332px 1fr;
-            border: 1px solid var(--line);
-            background: var(--paper);
-            margin-top: 46px;
-            min-height: 460px;
-        }
-
-        /* ── Explorer pane (the tree) ── */
-        .explorer {
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-            border-right: 1px solid var(--line);
-            position: sticky;
-            top: 84px;
-            align-self: start;
-            max-height: calc(100vh - 110px);
-            background: var(--paper);
-        }
-
-        .explorer-head {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 14px;
-            border-bottom: 1px solid var(--line);
-            background: var(--paper-2);
-            font: 10px "DM Mono";
-            letter-spacing: .2em;
-            color: #8d8776;
-            flex-shrink: 0;
-        }
-
-        .ex-title {
-            color: var(--ink);
-        }
-
-        .ex-title::after {
-            content: "▋";
-            margin-left: 3px;
-            color: var(--acid);
-            animation: blink 1.2s steps(2) infinite;
-        }
-
-        .ex-actions {
-            margin-left: auto;
-            display: flex;
-            gap: 6px;
-        }
-
-        .ex-btn {
-            width: 26px;
-            height: 26px;
-            display: grid;
-            place-items: center;
-            border: 1px solid #4a443a;
-            background: var(--paper);
-            color: var(--ink);
-            cursor: pointer;
-            transition: background var(--t-fast) var(--ease-snap),
-                color var(--t-fast) var(--ease-snap),
-                border-color var(--t-fast) var(--ease-snap),
-                transform var(--t-fast) var(--ease-snap);
-        }
-
-        .ex-btn svg {
-            width: 12px;
-            height: 12px;
-            display: block;
-        }
-
-        .ex-btn:hover {
-            background: var(--ink);
-            color: #14110c;
-            border-color: var(--ink);
-        }
-
-        .ex-btn:active {
-            transform: scale(.92);
-        }
-
-        .tree {
-            flex: 1;
-            overflow-y: auto;
-            padding: 10px 0 12px;
-            scrollbar-width: thin;
-            scrollbar-color: #4a443a transparent;
-            outline: none;
-        }
-
-        /* rows */
-        .trow {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            height: 30px;
-            padding: 0 12px 0 12px;
-            font: 11px "DM Mono";
-            letter-spacing: .05em;
-            color: var(--ink);
-            cursor: pointer;
-            user-select: none;
-            position: relative;
-            white-space: nowrap;
-            transition: background var(--t-fast) var(--ease-snap),
-                color var(--t-fast) var(--ease-snap);
-        }
-
-        .trow:hover {
-            background: #eae3d20d;
-        }
-
-        .trow.d1 {
-            padding-left: 30px;
-        }
-
-        .trow.d2 {
-            padding-left: 48px;
-        }
-
-        .trow .chev {
-            width: 12px;
-            height: 12px;
-            flex-shrink: 0;
-            display: grid;
-            place-items: center;
-            color: #8d8776;
-            transition: transform var(--t-med) var(--ease-out), color var(--t-med) var(--ease-swift);
-        }
-
-        .trow .chev svg {
-            width: 9px;
-            height: 9px;
-        }
-
-        .trow .chev.is-leaf {
-            visibility: hidden;
-        }
-
-        .trow.is-open>.chev {
-            transform: rotate(90deg);
-        }
-
-        .trow.is-active .chev {
-            color: #14110c;
-        }
-
-        .trow .ic {
-            width: 14px;
-            height: 14px;
-            flex-shrink: 0;
-            display: grid;
-            place-items: center;
-            color: var(--muted);
-            transition: color var(--t-med) var(--ease-swift);
-        }
-
-        .trow .ic svg {
-            width: 14px;
-            height: 14px;
-            display: block;
-        }
-
-        .trow.is-active .ic {
-            color: #14110c;
-        }
-
-        .trow .fname {
-            flex-shrink: 0;
-            font-weight: 500;
-        }
-
-        .trow .sub {
-            flex: 1 1 auto;
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-size: 9px;
-            letter-spacing: .12em;
-            color: #8d8776;
-            transition: color var(--t-med) var(--ease-swift);
-        }
-
-        .trow.is-active .sub {
-            color: #2e5c46;
-        }
-
-        .trow .cnt {
-            margin-left: auto;
-            flex-shrink: 0;
-            font: 9px "DM Mono";
-            letter-spacing: .1em;
-            padding: 1px 7px;
-            border: 1px solid #4a443a;
-            border-radius: 99px;
-            color: #8d8776;
-            transition: border-color var(--t-fast) var(--ease-snap),
-                color var(--t-fast) var(--ease-snap),
-                background var(--t-fast) var(--ease-snap);
-        }
-
-        .trow .cnt.has {
-            border-color: var(--branch-accent);
-            color: var(--branch-accent);
-        }
-
-        .trow.is-active .cnt {
-            border-color: #14110c55;
-            color: #14110c;
-        }
-
-        /* tree guides — vertical rules at each parent's icon column */
-        .trow.d1::before,
-        .trow.d2::before {
-            content: "";
-            position: absolute;
-            left: 38px;
-            top: 0;
-            bottom: 0;
-            width: 1px;
-            background: #eae3d21f;
-            pointer-events: none;
-        }
-
-        .trow.d2::before {
-            box-shadow: 18px 0 0 #eae3d21f;
-        }
-
-        /* selection + focus */
-        .trow.is-focus {
-            box-shadow: inset 0 0 0 1px #7cb7ff66;
-        }
-
-        .trow.is-active {
-            background: var(--acid);
-            color: #14110c;
-        }
-
-        .trow.is-active:hover {
-            background: var(--acid);
-        }
-
-        .trow.is-active::after {
-            content: "";
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 3px;
-            background: var(--branch-accent);
-            animation: accent-sweep .5s var(--ease-out) both;
-        }
-
-        /* empty leaves (folder with no notes yet) */
-        .trow.trow-empty {
-            height: 26px;
-            color: #8d8776;
-            cursor: default;
-            font-style: italic;
-        }
-
-        .trow.trow-empty .fname {
-            font-size: 10px;
-            letter-spacing: .12em;
-        }
-
-        .trow.trow-empty .ic {
-            opacity: .45;
-        }
-
-        .trow.trow-empty:hover {
-            background: transparent;
-        }
-
-        /* expand / collapse — directional easing: open eases out, close eases in */
-        .kids {
-            display: grid;
-            grid-template-rows: 0fr;
-            transition: grid-template-rows 300ms var(--ease-in);
-        }
-
-        .kids.open {
-            grid-template-rows: 1fr;
-            transition-timing-function: var(--ease-out);
-            transition-duration: var(--t-med);
-        }
-
-        .kids>.kids-in {
-            overflow: hidden;
-            min-height: 0;
-        }
-
-        .kids.just-open>.kids-in>.trow {
-            opacity: 0;
-            transform: translateY(6px);
-            animation: fade-rise .4s var(--ease-out) both;
-        }
-
-        /* load stagger for the visible roots */
-        .ide.seen .trow[data-depth="0"] {
-            opacity: 0;
-            transform: translateY(6px);
-            animation: fade-rise .5s var(--ease-out) both;
-        }
-
-        /* status bar */
-        .ex-status {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            padding: 9px 14px;
-            background: #171410;
-            color: #8d8776;
-            font: 9px "DM Mono";
-            letter-spacing: .14em;
-            border-top: 1px solid var(--line);
-            flex-shrink: 0;
-        }
-
-        .ex-status .live {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .ex-status .live::before {
-            content: "";
-            display: inline-block;
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--acid);
-            margin-right: 7px;
-            animation: blink 1.6s steps(2) infinite;
-        }
-
-        .ex-status b {
-            color: var(--acid);
-            font-weight: 500;
-            white-space: nowrap;
-        }
-
-        /* ── Entries panel ── */
-        .panel {
-            min-width: 0;
-            background: var(--paper);
-            padding: 0 34px 44px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .panel-head {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 14px;
-            flex-wrap: wrap;
-            padding: 18px 0 0;
-            font: 10px "DM Mono";
-            letter-spacing: .16em;
-            color: #8d8776;
-        }
-
-        .panel-head .crumb {
-            margin-bottom: 0;
-        }
-
-        .panel-head .crumb b {
-            color: var(--ink);
-            font-weight: 500;
-        }
-
-        .panel-head .hint {
-            color: #8d8776;
-        }
-
-        .p-entries {
-            margin-top: 16px;
-            border-top: 1px solid #2e2a22;
-        }
-
-        .p-entry {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 6px 28px;
-            padding: 20px 4px;
-            border-bottom: 1px solid #2e2a22;
-            color: var(--ink);
-            transition: background var(--t-med) var(--ease-swift);
-        }
-
-        .e-title {
-            font-family: "Unbounded", sans-serif;
-            font-weight: 500;
-            font-size: clamp(15px, 1.6vw, 21px);
-            letter-spacing: -.03em;
-            line-height: 1.15;
-            transition: color var(--t-fast) var(--ease-snap);
-        }
-
-        .e-deck {
-            color: #a49d8d;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .e-meta {
-            grid-row: 1 / span 2;
-            grid-column: 2;
-            align-self: center;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            align-items: flex-end;
-        }
-
-        .e-path {
-            font: 9px "DM Mono";
-            letter-spacing: .16em;
-            color: #8d8776;
-        }
-
-        .e-date {
-            font: 9px "DM Mono";
-            letter-spacing: .14em;
-            color: #8d8776;
-        }
-
-        .read-tag {
-            font: 9px "DM Mono";
-            letter-spacing: .16em;
-            color: var(--ink);
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .read-tag::after {
-            content: "→";
-            transition: transform var(--t-med) var(--ease-out);
-        }
-
-        .p-entry:hover {
-            background: #191611;
-        }
-
-        .p-entry:hover .e-title {
-            color: var(--blue);
-        }
-
-        .p-entry:hover .read-tag::after {
-            transform: translateX(6px);
-        }
-
-        .panel-empty {
-            margin-top: 16px;
-            padding: 38px 18px;
-            border: 1px dashed #4a443a;
-            text-align: center;
-            font: 10px "DM Mono";
-            letter-spacing: .16em;
-            color: #8d8776;
-        }
-
-        .panel-empty i {
-            display: inline-block;
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--acid);
-            margin-right: 9px;
-            animation: blink 1.4s steps(2) infinite;
-        }
-
-        .panel-empty .sub {
-            display: block;
-            margin-top: 10px;
-            font-size: 9px;
-            letter-spacing: .14em;
-            color: #8d8776;
-        }
-
-        /* entries re-render choreography */
-        .p-entries .p-entry {
-            opacity: 0;
-        }
-
-        .p-entries.playing .p-entry {
-            animation: fade-rise .5s var(--ease-out) both;
-            animation-delay: calc(var(--i) * 70ms);
-        }
-
-        /* ── Latest — chronological index ─────────────────── */
-        .recent {
-            padding: 7vw 4vw 5vw;
-            border-top: 1px solid var(--line);
-        }
-
+        /* ── The documents — one shelf, newest first ─────── */
         .index {
-            margin-top: 40px;
+            margin-top: 46px;
+            border-top: 1px solid var(--line);
         }
 
-        .index-row {
+        .doc-row {
             display: grid;
-            grid-template-columns: 110px 1.4fr 1fr 1fr auto;
-            gap: 22px;
+            grid-template-columns: 86px 1fr auto;
+            gap: 6px 30px;
             align-items: center;
-            padding: 26px 18px;
+            padding: 30px 18px;
             border-bottom: 1px solid var(--line);
             position: relative;
             transition: background var(--t-med) var(--ease-swift);
         }
 
-        .index-row::before {
+        .doc-row::before {
             content: "";
             position: absolute;
             left: 0;
@@ -1039,55 +667,108 @@
             transition: transform .5s var(--ease-out);
         }
 
-        .index-row:hover::before {
+        .doc-row:hover::before {
             transform: scaleY(1);
             transform-origin: 50% 0;
         }
 
-        .index-row:hover {
-            background: var(--paper-2);
+        .doc-row:hover {
+            background: #191611;
         }
 
-        .ix-date {
-            font: 10px "DM Mono";
-            letter-spacing: .14em;
+        .doc-no {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .doc-no b {
+            font: 8.5px "DM Mono";
+            letter-spacing: .2em;
+            color: #6b6557;
+            font-weight: 400;
+        }
+
+        .doc-no i {
+            font: italic 34px/1 "Instrument Serif";
             color: #8d8776;
+            transition: color var(--t-fast) var(--ease-snap);
         }
 
-        .ix-title {
+        .doc-row:hover .doc-no i {
+            color: var(--acid);
+        }
+
+        .doc-title,
+        .doc-deck,
+        .doc-path {
+            display: block;
+        }
+
+        .doc-title {
             font-family: "Unbounded", sans-serif;
             font-weight: 500;
-            font-size: clamp(16px, 2vw, 22px);
+            font-size: clamp(18px, 2.2vw, 26px);
             letter-spacing: -.03em;
             transition: color var(--t-fast) var(--ease-snap);
         }
 
-        .index-row:hover .ix-title {
+        .doc-row:hover .doc-title {
             color: var(--blue);
         }
 
-        .ix-path {
-            font: 10px "DM Mono";
+        .doc-deck {
+            margin-top: 8px;
+            color: #a49d8d;
+            font-size: 14.5px;
+            line-height: 1.55;
+            max-width: 640px;
+        }
+
+        .doc-path {
+            margin-top: 10px;
+            font: 9px "DM Mono";
+            letter-spacing: .1em;
+            color: #6b6557;
+        }
+
+        .doc-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+            align-items: flex-end;
+            text-align: right;
+            font: 9px "DM Mono";
             letter-spacing: .14em;
             color: #8d8776;
         }
 
-        .ix-tags {
-            font: 10px "DM Mono";
-            color: #8d8776;
+        .doc-meta .m-date {
+            color: #c9c2b1;
         }
 
-        .ix-arrow {
-            font-size: 18px;
+        .doc-meta .m-topic {
+            color: var(--orange);
+        }
+
+        .doc-read {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--ink);
+        }
+
+        .doc-read::after {
+            content: "→";
             transition: transform var(--t-med) var(--ease-out);
         }
 
-        .index-row:hover .ix-arrow {
-            transform: translateX(8px);
+        .doc-row:hover .doc-read::after {
+            transform: translateX(6px);
         }
 
         .index-empty {
-            padding: 30px 18px;
+            padding: 44px 18px;
             border-bottom: 1px solid var(--line);
             font: 10px "DM Mono";
             letter-spacing: .16em;
@@ -1109,6 +790,18 @@
             margin-top: 10px;
             font-size: 9px;
             letter-spacing: .14em;
+            color: #8d8776;
+        }
+
+        .queue-note {
+            margin-top: 30px;
+            text-align: center;
+            font: 9px "DM Mono";
+            letter-spacing: .18em;
+            color: #6b6557;
+        }
+
+        .queue-note .mono {
             color: #8d8776;
         }
 
@@ -1203,66 +896,35 @@
                 gap: 16px;
             }
 
-            .ide {
-                grid-template-columns: 1fr;
-                min-height: 0;
+            .doc-row {
+                grid-template-columns: 1fr auto;
+                gap: 4px 18px;
+                padding: 24px 14px;
             }
 
-            .explorer {
-                position: static;
-                max-height: none;
-                border-right: 0;
-                border-bottom: 1px solid var(--line);
-            }
-
-            .tree {
-                max-height: 320px;
-            }
-
-            .panel {
-                padding: 0 4vw 40px;
-            }
-
-            .p-entry {
-                grid-template-columns: 1fr;
-                gap: 6px;
-            }
-
-            .e-meta {
-                grid-row: auto;
-                grid-column: 1;
+            .doc-no {
+                grid-column: 1 / -1;
                 flex-direction: row;
+                align-items: baseline;
+                gap: 10px;
+            }
+
+            .doc-no i {
+                font-size: 26px;
+            }
+
+            .doc-meta {
+                grid-column: 1 / -1;
+                flex-direction: row;
+                flex-wrap: wrap;
                 align-items: center;
-                justify-content: space-between;
+                justify-content: flex-start;
+                gap: 6px 16px;
+                text-align: left;
             }
 
-            .index-row {
-                grid-template-columns: 1fr 1fr;
-                gap: 8px 18px;
-                padding: 22px 14px;
-            }
-
-            .ix-title {
-                grid-column: 1 / -1;
-                grid-row: 1;
-            }
-
-            .ix-date {
-                grid-row: 2;
-            }
-
-            .ix-path {
-                grid-row: 2;
-                justify-self: end;
-            }
-
-            .ix-tags {
-                grid-row: 3;
-                grid-column: 1 / -1;
-            }
-
-            .ix-arrow {
-                display: none;
+            .queue-note {
+                letter-spacing: .12em;
             }
         }
     </style>
@@ -1276,8 +938,7 @@
     <nav>
         <a class="logo" href="#">VB<i></i></a>
         <div class="links">
-            <a href="#notes">Notes</a>
-            <a href="#recent">Latest</a>
+            <a href="#notes">Documents</a>
             <a href="about.html">About</a>
         </div>
         <div class="status">SANT QUIRZE · <b>2026</b></div>
@@ -1294,10 +955,9 @@
                 <span class="h-line"><span>read it.</span></span>
                 <span class="h-line"><span><em>Scroll it.</em></span></span>
             </h1>
-            <p>Every article teaches one idea as a scrollytelling story — scenes pinned, steps scrolled, the page
-                itself the timeline. Classified by topic — AI, software engineering, cloud — and ordered newest
-                first. Pick a category and walk the notes.</p>
-            <div class="scroll-cue"><span class="wheel"></span>SCROLL TO THE NOTES</div>
+            <p>Every document is a scroll story — one idea walked through, scene by scene, the page itself the
+                timeline. Engineering at the core; curiosity at the edges. Newest first, nothing faked.</p>
+            <div class="scroll-cue"><span class="wheel"></span>SCROLL TO THE DOCUMENTS</div>
         </div>
 
         <div class="hero-demo" aria-label="A scroll journey: one idea, scene by scene">
@@ -1315,7 +975,9 @@
                     <span class="d-caret"></span>
                 </div>
                 <div class="d-strip">
-                    <span class="ph ph-read">READ</span><span class="sep">→</span><span class="ph ph-score">SCORE</span><span class="sep">→</span><span class="ph ph-pick">PICK</span><span class="sep">→</span><span class="ph ph-append">APPEND</span>
+                    <span class="ph ph-read">READ</span><span class="sep">→</span><span
+                        class="ph ph-score">SCORE</span><span class="sep">→</span><span
+                        class="ph ph-pick">PICK</span><span class="sep">→</span><span class="ph ph-append">APPEND</span>
                 </div>
                 <div class="d-ticks"><i></i><i></i><i></i><i></i></div>
             </div>
@@ -1327,64 +989,12 @@
 
     </section>
 
-    <div class="marquee" aria-hidden="true">
-        <div class="marquee-track">
-            <span>The scroll is the timeline <i>◆</i></span><span>The story is the article <i>◆</i></span><span>Motion has meaning
-                <i>◆</i></span><span>Nothing is faked <i>◆</i></span><span>Walk the idea <i>◆</i></span>
-        </div>
-    </div>
-
-    <!-- ════ NOTES — the explorer ════ -->
+    <!-- ══════ DOCUMENTS — the shelf ══════ -->
     <section class="section" id="notes">
         <div class="section-top reveal">
-            <h2>The notes.</h2>
-            <p>One file tree, three roots. Folders are taxonomy, leaves are pages — every row is real, every entry
-                lives under <span class="mono">blog/</span>.</p>
-        </div>
-
-        <div class="ide reveal" id="ide">
-            <aside class="explorer" id="explorer" aria-label="Notes file tree">
-                <div class="explorer-head">
-                    <span class="ex-title">EXPLORER</span>
-                    <span class="ex-actions">
-                        <button class="ex-btn" id="expandAll" type="button" title="Expand all folders"
-                            aria-label="Expand all folders">
-                            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
-                                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M4 5.5L8 9.5l4-4M4 9.5L8 13.5l4-4" />
-                            </svg>
-                        </button>
-                        <button class="ex-btn" id="collapseAll" type="button" title="Collapse all folders"
-                            aria-label="Collapse all folders">
-                            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
-                                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M4 10.5L8 6.5l4 4M4 6.5L8 2.5l4 4" />
-                            </svg>
-                        </button>
-                    </span>
-                </div>
-                <div class="tree" id="tree" role="tree" tabindex="0" aria-label="Notes"></div>
-                <div class="ex-status">
-                    <span class="live" id="treeReadout"></span>
-                    <b>blog/</b>
-                </div>
-            </aside>
-            <div class="panel" id="panel">
-                <div class="panel-head">
-                    <span class="crumb" id="crumb"></span>
-                    <span class="hint">KEYBOARD · ↑↓ MOVE · ← → TOGGLE</span>
-                </div>
-                <div id="panelBody"></div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ════ LATEST — chronological index ════ -->
-    <section class="recent" id="recent">
-        <div class="section-top reveal">
-            <h2>Latest.</h2>
-            <p>Published notes, newest first. Only pages that exist under <span class="mono">blog/</span> are listed.
-            </p>
+            <h2>The documents.</h2>
+            <p>One idea per document, told as a scroll story you walk through — scenes pinned, steps scrolled,
+                nothing faked. Engineering at the core; curiosity at the edges. Newest first.</p>
         </div>
         <div class="index" id="indexList"></div>
     </section>
@@ -1395,61 +1005,27 @@
             <span class="row"><span>BREAK.</span></span>
             <span class="row"><span><em>EXPLAIN.</em></span></span>
         </div>
-        <div class="foot"><span>© 2026 VÍCTOR BUSQUÉ</span><span>AI · SOFTWARE ENGINEERING · CLOUD</span></div>
+        <div class="foot"><span>© 2026 VÍCTOR BUSQUÉ</span><span>ONE IDEA PER DOCUMENT · SCROLLED</span></div>
     </footer>
 
     <script>
-        /* ── The classification ──────────────────────────────
-           Mirrors AGENTS.md. Categories and their examples are
-           taxonomy only — the map's structure, not content.
-           ─────────────────────────────────────────────────── */
-        var TAXONOMY = [{
-            topic: 'AI', no: '01',
-            cats: [
-                { name: 'Basics', eg: 'LLM · Agent' },
-                { name: 'Advanced', eg: 'Tools · MCP · Skills · Plugins · Harness' },
-                { name: 'Models', eg: 'Tests · Experiments · Results' },
-                { name: 'Production', eg: 'Gateway · Memory · Guardrails · Sandboxing · Evaluation' },
-                { name: 'Personal', eg: 'Projects · Tricks · Stack · Learnings' }
-            ]
-        }, {
-            topic: 'SOFTWARE ENGINEERING', no: '02',
-            cats: [
-                { name: 'Python', eg: 'FastAPI · Litestar · Concurrency · Optimization' },
-                { name: 'Architecture', eg: 'Design Patterns · Microservices' }
-            ]
-        }, {
-            topic: 'CLOUD', no: '03',
-            cats: [
-                { name: 'AWS', eg: 'Lambda · S3 · DynamoDB · Bedrock AgentCore' }
-            ]
-        }];
-
-        /* ── Real entries only ───────────────────────────────
-           One object per published article in blog/. Nothing here
-           is invented: no entry, no count, no row. When an article
-           lands, add it below (slug is the href from this page,
-           date 'YYYY-MM', path 'Topic/Category'). It then appears
-           in both the explorer and the Latest index. */
+        /* ── Real entries only ———————————————————————
+           One object per published document in blog/. Nothing here is
+           invented: no entry, no row. When a document ships, add it below
+           (slug is the href, date 'YYYY-MM', topic free-form). It renders
+           on the shelf, newest first. The queue lives in docs/ideas.md. */
         var ENTRIES = [
             {
                 slug: 'blog/token-by-token.html', title: 'Token by token.',
                 deck: 'An LLM is a next-token predictor. Walk the loop with a toy model trained on twelve sentences — read, score, pick, append — and watch the whole vocabulary compete for every token.',
-                date: '2026-02', path: 'AI/Basics', tags: ['LLM', 'Sampling']
+                date: '2026-02', topic: 'AI · LLMs', tags: ['LLM', 'Sampling']
             }
         ];
 
         (function () {
             'use strict';
-            var treeEl = document.getElementById('tree');
-            var crumb = document.getElementById('crumb');
-            var panelBody = document.getElementById('panelBody');
-            var readout = document.getElementById('treeReadout');
-            var indexList = document.getElementById('indexList');
-            var expandAllBtn = document.getElementById('expandAll');
-            var collapseAllBtn = document.getElementById('collapseAll');
+            var list = document.getElementById('indexList');
             var MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-            var ACCENT = { 'AI': '#57d38c', 'SOFTWARE ENGINEERING': '#7cb7ff', 'CLOUD': '#ff9a5c' };
 
             function esc(s) {
                 return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -1458,327 +1034,27 @@
                 var p = d.split('-');
                 return p.length === 2 ? MONTHS[(+p[1]) - 1] + ' ' + p[0] : d;
             }
-            function retrigger(el) {
-                el.classList.remove('playing');
-                void el.offsetWidth;
-                el.classList.add('playing');
-            }
 
-            /* ── Icons — tiny inline SVGs, currentColor ── */
-            function chev() {
-                return '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" ' +
-                    'stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg>';
-            }
-            function folder(open) {
-                var d = open
-                    ? 'M1.5 3.5A1.5 1.5 0 0 1 3 2h2.9l1.6 2H13a1.5 1.5 0 0 1 1.5 1.5V6H4.9a1.5 1.5 0 0 0-1.42.98L1.2 13.2A1.5 1.5 0 0 1 1 12z'
-                    : 'M1.5 3.5A1.5 1.5 0 0 1 3 2h2.9l1.6 2H13a1.5 1.5 0 0 1 1.5 1.5V12a1.5 1.5 0 0 1-1.5 1.5H3A1.5 1.5 0 0 1 1.5 12z';
-                return '<svg viewBox="0 0 16 16" fill="currentColor"><path d="' + d + '"/></svg>';
-            }
-            function file() {
-                return '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1">' +
-                    '<path d="M4.3 1.4h5.4l2.9 2.9v9.9a.5.5 0 0 1-.5.5H4.3a.5.5 0 0 1-.5-.5V1.9a.5.5 0 0 1 .5-.5z"/>' +
-                    '<path d="M9.7 1.4v3h3"/></svg>';
-            }
-
-            /* ── State ── */
-            var open = {};       /* folder key → bool */
-            var selected = null; /* topic or category key */
-            var focusedKey = null;
-
-            TAXONOMY.forEach(function (b) {
-                open[b.topic] = open[b.topic] !== false;          /* topics start open */
-                b.cats.forEach(function (c) {
-                    open[b.topic + '/' + c.name] = open[b.topic + '/' + c.name] === true; /* cats start closed */
-                });
-            });
-
-            function notesFor(path) {
-                return ENTRIES.filter(function (e) { return e.path === path; })
-                    .sort(function (a, b) { return b.date < a.date ? -1 : 1; });
-            }
-            function notesForTopic(topic) {
-                return ENTRIES.filter(function (e) { return e.path.split('/')[0] === topic; })
-                    .sort(function (a, b) { return b.date < a.date ? -1 : 1; });
-            }
-
-            /* ── Build the tree ── */
-            function folderRow(o) {
-                return '<div class="trow d' + o.depth + '" role="treeitem" tabindex="-1" data-key="' + esc(o.key) + '"' +
-                    ' data-kind="' + o.kind + '" data-depth="' + o.depth + '"' +
-                    (o.parent ? ' data-parent="' + esc(o.parent) + '"' : '') +
-                    ' aria-expanded="' + o.open + '" aria-selected="false"' +
-                    ' style="--branch-accent:' + esc(o.accent) + ';animation-delay:' + o.delay + 'ms"' +
-                    (o.title ? ' title="' + esc(o.title) + '"' : '') + '>' +
-                    '<span class="chev">' + chev() + '</span>' +
-                    '<span class="ic">' + folder(o.open) + '</span>' +
-                    '<span class="fname">' + esc(o.label) + '</span>' +
-                    (o.sub ? '<span class="sub">' + esc(o.sub) + '</span>' : '') +
-                    '<span class="cnt' + (o.count ? ' has' : '') + '">' + o.count + '</span></div>';
-            }
-            function noteRow(n, depth, i, accent) {
-                return '<a class="trow d' + depth + '" role="treeitem" tabindex="-1" href="' + esc(n.slug) + '"' +
-                    ' data-key="' + esc(n.slug) + '" data-kind="note" data-depth="' + depth + '"' +
-                    ' data-parent="' + esc(n.path) + '" aria-selected="false"' +
-                    ' style="--branch-accent:' + esc(accent) + ';animation-delay:' + (i * 40) + 'ms">' +
-                    '<span class="chev is-leaf"></span>' +
-                    '<span class="ic">' + file() + '</span>' +
-                    '<span class="fname">' + esc(n.title) + '</span></a>';
-            }
-            function emptyRow(depth) {
-                return '<div class="trow trow-empty d' + depth + '" role="treeitem" tabindex="-1"' +
-                    ' data-kind="empty" data-depth="' + depth + '" style="animation-delay:0ms">' +
-                    '<span class="chev is-leaf"></span>' +
-                    '<span class="ic">' + file() + '</span>' +
-                    '<span class="fname">NO NOTES YET</span></div>';
-            }
-
-            var g = 0;
-            function buildTree() {
-                var html = '';
-                TAXONOMY.forEach(function (b) {
-                    var topicKey = b.topic;
-                    var accent = ACCENT[b.topic] || '#716f68';
-                    html += folderRow({
-                        key: topicKey, kind: 'topic', depth: 0, delay: (g++) * 60,
-                        open: open[topicKey], label: b.topic,
-                        count: notesForTopic(topicKey).length, accent: accent
-                    });
-                    var catsHtml = '';
-                    b.cats.forEach(function (c, j) {
-                        var key = topicKey + '/' + c.name;
-                        var notes = notesFor(key);
-                        catsHtml += folderRow({
-                            key: key, kind: 'cat', depth: 1, delay: j * 40, parent: topicKey,
-                            open: open[key], label: c.name.toUpperCase(),
-                            sub: c.eg.toUpperCase(), count: notes.length,
-                            accent: accent, title: c.name + ' — ' + c.eg
-                        });
-                        var kids = notes.length
-                            ? notes.map(function (n, k) { return noteRow(n, 2, k, accent); }).join('')
-                            : emptyRow(2);
-                        catsHtml += '<div class="kids" data-key="' + esc(key) + '">' +
-                            '<div class="kids-in">' + kids + '</div></div>';
-                    });
-                    html += '<div class="kids" data-key="' + esc(topicKey) + '">' +
-                        '<div class="kids-in">' + catsHtml + '</div></div>';
-                });
-                treeEl.innerHTML = html;
-                applyOpenState();
-            }
-
-            function applyOpenState() {
-                treeEl.querySelectorAll('.kids').forEach(function (kids) {
-                    var key = kids.getAttribute('data-key');
-                    var row = kids.previousElementSibling;
-                    var val = !!open[key];
-                    kids.classList.toggle('open', val);
-                    kids.inert = !val;
-                    if (row) {
-                        row.classList.toggle('is-open', val);
-                        row.setAttribute('aria-expanded', val ? 'true' : 'false');
-                        var ic = row.querySelector('.ic');
-                        if (ic) ic.innerHTML = folder(val);
-                    }
-                });
-            }
-            function toggle(key, val) {
-                if (val === undefined) val = !open[key];
-                open[key] = val;
-                var kids = treeEl.querySelector('.kids[data-key="' + key + '"]');
-                if (!kids) return;
-                kids.classList.toggle('open', val);
-                kids.inert = !val;
-                var row = kids.previousElementSibling;
-                if (row) {
-                    row.classList.toggle('is-open', val);
-                    row.setAttribute('aria-expanded', val ? 'true' : 'false');
-                    row.querySelector('.ic').innerHTML = folder(val);
-                }
-                if (val) {
-                    kids.classList.remove('just-open');
-                    void kids.offsetWidth;
-                    kids.classList.add('just-open');
-                }
-            }
-
-            /* ── Selection + panel ── */
-            function select(key) {
-                selected = key;
-                treeEl.querySelectorAll('.trow').forEach(function (r) {
-                    var on = r.getAttribute('data-key') === key;
-                    r.classList.toggle('is-active', on);
-                    r.setAttribute('aria-selected', on ? 'true' : 'false');
-                });
-                renderPanel();
-            }
-            function setFocus(key, doScroll) {
-                focusedKey = key;
-                treeEl.querySelectorAll('.trow.is-focus').forEach(function (r) { r.classList.remove('is-focus'); });
-                var row = treeEl.querySelector('.trow[data-key="' + key + '"]');
-                if (row) {
-                    row.classList.add('is-focus');
-                    if (doScroll) row.scrollIntoView({ block: 'nearest' });
-                }
-            }
-
-            function panelEmpty(text, sub) {
-                panelBody.innerHTML = '<div class="panel-empty"><i></i>' + esc(text) +
-                    (sub ? '<span class="sub">' + esc(sub) + '</span>' : '') + '</div>';
-            }
-            function renderPanel() {
-                if (!selected) {
-                    crumb.innerHTML = 'SELECT A FOLDER';
-                    panelEmpty('The tree is taxonomy — nothing invented', 'Pick a folder to see what lives inside it');
-                    return;
-                }
-                var parts = selected.split('/');
-                var isCat = parts.length === 2;
-                var list = isCat ? notesFor(selected) : notesForTopic(parts[0]);
-                var label = isCat ? parts[1] : parts[0];
-                crumb.innerHTML = '<b>' + esc(parts[0]) + '</b>' + (isCat ? ' / ' + esc(label.toUpperCase()) : '') +
-                    ' — ' + list.length + (list.length === 1 ? ' NOTE' : ' NOTES');
-                if (!list.length) {
-                    panelEmpty('No notes in ' + label + ' yet',
-                        isCat ? 'The first note in this category is being written'
-                            : 'All categories in this branch are still being written');
-                    return;
-                }
-                var html = list.map(function (e, i) {
-                    return '<a class="p-entry" style="--i:' + i + '" href="' + esc(e.slug) + '">' +
-                        '<span class="e-title">' + esc(e.title) + '</span>' +
-                        '<span class="e-deck">' + esc(e.deck) + '</span>' +
-                        '<span class="e-meta">' +
-                        '<span class="e-path">' + esc(e.path.toUpperCase()) + '</span>' +
-                        '<span class="e-date">' + esc(fmtDate(e.date)) + '</span>' +
-                        '<span class="read-tag">READ</span>' +
-                        '</span></a>';
-                }).join('');
-                panelBody.innerHTML = '<div class="p-entries">' + html + '</div>';
-                retrigger(panelBody.querySelector('.p-entries'));
-            }
-
-            /* ── Interactions ── */
-            function isFolder(row) {
-                var k = row.getAttribute('data-kind');
-                return k === 'topic' || k === 'cat';
-            }
-            function visibleRows() {
-                return Array.prototype.filter.call(treeEl.querySelectorAll('.trow'), function (r) {
-                    var kids = r.closest('.kids');
-                    while (kids) {
-                        if (!kids.classList.contains('open')) return false;
-                        kids = kids.parentElement ? kids.parentElement.closest('.kids') : null;
-                    }
-                    return true;
-                });
-            }
-
-            treeEl.addEventListener('click', function (e) {
-                var row = e.target.closest('.trow');
-                if (!row) return;
-                treeEl.focus();
-                var key = row.getAttribute('data-key');
-                setFocus(key);
-                if (!isFolder(row)) return;   /* notes are links, empty rows are inert */
-                select(key);
-                toggle(key);
-            });
-
-            treeEl.addEventListener('keydown', function (e) {
-                var rows = visibleRows();
-                if (!rows.length) return;
-                var idx = -1;
-                rows.forEach(function (r, i) { if (r.getAttribute('data-key') === focusedKey) idx = i; });
-                var row = idx >= 0 ? rows[idx] : null;
-
-                if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    idx = row ? Math.min(idx + 1, rows.length - 1) : 0;
-                    setFocus(rows[idx].getAttribute('data-key'), true);
-                } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    idx = row ? Math.max(idx - 1, 0) : rows.length - 1;
-                    setFocus(rows[idx].getAttribute('data-key'), true);
-                } else if (e.key === 'ArrowRight') {
-                    if (!row || !isFolder(row)) return;
-                    e.preventDefault();
-                    var k = row.getAttribute('data-key');
-                    if (!open[k]) {
-                        select(k);
-                        toggle(k, true);
-                    } else if (idx + 1 < rows.length) {
-                        setFocus(rows[idx + 1].getAttribute('data-key'), true);
-                    }
-                } else if (e.key === 'ArrowLeft') {
-                    if (!row || !isFolder(row)) return;
-                    e.preventDefault();
-                    var k2 = row.getAttribute('data-key');
-                    if (open[k2]) {
-                        toggle(k2, false);
-                    } else {
-                        var p = row.getAttribute('data-parent');
-                        if (p) setFocus(p, true);
-                    }
-                } else if (e.key === 'Enter' || e.key === ' ') {
-                    if (!row) return;
-                    e.preventDefault();
-                    if (row.getAttribute('data-kind') === 'note') {
-                        window.location.href = row.getAttribute('href');
-                        return;
-                    }
-                    if (isFolder(row)) {
-                        select(row.getAttribute('data-key'));
-                        toggle(row.getAttribute('data-key'));
-                    }
-                }
-            });
-
-            treeEl.addEventListener('focus', function () {
-                if (!focusedKey) {
-                    var rows = visibleRows();
-                    if (rows.length) setFocus(rows[0].getAttribute('data-key'));
-                }
-            });
-
-            expandAllBtn.addEventListener('click', function () {
-                TAXONOMY.forEach(function (b) {
-                    open[b.topic] = true;
-                    b.cats.forEach(function (c) { open[b.topic + '/' + c.name] = true; });
-                });
-                applyOpenState();
-            });
-            collapseAllBtn.addEventListener('click', function () {
-                TAXONOMY.forEach(function (b) {
-                    open[b.topic] = false;
-                    b.cats.forEach(function (c) { open[b.topic + '/' + c.name] = false; });
-                });
-                applyOpenState();
-            });
-
-            /* ── Status readout (computed) ── */
-            var totalCats = 0;
-            TAXONOMY.forEach(function (b) { totalCats += b.cats.length; });
-            readout.textContent = TAXONOMY.length + ' BRANCHES · ' + totalCats + ' CATEGORIES · ' + ENTRIES.length + ' NOTES';
-
-            /* ── Latest index — published only, newest first ── */
             var sorted = ENTRIES.slice().sort(function (a, b) { return b.date < a.date ? -1 : 1; });
             if (sorted.length) {
-                indexList.innerHTML = sorted.map(function (n) {
-                    return '<a class="index-row" href="' + esc(n.slug) + '">' +
-                        '<span class="ix-date">' + esc(fmtDate(n.date)) + '</span>' +
-                        '<span class="ix-title">' + esc(n.title) + '</span>' +
-                        '<span class="ix-path">' + esc(n.path.toUpperCase()) + '</span>' +
-                        '<span class="ix-tags">' + esc((n.tags || []).join(' · ')) + '</span>' +
-                        '<span class="ix-arrow">→</span></a>';
+                list.innerHTML = sorted.map(function (n, i) {
+                    return '<a class="doc-row reveal" style="--d:' + (i * 90) + 'ms" href="' + esc(n.slug) + '">' +
+                        '<span class="doc-no"><b>DOC</b><i>' + String(i + 1).padStart(2, '0') + '</i></span>' +
+                        '<span>' +
+                        '<span class="doc-title">' + esc(n.title) + '</span>' +
+                        '<span class="doc-deck">' + esc(n.deck) + '</span>' +
+                        '<span class="doc-path">' + esc(n.slug) + '</span>' +
+                        '</span>' +
+                        '<span class="doc-meta">' +
+                        '<span class="m-date">' + esc(fmtDate(n.date)) + '</span>' +
+                        '<span class="m-topic">' + esc((n.topic || '').toUpperCase()) + '</span>' +
+                        '<span class="doc-read">READ</span>' +
+                        '</span></a>';
                 }).join('');
             } else {
-                indexList.innerHTML = '<div class="index-empty"><i></i>NO NOTES PUBLISHED YET' +
-                    '<span class="sub">The explorer above is the queue — entries land here as they go live</span></div>';
+                list.innerHTML = '<div class="index-empty"><i></i>NO DOCUMENTS PUBLISHED YET' +
+                    '<span class="sub">The queue lives in docs/ideas.md — documents land here as they’re written</span></div>';
             }
-
-            buildTree();
-            renderPanel();
         })();
 
         /* hero ghost numeral parallax */

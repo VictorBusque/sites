@@ -10,7 +10,7 @@ description: >
   so every agent produces consistent, polished pages.
 metadata:
   author: Víctor Busqué
-  version: "2.0.0"
+  version: "2.1.0"
   site: living-engineering-notes
 ---
 
@@ -151,7 +151,7 @@ step activation for sticky scenes. Page scripts only do what the shared engine
 can't: compute honest state and drive per-step stage states via
 `data-active-step` CSS hooks.
 
-### 5. Register the story on the landing page
+### 5. Register the document on the landing shelf
 
 Add one entry to the `ENTRIES` array in `index.html` (find it under "Real
 entries only"):
@@ -160,16 +160,19 @@ entries only"):
 {
     slug: 'blog/<slug>.html', title: 'Short, concrete title.',
     deck: 'One or two sentences that promise the experience: what the reader will scroll through and understand.',
-    date: 'YYYY-MM', path: 'Topic/Category', tags: ['Tag', 'Tag']
+    date: 'YYYY-MM', topic: 'Free-form topic label (e.g. "AI · LLMs")', tags: ['Tag', 'Tag']
 }
 ```
 
-The entry appears automatically in both the IDE explorer tree and the Latest
-index — the row and the file are the same object. `slug` must match the file,
-`path` must match a leaf in `TAXONOMY` (see [AGENTS.md](../../../AGENTS.md)).
-No entry may point at a file that doesn't exist, and no file may be missing
-its entry. Update the site's framing copy (hero demo labels, marquee items)
-only if the site's promise changes.
+The entry renders on the documents shelf, newest first — the row and the
+file are the same object. `slug` must match the file; `topic` is free-form
+metadata shown on the row (there is no fixed taxonomy and no folder tree —
+the site is a curiosity notebook where engineering is the core, not the
+boundary). No entry may point at a file that doesn't exist, and no file
+may be missing its entry. The idea queue lives in `docs/ideas.md` — move
+an idea from there to `ENTRIES` when its document ships. Update the site's
+framing copy (hero demo labels, marquee items) only if the site's promise
+changes.
 
 ### 6. Verify (run the checklist)
 
@@ -274,7 +277,7 @@ Full reference: [references/MOTION.md](references/MOTION.md).
 - [ ] No network requests beyond the site's own fonts and `og:image`;
       no CDN, no remote script, no `fetch()`
 - [ ] Landing `ENTRIES` entry added with a slug that matches the file; no
-      stale rows; explorer and Latest show the new note
+      stale rows; the documents shelf shows the new note
 - [ ] Mobile check at 390px: sticky stage fits (labels ≥ 8px rendered), step
       cards legible, lanes/rails stack, nothing clips or overflows
 - [ ] Copy follows the tone rules; no fake stats, no slang, no emoji

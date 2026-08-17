@@ -4,27 +4,16 @@ This is the project for Víctor Busqué (victorbusque.com) engineering blog site
 
 # Structure
 
-The blogpost works around several topics:
+This is the project for Víctor Busqué (victorbusque.com): a living notebook
+of scroll-story essays ("documents"). One idea per document, told as a
+scrollytelling page. Engineering is the core, not the boundary — any topic
+that deserves a slow walk can become a document (AI and agents, systems,
+Python, cloud, craft, curiosity).
 
-- AI
-  - Basics
-    - e.g. LLM, Agent
-  - Advanced
-    - e.g. Tools, MCP, Skills, Plugins, Harness
-  - Models
-    - e.g. my tests, experiments, results and thoughts on the models I can access.
-  - Production
-    - e.g. Gateway, Memory, Guardrails, Sandboxing, evaluation, security.
-  - Personal
-    - e.g. my projects, tricks, tips, stack, learnings, etc.
-- Software Engineering
-  - Python
-    - e.g. FastAPI, Litestar, concurrency, parallelism, optimization, etc.
-  - Architecture
-    - e.g. Design Patterns, Microservices, etc.
-- Cloud
-  - AWS
-    - e.g. Lambda, S3, DynamoDB, Bedrock AgentCore, etc.
+- Posts live at `blog/<slug>.html`, one idea each.
+- Topics are free-form metadata on each entry (`topic` + `tags` in the
+  `ENTRIES` list in `index.html`) — no fixed taxonomy, no folder tree.
+- The idea queue lives in `docs/ideas.md`.
 
 # Posts
 

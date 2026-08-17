@@ -37,7 +37,7 @@ sites/
 |---|---|---|
 | `css/site.css` | Extend (new shared components, keyframes, tokens) | Restyle existing shared classes to fit one page |
 | `js/site.js` | Fix bugs, add engine features | Move it, break `defer` ordering, add page-specific logic |
-| `index.html` | Add/remove note entries and update copy | Delete the hero/manifesto/principles sections |
+| `index.html` | Add/remove document entries and update copy | Delete the hero or the documents shelf |
 | `blog/<slug>.html` | Everything inside the page (styles, scripts, prose, scenes) | Duplicate shared system or hand-write scene wiring |
 | `blog/template.html` | Keep it current as the catalog + starting point | Remove scene kinds or layout pieces it documents |
 | `about.html` | Fix bugs in its inline figure logic | Convert it to scrollytelling — it intentionally keeps the legacy figure system (it documents how the author learns) |
