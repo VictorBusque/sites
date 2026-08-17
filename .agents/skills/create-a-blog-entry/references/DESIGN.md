@@ -11,27 +11,27 @@ inline `<style>` block.
 |---|---|---|
 | `--ink` | `#101010` | text, borders, dark fills |
 | `--paper` | `#f2f0e9` | page background |
-| `--paper-2` | `#ece9de` | secondary surfaces, fig head bars |
+| `--paper-2` | `#ece9de` | secondary surfaces, scene-head bars |
 | `--acid` | `#c7ff3d` | the accent — highlights, found/ok states, selection |
 | `--blue` | `#546cff` | secondary accent — scanning, in-flight, structure |
-| `--orange` | `#ff6b2c` | attention — probes, candidates, warnings |
+| `--orange` | `#ff6b2c` | attention — the thing to watch right now |
 | `--muted` | `#716f68` | secondary text |
 | `--line` | `#111111` | 1px rules |
-| `--stage` | `#121212` | dark figure canvas (with `--grid #ffffff0d`) |
+| `--stage` | `#121212` | dark scene canvas (with `--grid #ffffff0d`) |
 
 Semantic mapping on dark canvases: **acid** = found / settled / active flow,
 **blue** = currently being examined, **orange** = the thing to watch right now
 (probe, smallest-so-far, dropped item). Keep this mapping consistent across
-posts — readers learn it once.
+articles — readers learn it once.
 
 ## Type
 
 | Face | Role |
 |---|---|
 | Unbounded | display and headings (letter-spacing ~ `-.07em`, weights 400–600) |
-| Instrument Serif | italic accents inside headlines, big ghost numerals, callouts |
+| Instrument Serif | italic accents inside headlines, big ghost numerals, callouts, metrics numerals |
 | Newsreader | body text |
-| DM Mono | labels, kickers, readouts, figure captions' kicker, meta |
+| DM Mono | labels, kickers, readouts, step numbers, captions' kicker, meta |
 
 Headline pattern: stacked `.h-line` masked lines, `clamp(46px, 7.5vw, 116px)`,
 line-height ~ `.86`. One line per span; an `<em>` adds the serif accent.
@@ -43,11 +43,12 @@ line-height ~ `.86`. One line per span; an `<em>` adds the serif accent.
   (`NOTE NN / TOPIC`).
 - **Post hero:** `post-hero` — crumb (link back to `../index.html`), `h1` with
   `.h-line` spans, `.dek` (max 620px, fades up on load), `.post-meta`
-  (`MON YEAR · ~N MIN · N FIGURES`), plus a `.ghost` numeral (`01`, `02`, …).
+  (`MON YEAR · ~N MIN · N SCENES`), plus a `.ghost` numeral (`01`, `02`, …).
 - **Prose column:** `.post-prose` — max 700px, centered. `h2` sections carry a
   small `.sec-no` (orange, DM Mono). `.callout` (serif italic, acid left
   border) holds the takeaway; `.aside` (DM Mono, muted) holds provenance.
-- **Figures:** full-width, breaking the prose column, spaced `11vh` vertically.
+- **Scenes:** full-width, breaking the prose column. Sticky scenes are the
+  workhorse — see below.
 - **Post nav:** two-column `post-nav` at the bottom, previous / next note.
 - **Footer:** ink background, huge `footer-big` masked reveal, small mono
   `foot` line. Shared — copy it verbatim, change only the footer label.
@@ -61,10 +62,11 @@ line-height ~ `.86`. One line per span; an `<em>` adds the serif accent.
 - `.h-line > span` — load-time masked line reveal for headlines.
 - Never write your own scroll-triggered reveal; always reuse these classes.
 
-## Dark figure canvases
+## Dark scene canvases
 
-The `.fig-body` from `css/site.css` provides the dark canvas, the 32px grid,
-and the decorative bottom-right circle. Inside, follow the stage conventions:
+The `.sticky-scene__stage` from `css/site.css` provides the dark canvas, the
+32px grid, and the decorative bottom-right circle. Inside, follow the stage
+conventions:
 
 - Nodes/cells: `1px` borders in `#ffffff2a–45`, text in `#888–ccc`,
   backgrounds `#121212` / `#1c1c1c`.
@@ -73,28 +75,61 @@ and the decorative bottom-right circle. Inside, follow the stage conventions:
 - A "consumed/past" element: opacity to `~.2` or dimmed border — never delete
   it from the layout (position stability matters).
 - Always add a mono micro-label (9–10px, letter-spacing `.12–.16em`) so a
-  figure is legible without the caption.
+  stage is legible without the caption.
+
+### Sticky scenes
+
+```text
+<section class="sticky-scene">          tall track = n × 100svh
+  .sticky-scene__stage                  pinned (position: sticky, top 0, 100svh)
+    .scene-head                         ACT NN / NAME / live STEP k / n readout
+    .stage                              the diagram
+  .sticky-scene__steps                  overlays the stage (only under .js)
+    article.step[data-step]             paper card: STEP k / n label + 1 short ¶
+```
+
+- Step cards: paper background, ink border, `max-width: 420px`, mono
+  `step-k` label, one short paragraph (1–2 sentences). Inactive cards rest
+  dimmed; the active card fades/rises in (`--ease-out`, 600–900ms).
+- Stage states key off `data-active-step` attribute selectors, e.g.
+  `.sticky-scene[data-active-step="2"] .marker { … }`.
+- Without JS or under reduced motion the overlay collapses: the stage is a
+  plain block and the steps stack below it — still a complete article.
+
+### Non-sticky scenes
+
+- `.scene.split` — copy and a bounded visual side by side, stacked below
+  850px.
+- `.comparison` — two labeled states of the same composition.
+- `.metrics-scene` — a large Instrument Serif numeral with the mechanism that
+  produced it beside it.
+- `.breather` — a quiet beat: a centered serif line or masked quote, no
+  diagram.
 
 ## Responsive
 
 Shared breakpoints (in `css/site.css`): 850px collapses nav links/status,
 stacks grids, shrinks `post-nav` to one column; the landing page stacks its
-hero and card grids at 1050px. Keep new figure stages flexible: cell sizes in
-`clamp` or percentages, labels that shrink, and figure bodies that accept
-`min-height` reductions without clipping content.
+hero and card grids at 1050px.
 
-Figures on narrow screens follow the same rule as the page grids: they
-**reframe, they don't shrink**. Full-bleed SVG stages declare a tighter mobile
-`viewBox` via `data-vb-narrow` (swapped by `js/site.js` below 850px), get
-mobile font bumps in the page's media query (≥ 8px rendered), and a side rail
-(meter, legend) moves above or below the diagram so the SVG keeps full width.
-A full-bleed figure's `.fig-body` gets `aspect-ratio` set to the narrow frame
-so the canvas matches it exactly. HTML/CSS figures shrink fixed cell sizes and
-wrap rows in a media query. See `references/FIGURE-ENGINE.md` and
+Scenes on narrow screens follow the same rule as the page grids: they
+**reframe, they don't shrink**. Sticky stages keep their track but use `svh`
+and centered compositions; full-bleed SVG stages declare a tighter mobile
+`viewBox` via `data-vb-narrow` (swapped by `js/site.js` below 850px) and get
+mobile font bumps in the page's media query (≥ 8px rendered). Step cards go
+full-width with generous padding. See `references/SCROLLYTELLING.md` and
 `blog/template.html` for working examples.
 
 ## Reduced motion
 
 A global `@media (prefers-reduced-motion: reduce)` block in `css/site.css`
-collapses all animation to near-instant and forces reveals visible. Do not
-weaken or override it. It is the reason pages stay usable for every reader.
+collapses all animation to near-instant, forces reveals visible, and restores
+document flow for sticky scenes (stage static, steps stacked, all text
+visible). Do not weaken or override it. It is the reason pages stay usable for
+every reader.
+
+## Legacy figure system
+
+`about.html` keeps the older `.fig` frame (fig-head, fig-body, engine
+PAUSE/REPLAY controls). The styles remain in `css/site.css` and the engine in
+`js/site.js`. Blog posts never use it. See `references/FILE-MAP.md`.

@@ -466,6 +466,192 @@ nav .links a:hover::after {
     margin-right: 8px;
 }
 
+/* ── Scene system (scrollytelling) ────────────────────────── */
+/*
+   Posts are scrollytelling articles. The scene system pins a dark stage
+   while step cards scroll over it — the scroll length is the timeline.
+   js/site.js toggles .is-active on [data-step] cards, sets
+   data-active-step on the section, and fills [data-readout]. The overlay
+   layout exists only under the .js gate in <head>; without JS or under
+   reduced motion the scene is a plain document (stage block, then steps).
+   See blog/template.html for the recipe.
+*/
+.scene {
+    padding: 0 4vw;
+    margin: 11vh 0;
+}
+.scene.split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6vw;
+    align-items: center;
+    max-width: 1240px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.scene__copy h2 {
+    font-family: "Unbounded", sans-serif;
+    font-weight: 500;
+    font-size: clamp(25px, 3.4vw, 38px);
+    letter-spacing: -.045em;
+    line-height: 1.05;
+    margin: 0 0 20px;
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+}
+.scene__copy h2 .sec-no {
+    font: 10px "DM Mono";
+    letter-spacing: .14em;
+    color: var(--orange);
+    align-self: center;
+}
+.scene__copy p {
+    font-size: 17px;
+    line-height: 1.7;
+    color: #33322e;
+    margin-bottom: 1.2em;
+}
+.scene__visual {
+    display: grid;
+    place-items: center;
+}
+
+/* ── sticky scene ── */
+.sticky-scene {
+    position: relative;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+}
+.sticky-scene__stage {
+    background-color: var(--stage);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 32px 32px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    min-height: 60vh; /* static fallback */
+}
+.js .sticky-scene__stage {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    min-height: 0;
+}
+.sticky-scene__stage::after {
+    content: "";
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    border: 1px solid #ffffff12;
+    border-radius: 50%;
+    right: -100px;
+    bottom: -100px;
+    pointer-events: none;
+}
+.scene-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid #ffffff1a;
+    padding: 12px 4vw;
+    position: relative;
+    z-index: 2;
+}
+.scene-no {
+    font: 10px "DM Mono";
+    letter-spacing: .14em;
+    color: var(--orange);
+}
+.scene-name {
+    font: 10px "DM Mono";
+    letter-spacing: .18em;
+}
+.scene-readout {
+    font: 10px "DM Mono";
+    color: #777;
+    margin-left: auto;
+}
+
+/* steps overlay — only under .js */
+.js .sticky-scene__steps {
+    position: relative;
+    margin-top: -100svh;
+    pointer-events: none;
+    z-index: 1;
+}
+.js .sticky-scene__steps > * {
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    padding: 0 4vw;
+}
+.step {
+    max-width: 420px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    padding: 26px 28px;
+    color: var(--ink);
+}
+.js .step {
+    opacity: 0;
+    transform: translateY(26px);
+    transition: opacity var(--t-slow) var(--ease-out),
+        transform var(--t-slow) var(--ease-out);
+    pointer-events: none;
+}
+.js .step.is-active {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+}
+.step-k {
+    font: 9px "DM Mono";
+    letter-spacing: .16em;
+    color: var(--orange);
+    display: block;
+    margin-bottom: 10px;
+}
+.step p {
+    font-size: 16.5px;
+    line-height: 1.6;
+    color: #33322e;
+}
+.step p + p {
+    margin-top: .8em;
+}
+
+/* ── other scene kinds ── */
+.breather {
+    padding: 14vh 4vw;
+    text-align: center;
+}
+.breather .breather-line {
+    font: italic clamp(30px, 4.6vw, 54px)/1.25 "Instrument Serif";
+    max-width: 720px;
+    margin: 0 auto;
+}
+.metrics-scene {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 5vw;
+    align-items: center;
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 4vw;
+}
+.metrics-scene .metric {
+    font: italic clamp(90px, 14vw, 190px)/.9 "Instrument Serif";
+    letter-spacing: -.04em;
+}
+.metrics-scene p {
+    font-size: 17px;
+    line-height: 1.7;
+    color: #33322e;
+    max-width: 560px;
+}
+
 /* ── Blog post layout ───────────────────────────────────── */
 .post-hero {
     border-bottom: 1px solid var(--line);
@@ -733,6 +919,10 @@ footer::after {
     .fig-body { min-height: 300px; }
     .fig-head { flex-wrap: wrap; gap: 10px; }
     .fig-readout { max-width: 100%; margin-left: 0; }
+    .scene.split { grid-template-columns: 1fr; }
+    .metrics-scene { grid-template-columns: 1fr; gap: 4vh; }
+    .js .sticky-scene__steps > * { padding: 0 5vw; }
+    .step { max-width: none; }
     .post-nav { grid-template-columns: 1fr; }
     .post-nav a + a { border-left: 0; border-top: 1px solid var(--line); text-align: left; }
     .post-hero .ghost { font-size: 100px; }
@@ -755,5 +945,18 @@ footer::after {
     .fig.is-paused .fig-body *::before,
     .fig.is-paused .fig-body *::after {
         animation-play-state: initial !important;
+    }
+    /* scenes → plain document flow: stage block first, steps stacked */
+    .js .sticky-scene__stage { position: relative; height: auto; min-height: 50vh; }
+    .js .sticky-scene__steps { margin-top: 0; }
+    .js .sticky-scene__steps > * { min-height: auto; display: block; padding: 0 4vw; }
+    .js .step {
+        opacity: 1 !important;
+        transform: none !important;
+        max-width: none;
+        background: none;
+        border: 0;
+        padding: 30px 0;
+        pointer-events: auto;
     }
 }

@@ -25,3 +25,9 @@ The blogpost works around several topics:
 - Cloud
   - AWS
     - e.g. Lambda, S3, DynamoDB, Bedrock AgentCore, etc.
+
+# Posts
+
+Blog posts are scrollytelling articles (one idea, scroll-driven scenes). Follow
+`.agents/skills/create-a-blog-entry` when writing or editing posts, the landing
+page, or the shared css/js system.

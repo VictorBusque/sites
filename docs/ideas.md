@@ -6,7 +6,6 @@ Every idea maps to one note under `blog/`. **Status:** `Queued` = on my list to 
 
 | Concept | Title | Excerpt | Status |
 | --- | --- | --- | --- |
-| LLM | Token by token | What a language model actually is, one token at a time | Queued |
 | Agent | When a tool acts on its own | What makes a system an agent, not a tool | Queued |
 | Tokens | How text becomes numbers | The split that happens before the model ever sees your words | Idea |
 | Embeddings | Meaning, mapped | Turning meaning into vectors, and why similar things land nearby | Idea |

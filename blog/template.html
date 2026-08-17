@@ -7,7 +7,7 @@
 
     <!-- Primary meta -->
     <title>The template — Víctor Busqué</title>
-    <meta name="description" content="Template note for the Living Engineering Notes figure engine — the building blocks for teaching an idea with diagrams that move.">
+    <meta name="description" content="Template article for the scrollytelling engine — the building blocks for teaching an idea by scrolling through it.">
     <meta name="author" content="Víctor Busqué">
     <meta name="robots" content="noindex, follow">
     <link rel="canonical" href="https://victorbusque.com/blog/template.html">
@@ -26,7 +26,7 @@
     <meta property="og:type" content="article">
     <meta property="og:site_name" content="Víctor Busqué — Living Engineering Notes">
     <meta property="og:title" content="The template — Víctor Busqué">
-    <meta property="og:description" content="Template note for the Living Engineering Notes figure engine.">
+    <meta property="og:description" content="Template article for the scrollytelling engine.">
     <meta property="og:url" content="https://victorbusque.com/blog/template.html">
     <meta property="og:image" content="https://victorbusque.com/img/og.png">
     <meta property="og:image:width" content="1200">
@@ -36,12 +36,17 @@
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="The template — Víctor Busqué">
-    <meta name="twitter:description" content="Template note for the Living Engineering Notes figure engine.">
+    <meta name="twitter:description" content="Template article for the scrollytelling engine.">
     <meta name="twitter:image" content="https://victorbusque.com/img/og.png">
 
     <!-- Performance: preconnect to font CDN -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- The .js gate: enables the scene overlay layout. Without it (no JS,
+         reduced motion) scenes render as a plain document — stage first,
+         steps stacked. Must run before the body parses. -->
+    <script>document.documentElement.className += ' js';</script>
 
     <link rel="stylesheet" href="../css/site.css">
     <script src="../js/site.js" defer></script>
@@ -49,33 +54,66 @@
         /* ════════════════════════════════════════════════════════════════
            TEMPLATE-ONLY STYLES
            Each block is a working example. Copy the block you need into a
-           new note; the shared pieces (nav, footer, reveals, figure engine)
-           live in css/site.css and js/site.js.
+           new article; the shared pieces (tokens, nav, footer, reveals,
+           scene frame, step cards) live in css/site.css and js/site.js.
            ════════════════════════════════════════════════════════════════ */
 
-        /* ── FIG 01 · scripted step-through — "the walker" ── */
-        .w-stage { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; }
-        .w-track { display: flex; gap: 8px; }
-        .w-cell {
-            width: 38px;
-            height: 42px;
-            border: 1px solid #ffffff30;
+        /* ── SCENE 01 · sticky — "the search race" ──
+           Stage states are keyed off data-active-step on the section,
+           set by the shared engine as step cards cross mid-viewport. */
+        .s-stage { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; }
+        .s-needle { border: 1px solid var(--acid); color: var(--acid); padding: 8px 20px; font: 12px "DM Mono"; letter-spacing: .14em; box-shadow: 0 0 18px #c7ff3d22; }
+        .s-lane { display: flex; align-items: center; gap: 14px; }
+        .s-lab { width: 92px; text-align: right; padding-right: 8px; font: 9px "DM Mono"; letter-spacing: .14em; color: #777; }
+        .s-row { display: flex; gap: 6px; }
+        .s-cell {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #ffffff2a;
             display: grid;
             place-items: center;
-            font: 10px "DM Mono";
-            color: #888;
-            transition: border-color .25s var(--ease-swift), box-shadow .25s var(--ease-swift), color .25s var(--ease-swift);
+            font: 11px "DM Mono";
+            color: #999;
+            transition: border-color .3s var(--ease-swift), color .3s var(--ease-swift),
+                opacity .3s var(--ease-swift), box-shadow .3s var(--ease-swift);
         }
-        .w-cell.done { border-color: #546cff66; color: #666; }
-        .w-cell.on { border-color: var(--acid); color: #fff; box-shadow: 0 0 14px #c7ff3d33; }
-        .w-axis { display: flex; gap: 8px; font: 9px "DM Mono"; letter-spacing: .14em; color: #555; }
-        .w-axis span { width: 38px; text-align: center; }
+        .s-cell.past { opacity: .22; border-color: #ffffff24; }
+        .s-cell.probe { border-color: var(--orange); color: #fff; box-shadow: inset 0 0 0 1px var(--orange); }
+        .s-cell.found { border-color: var(--acid); color: var(--acid); box-shadow: 0 0 14px #c7ff3d33; }
+        .s-chips { display: flex; gap: 10px; }
+        .s-chip { font: 9px "DM Mono"; letter-spacing: .14em; padding: 6px 12px; border: 1px solid #ffffff22; color: #aaa; opacity: 0; transition: opacity .5s var(--ease-out); }
+        .s-chip b { color: var(--acid); font-weight: 500; }
 
-        /* ── FIG 02 · looping CSS scene — "the orbit" ── */
-        .orb-stage { position: absolute; inset: 0; display: grid; place-items: center; }
-        .orb { width: 180px; height: 180px; position: relative; }
-        .orb .ring { position: absolute; inset: 0; border: 1px solid #ffffff22; border-radius: 50%; }
-        .orb .ring.r2 { inset: -14px; border-color: #ffffff10; animation: orb-ping 3s var(--ease-out) infinite; }
+        /* per-step states — one named state per step, never pixels */
+        .sticky-scene[data-active-step="2"] .s-row-lin .s-cell:nth-child(-n+3),
+        .sticky-scene[data-active-step="3"] .s-row-lin .s-cell:nth-child(-n+6),
+        .sticky-scene[data-active-step="4"] .s-row-lin .s-cell:nth-child(-n+7),
+        .sticky-scene[data-active-step="5"] .s-row-lin .s-cell:nth-child(-n+7) { opacity: .22; border-color: #ffffff24; }
+        .sticky-scene[data-active-step="2"] .s-row-lin .s-cell:nth-child(4),
+        .sticky-scene[data-active-step="3"] .s-row-lin .s-cell:nth-child(7) { border-color: var(--orange); color: #fff; box-shadow: inset 0 0 0 1px var(--orange); }
+        .sticky-scene[data-active-step="4"] .s-row-lin .s-cell:nth-child(8),
+        .sticky-scene[data-active-step="5"] .s-row-lin .s-cell:nth-child(8) { border-color: var(--acid); color: var(--acid); box-shadow: 0 0 14px #c7ff3d33; }
+
+        .sticky-scene[data-active-step="3"] .s-row-bin .s-cell:nth-child(6),
+        .sticky-scene[data-active-step="4"] .s-row-bin .s-cell:nth-child(6),
+        .sticky-scene[data-active-step="4"] .s-row-bin .s-cell:nth-child(7),
+        .sticky-scene[data-active-step="4"] .s-row-bin .s-cell:nth-child(9),
+        .sticky-scene[data-active-step="5"] .s-row-bin .s-cell:nth-child(6),
+        .sticky-scene[data-active-step="5"] .s-row-bin .s-cell:nth-child(7),
+        .sticky-scene[data-active-step="5"] .s-row-bin .s-cell:nth-child(9) { opacity: .22; border-color: #ffffff24; }
+        .sticky-scene[data-active-step="2"] .s-row-bin .s-cell:nth-child(6),
+        .sticky-scene[data-active-step="3"] .s-row-bin .s-cell:nth-child(9) { border-color: var(--orange); color: #fff; box-shadow: inset 0 0 0 1px var(--orange); }
+        .sticky-scene[data-active-step="4"] .s-row-bin .s-cell:nth-child(8),
+        .sticky-scene[data-active-step="5"] .s-row-bin .s-cell:nth-child(8) { border-color: var(--acid); color: var(--acid); box-shadow: 0 0 14px #c7ff3d33; }
+
+        /* the honest counts appear only once the race is over */
+        .sticky-scene[data-active-step="4"] .s-chip,
+        .sticky-scene[data-active-step="5"] .s-chip { opacity: 1; }
+
+        /* ── SCENE 02 · split — "the orbit" ── */
+        .orb { width: 210px; height: 210px; position: relative; margin: 0 auto; }
+        .orb .ring { position: absolute; inset: 0; border: 1px solid #1111112a; border-radius: 50%; }
+        .orb .ring.r2 { inset: -16px; border-color: #11111114; animation: orb-ping 3s var(--ease-out) infinite; }
         .orb .spin { position: absolute; inset: 0; animation: orb-spin 3.4s linear infinite; }
         .orb .sat {
             position: absolute;
@@ -85,8 +123,8 @@
             height: 12px;
             margin-left: -6px;
             border-radius: 50%;
-            background: var(--acid);
-            box-shadow: 0 0 14px var(--acid);
+            background: var(--blue);
+            box-shadow: 0 0 14px var(--blue);
         }
         .orb .core {
             position: absolute;
@@ -96,8 +134,7 @@
             height: 14px;
             margin: -7px 0 0 -7px;
             border-radius: 50%;
-            background: #fff;
-            box-shadow: 0 0 16px #ffffff44;
+            background: var(--ink);
             z-index: 2;
         }
         @keyframes orb-spin { to { transform: rotate(360deg); } }
@@ -106,25 +143,18 @@
             80%, 100% { transform: scale(1.16); opacity: 0; }
         }
 
-        /* ── FIG 03 · autoplay scripted — "the search race" ── */
-        .a-stage { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; }
-        .a-needle { border: 1px solid var(--acid); color: var(--acid); padding: 10px 22px; font: 12px "DM Mono"; letter-spacing: .14em; box-shadow: 0 0 18px #c7ff3d22; }
-        .a-lane { display: flex; gap: 6px; align-items: center; }
-        .a-lane .lab { width: 86px; font: 9px "DM Mono"; letter-spacing: .14em; color: #777; text-align: right; padding-right: 14px; }
-        .a-lane .lab b { color: var(--acid); font-weight: 500; }
-        .a-cell {
-            width: 34px;
-            height: 36px;
-            border: 1px solid #ffffff30;
-            display: grid;
-            place-items: center;
-            font: 10px "DM Mono";
-            color: #999;
-            transition: border-color .25s var(--ease-swift), color .25s var(--ease-swift), opacity .25s var(--ease-swift);
-        }
-        .a-cell.past { opacity: .22; }
-        .a-cell.probe { border-color: var(--orange); color: #fff; box-shadow: inset 0 0 0 1px var(--orange); }
-        .a-cell.found { border-color: var(--acid); color: var(--acid); animation: pop 2s var(--ease-out) infinite; }
+        /* ── SCENE 04 · metrics — real number, visible evidence ── */
+        .m-evidence { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .ev-chip { border: 1px solid var(--line); padding: 10px 16px; font: 12px "DM Mono"; color: var(--muted); }
+        .ev-chip.ev-hit { border-color: var(--acid); color: var(--ink); background: var(--acid); box-shadow: 0 0 14px #c7ff3d44; }
+        .m-note { font: 10px "DM Mono"; letter-spacing: .14em; color: var(--muted); margin-top: 14px; }
+
+        /* ── SCENE 05 · comparison — the same scene, two modes ── */
+        .cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .cmp-card { border: 1px solid var(--line); background: var(--paper-2); padding: 26px; }
+        .cmp-card h4 { font-size: 15px; margin-bottom: 8px; }
+        .cmp-card p { font-size: 13px; color: var(--muted); line-height: 1.55; }
+        .cmp-card .cmp-k { font: 9px "DM Mono"; letter-spacing: .16em; color: var(--orange); display: block; margin-bottom: 10px; }
 
         /* ── recipe code block ── */
         .recipe {
@@ -150,20 +180,18 @@
         .ex-blockquote .hl { background: var(--acid); padding: 0 6px; }
 
         @media (max-width: 850px) {
-            .ex-grid { grid-template-columns: 1fr; }
+            .ex-grid, .cmp-grid { grid-template-columns: 1fr; }
 
-            /* figures adapt to narrow canvases — rows shrink, lanes reflow */
-            .w-cell { width: 32px; height: 36px; }
-            .w-axis span { width: 32px; }
-            .a-lane { flex-wrap: wrap; row-gap: 8px; gap: 5px; }
-            .a-lane .lab { width: 100%; text-align: left; padding-right: 0; }
-            .a-cell { width: 26px; height: 28px; font-size: 9px; }
+            /* the race reframes: labels move above the rows, cells shrink */
+            .s-lane { flex-direction: column; gap: 8px; }
+            .s-lab { width: auto; text-align: center; padding-right: 0; }
+            .s-cell { width: 30px; height: 30px; font-size: 9px; }
         }
         @media (max-width: 480px) {
-            .w-cell { width: 29px; height: 33px; }
-            .w-axis span { width: 29px; }
-            .a-lane { gap: 4px; }
-            .a-cell { width: 22px; height: 24px; font-size: 8.5px; }
+            .s-stage { gap: 18px; }
+            .s-row { gap: 4px; }
+            .s-cell { width: 22px; height: 24px; font-size: 8.5px; }
+            .s-needle { font-size: 10px; padding: 6px 14px; }
         }
     </style>
 </head>
@@ -185,170 +213,229 @@
 
     <header class="post-hero">
         <div class="ghost" aria-hidden="true">T</div>
-        <div class="crumb"><a href="../index.html">Index</a> / TEMPLATE — BUILDING BLOCKS</div>
+        <div class="crumb"><a href="../index.html">Index</a> / TEMPLATE — SCROLLYTELLING</div>
         <h1>
             <span class="h-line"><span>The</span></span>
             <span class="h-line"><span><em>template.</em></span></span>
         </h1>
-        <p class="dek">A mock note that doubles as a working catalog. Every figure type, every control, every layout
-            piece — copy what you need and start the next note. Nothing here is fake: step through the figures and
-            they obey.</p>
-        <div class="post-meta"><span>DRAFT <b>2026</b></span><span>~<b>8</b> MIN</span><span><b>3</b> FIGURES</span><span>MODE: <b>TEMPLATE</b></span></div>
+        <p class="dek">A mock article that doubles as a working catalog. Every scene type, every layout piece — copy
+            what you need and start the next story. Nothing here is fake: scroll through the race and every probe you
+            count is real.</p>
+        <div class="post-meta"><span>DRAFT <b>2026</b></span><span>~<b>8</b> MIN</span><span><b>5</b> SCENES</span><span>MODE: <b>TEMPLATE</b></span></div>
     </header>
 
-    <article class="post-prose">
+    <main>
+        <article class="post-prose">
+            <h2><span class="sec-no">01</span>How this page works</h2>
+            <p>Every article on this site is a <strong>scrollytelling story</strong>: one idea, told as a sequence of
+                scenes, and the scroll is the timeline. A <span class="mono">sticky-scene</span> pins a dark diagram to
+                the viewport while step cards scroll over it — each step is one named state of the diagram, and the
+                reader controls the clock by scrolling.</p>
+            <p>Each section below is a working example of one piece. Copy the markup, keep the shared files, write the
+                content.</p>
+        </article>
 
-        <h2><span class="sec-no">01</span>How this page works</h2>
-        <p>Figures come in two kinds. <strong>Scripted figures</strong> are driven by a small <span class="mono">draw(i,
-                body)</span> function — the engine builds the controls, calls your function once per step, and shows
-            whatever string you return in the readout. <strong>Looping figures</strong> are pure CSS choreography with
-            no JavaScript at all. Both get their controls automatically.</p>
-        <p>Each section below is a working example of one piece. Copy the markup, keep the shared files, write the
-            content.</p>
-
-        <h2><span class="sec-no">02</span>A scripted figure — step through it</h2>
-        <p>This is the heart of the site: a figure where every step is a real state, and the reader controls the
-            clock. Eight cells, one marker. The engine adds <strong>PREV / PLAY / NEXT / RESET</strong> on its own, and
-            the readout shows the live step.</p>
-
-        <figure class="fig">
-            <div class="fig-head">
-                <span class="fig-no">FIG. 01</span>
-                <span class="fig-name">THE WALKER</span>
-                <span class="fig-readout"></span>
-                <div class="fig-controls"></div>
-            </div>
-            <div class="fig-body" data-script="walker">
-                <div class="w-stage"></div>
-            </div>
-            <figcaption class="fig-caption"><b>What to watch</b>One marker, eight cells. NEXT advances the state; the
-                readout is the state. Build your real figure the same way — the counters come from your own
-                logic.</figcaption>
-        </figure>
-
-        <p>To make one, register a script with three things: <span class="mono">steps</span>, <span class="mono">draw</span>,
-            and optionally <span class="mono">label</span>. The body gets built once, then mutated per step:</p>
-
-        <pre class="recipe"><span class="cm">&lt;!-- scripted figure: engine adds PREV / PLAY / NEXT / RESET --&gt;</span>
-<span class="cm">&lt;div class="fig-body" data-script="my_figure" data-autoplay data-loop data-speed="900"&gt;</span>
-    <span class="cm">&lt;div class="my-stage"&gt;&lt;/div&gt;</span>
-<span class="cm">&lt;/div&gt;</span>
-
-<span class="cm">&lt;script&gt;</span>
-    <span class="cm">window.__figScripts = window.__figScripts || {};</span>
-    __figScripts.my_figure = {
-        steps: 12,                                 <span class="cm">// frames 0..11</span>
-        draw: function (i, body) {
-            var stage = body.querySelector('.my-stage');
-            <span class="cm">// build DOM once, then change state per step</span>
-            return 'STEP ' + (i + 1) + ' / 12';    <span class="cm">// shown in the readout</span>
-        }
-    };
-<span class="cm">&lt;/script&gt;</span></pre>
-
-        <p>Add <span class="mono">data-autoplay</span> to start playing the moment the figure scrolls into view, and
-            <span class="mono">data-loop</span> to wrap from the last step back to the first. <span class="mono">data-speed</span>
-            sets the milliseconds per step.</p>
-
-        <h2><span class="sec-no">03</span>A looping figure — pure CSS</h2>
-        <p>For ambient scenes with no state to read, skip the script entirely. The engine still adds
-            <strong>PAUSE / REPLAY</strong> so readers can freeze the scene and look at it.</p>
-
-        <figure class="fig">
-            <div class="fig-head">
-                <span class="fig-no">FIG. 02</span>
-                <span class="fig-name">THE ORBIT</span>
-                <span class="fig-readout">CSS LOOP · PERIOD 3.4s</span>
-                <div class="fig-controls"></div>
-            </div>
-            <div class="fig-body">
-                <div class="orb-stage">
-                    <div class="orb">
-                        <span class="ring"></span>
-                        <span class="ring r2"></span>
-                        <span class="core"></span>
-                        <span class="spin"><span class="sat"></span></span>
+        <!-- ════ SCENE 01 · sticky-scene — the workhorse ════ -->
+        <section class="sticky-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 02</span>
+                    <span class="scene-name">THE SEARCH RACE</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="s-stage">
+                    <div class="s-needle">FIND 55</div>
+                    <div class="s-lane">
+                        <span class="s-lab">UNSORTED</span>
+                        <div class="s-row s-row-lin">
+                            <span class="s-cell">3</span><span class="s-cell">7</span><span class="s-cell">12</span><span class="s-cell">19</span><span class="s-cell">24</span><span class="s-cell">31</span><span class="s-cell">42</span><span class="s-cell">55</span><span class="s-cell">63</span><span class="s-cell">70</span><span class="s-cell">81</span><span class="s-cell">90</span>
+                        </div>
+                    </div>
+                    <div class="s-lane">
+                        <span class="s-lab">SORTED</span>
+                        <div class="s-row s-row-bin">
+                            <span class="s-cell">3</span><span class="s-cell">7</span><span class="s-cell">12</span><span class="s-cell">19</span><span class="s-cell">24</span><span class="s-cell">31</span><span class="s-cell">42</span><span class="s-cell">55</span><span class="s-cell">63</span><span class="s-cell">70</span><span class="s-cell">81</span><span class="s-cell">90</span>
+                        </div>
+                    </div>
+                    <div class="s-chips">
+                        <span class="s-chip" id="chipLin">LINEAR · —</span>
+                        <span class="s-chip" id="chipBin">BINARY · —</span>
                     </div>
                 </div>
             </div>
-            <figcaption class="fig-caption"><b>What to watch</b>A dot on an orbit, a core, two pulse rings. No script,
-                no state — just CSS keyframes, pausable by the reader.</figcaption>
-        </figure>
 
-        <pre class="recipe"><span class="cm">&lt;!-- looping figure: pure CSS, engine adds PAUSE / REPLAY --&gt;</span>
-<span class="cm">&lt;div class="fig-body"&gt;</span>
-    <span class="cm">&lt;div class="orb"&gt;</span>
-        <span class="cm">&lt;span class="ring"&gt;&lt;/span&gt;</span>
-        <span class="cm">&lt;span class="core"&gt;&lt;/span&gt;</span>
-        <span class="cm">&lt;span class="spin"&gt;&lt;span class="sat"&gt;&lt;/span&gt;&lt;/span&gt;</span>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <span class="step-k">STEP 01 / 05</span>
+                    <p>Twelve numbers, one target: 55. The unsorted row must ask each number in order. The sorted row
+                        can jump — and every jump halves what is left.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <span class="step-k">STEP 02 / 05</span>
+                    <p>Linear probes 3, 7, 12, 19. Binary goes straight to the middle and reads 31 — four cells further
+                        in one move.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <span class="step-k">STEP 03 / 05</span>
+                    <p>Linear reaches 42. Binary read 63 — too high — and throws away the whole upper half without
+                        looking at it.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <span class="step-k">STEP 04 / 05</span>
+                    <p>Linear lands on 55 after 8 probes. Binary needed 4: 31, 63, 42, 55. Same answer, half the
+                        questions.</p>
+                </article>
+                <article class="step" data-step="5">
+                    <span class="step-k">STEP 05 / 05</span>
+                    <p>Order changes the route, not the answer. Both counts are computed by the code on this page —
+                        scroll back and watch every probe land.</p>
+                </article>
+            </div>
+        </section>
+
+        <article class="post-prose">
+            <h2><span class="sec-no">02</span>The recipe</h2>
+            <p>A sticky scene is a tall track: a pinned stage plus one <span class="mono">article.step</span> per
+                diagram state. The shared engine in <span class="mono">js/site.js</span> watches the steps and toggles
+                <span class="mono">is-active</span>, so the page itself needs no scene JavaScript — only CSS keyed off
+                <span class="mono">data-active-step</span>.</p>
+
+            <pre class="recipe"><span class="cm">&lt;!-- sticky scene: engine activates steps, sets data-active-step --&gt;</span>
+<span class="cm">&lt;section class="sticky-scene"&gt;</span>
+    <span class="cm">&lt;div class="sticky-scene__stage" aria-hidden="true"&gt;</span>
+        <span class="cm">&lt;div class="scene-head"&gt;</span>
+            <span class="cm">&lt;span class="scene-no"&gt;ACT 02&lt;/span&gt;</span>
+            <span class="cm">&lt;span class="scene-name"&gt;THE MECHANISM&lt;/span&gt;</span>
+            <span class="cm">&lt;span class="scene-readout" data-readout&gt;&lt;/span&gt;</span>
+        <span class="cm">&lt;/div&gt;</span>
+        <span class="cm">&lt;div class="stage"&gt;&lt;!-- the diagram --&gt;&lt;/div&gt;</span>
     <span class="cm">&lt;/div&gt;</span>
-<span class="cm">&lt;/div&gt;</span>
+    <span class="cm">&lt;div class="sticky-scene__steps"&gt;</span>
+        <span class="cm">&lt;article class="step" data-step="1"&gt;</span>
+            <span class="cm">&lt;span class="step-k"&gt;STEP 01 / 03&lt;/span&gt;</span>
+            <span class="cm">&lt;p&gt;One short paragraph. Real text, real conclusion.&lt;/p&gt;</span>
+        <span class="cm">&lt;/article&gt;</span>
+        <span class="cm">&lt;article class="step" data-step="2"&gt;…&lt;/article&gt;</span>
+    <span class="cm">&lt;/div&gt;</span>
+<span class="cm">&lt;/section&gt;</span>
 
-<span class="cm">/* css */</span>
-<span class="cm">.orb .spin  { animation: spin 3.4s linear infinite; }</span>
-<span class="cm">@keyframes spin { to { transform: rotate(360deg); } }</span></pre>
+<span class="cm">/* stage states are named, not pixel-driven */</span>
+<span class="cm">.sticky-scene[data-active-step="2"] .marker { transform: translateX(60px); }</span></pre>
 
-        <h2><span class="sec-no">04</span>Autoplay + loop — a real algorithm</h2>
-        <p>Here is the same engine doing real work: linear search against binary search on the same twelve numbers,
-            looking for 55. It autoplays when visible and loops forever, and the readout reports the true probe
-            counts — 8 probes against 4, both computed by the code on this page.</p>
+            <p>Steps are real DOM text in reading order; the overlay layout exists only under the <span class="mono">.js</span>
+                gate in <span class="mono">&lt;head&gt;</span>. Disable JavaScript and the same page becomes a plain
+                document — stage first, steps stacked — still a complete article. That is the fallback, and it is never
+                optional.</p>
+            <p>For continuous scroll-linked effects (a marker easing along a path, a bar filling), feature-detect and
+                keep a base state:</p>
 
-        <figure class="fig">
-            <div class="fig-head">
-                <span class="fig-no">FIG. 03</span>
-                <span class="fig-name">THE SEARCH RACE</span>
-                <span class="fig-readout"></span>
-                <div class="fig-controls"></div>
+            <pre class="recipe"><span class="cm">@supports (animation-timeline: view()) {</span>
+    <span class="cm">.stage .path-progress {</span>
+        <span class="cm">animation: fill 1s linear both;</span>
+        <span class="cm">animation-timeline: view();</span>
+        <span class="cm">animation-range: entry 0% cover 40%;</span>
+    <span class="cm">}</span>
+<span class="cm">}</span>
+<span class="cm">/* outside @supports the element simply rests at its base state */</span></pre>
+
+            <div class="callout">The story is the article. Scenes sit at the center — the prose tells you what is
+                happening and <em>why it matters</em>.</div>
+        </article>
+
+        <!-- ════ SCENE 02 · split — copy beside a bounded visual ════ -->
+        <section class="scene split">
+            <div class="scene__copy">
+                <h2><span class="sec-no">03</span>A split scene — quiet, bounded</h2>
+                <p>Not every idea needs a pinned stage. A <strong>split scene</strong> keeps a small visual beside the
+                    copy — ambient life, a settled diagram, a shape that explains itself. It reads like a figure in a
+                    magazine: no travel, no timeline, just the two parts agreeing.</p>
+                <p>On narrow screens the pair stacks: copy first, visual after.</p>
             </div>
-            <div class="fig-body" data-script="search" data-autoplay data-loop data-speed="800">
-                <div class="a-stage"></div>
+            <div class="scene__visual">
+                <div class="orb">
+                    <span class="ring"></span>
+                    <span class="ring r2"></span>
+                    <span class="core"></span>
+                    <span class="spin"><span class="sat"></span></span>
+                </div>
             </div>
-            <figcaption class="fig-caption"><b>What to watch</b>The sorted row halves the search each time; the
-                unsorted row walks every item. Real binary search, recorded, replayed.</figcaption>
-        </figure>
+        </section>
 
-        <h2><span class="sec-no">05</span>Layout pieces</h2>
-        <p>Every prose block you need, live. Section headings with numbers, a callout, an aside, tags, buttons, a
-            masked quote, and a staggered card row that reveals on scroll.</p>
+        <!-- ════ SCENE 03 · breather — the quiet beat ════ -->
+        <section class="breather">
+            <p class="breather-line reveal">The scroll is the timeline. <em>The story is the article.</em></p>
+        </section>
 
-        <div class="callout">The diagram is the article. The figures sit at the center of the story — the prose is
-            there to tell you <em>what to watch</em>.</div>
+        <!-- ════ SCENE 04 · metrics — a number with evidence ════ -->
+        <section class="metrics-scene">
+            <div class="metric reveal">4</div>
+            <div>
+                <p>Probes to find 55 in a sorted row. Binary search never reads a cell it does not need: each probe
+                    either lands on the target or discards half of what remains.</p>
+                <div class="m-evidence" id="evBin"></div>
+                <p class="m-note">THE PROBE VALUES ABOVE ARE COMPUTED FROM THE SAME ARRAY AS THE RACE — SCROLL BACK TO WATCH EACH ONE LAND.</p>
+            </div>
+        </section>
 
-        <div class="ex-row">
-            <span class="tag">A tag</span><span class="tag">Another tag</span>
-            <a class="btn" href="../index.html">A button</a>
-        </div>
+        <!-- ════ SCENE 05 · comparison — one scene, two modes ════ -->
+        <section class="scene">
+            <div class="cmp-grid">
+                <div class="cmp-card">
+                    <span class="cmp-k">MODE A · ENHANCED</span>
+                    <h4>Overlay.</h4>
+                    <p>With the <span class="mono">.js</span> gate, the stage pins to the viewport and the step cards
+                        float over it. Scrolling drives the diagram through its named states.</p>
+                </div>
+                <div class="cmp-card">
+                    <span class="cmp-k">MODE B · DOCUMENT</span>
+                    <h4>Stacked.</h4>
+                    <p>Without JavaScript — or under reduced motion — the same scene is a plain block followed by its
+                        steps. The story survives, word for word.</p>
+                </div>
+            </div>
+        </section>
 
-        <blockquote class="ex-blockquote mask">
-            <span class="row"><span>Ideas that <span class="hl">move</span> are</span></span>
-            <span class="row"><span>ideas that stick.</span></span>
-        </blockquote>
+        <article class="post-prose">
+            <h2><span class="sec-no">04</span>Layout pieces</h2>
+            <p>Every prose block you need, live. Section headings with numbers, a callout, an aside, tags, buttons, a
+                masked quote, and a staggered card row that reveals on scroll.</p>
 
-        <div class="ex-grid stagger">
-            <div class="ex-card"><h4>Primary motion.</h4><p>The thing the reader follows. One clear action per
-                    figure.</p></div>
-            <div class="ex-card"><h4>Secondary motion.</h4><p>Supporting cues — a glow, a shadow, a pulse that lands
-                    with the action.</p></div>
-            <div class="ex-card"><h4>Ambient life.</h4><p>Background motion that keeps the scene alive without
-                    demanding attention.</p></div>
-        </div>
+            <div class="ex-row">
+                <span class="tag">A tag</span><span class="tag">Another tag</span>
+                <a class="btn" href="../index.html">A button</a>
+            </div>
 
-        <div class="aside">Conventions: figures are numbered FIG. 01 upward; captions always say what to watch; every
-            counter shown is the real state, never decoration.</div>
+            <blockquote class="ex-blockquote mask">
+                <span class="row"><span>Ideas you <span class="hl">walk through</span></span></span>
+                <span class="row"><span>are ideas you keep.</span></span>
+            </blockquote>
 
-        <h2><span class="sec-no">06</span>Putting it together</h2>
-        <p>Copy this page as your starting point. Keep <span class="mono">css/site.css</span> and <span class="mono">js/site.js</span>
-            untouched; replace the hero, the prose, and the figures. Every component on this page is a working
-            example — delete what you do not need, keep what you do.</p>
-        <p>Every figure on this page also adapts to narrow screens: shrink the window to 390px and the walker's cells
-            shrink and the race lanes reflow. Full-bleed SVG figures get the same treatment with a tighter
-            <span class="mono">data-vb-narrow</span> frame — see the figure engine reference.</p>
+            <div class="ex-grid stagger">
+                <div class="ex-card"><h4>Primary motion.</h4><p>The thing the reader follows — one clear action per
+                        scene.</p></div>
+                <div class="ex-card"><h4>Secondary motion.</h4><p>Supporting cues — a glow, a shadow, a pulse that
+                        lands with the action.</p></div>
+                <div class="ex-card"><h4>Ambient life.</h4><p>Background motion that keeps the scene alive without
+                        demanding attention.</p></div>
+            </div>
 
-    </article>
+            <div class="aside">Conventions: scenes carry ACT labels and STEP k / n cards; every number shown is the
+                real state — computed by the code that renders it, never decoration. Reduced motion and no-JS collapse
+                the overlay to a stacked document, and that stacked document is always complete.</div>
+
+            <h2><span class="sec-no">05</span>Putting it together</h2>
+            <p>Copy this page as your starting point. Keep <span class="mono">css/site.css</span> and <span class="mono">js/site.js</span>
+                untouched; replace the hero, the acts, and the scenes. Every component on this page is a working
+                example — delete what you do not need, keep what you do.</p>
+            <p>Every scene on this page also adapts to narrow screens: shrink the window to 390px and the race's cells
+                shrink and its labels move above the rows. Full-bleed SVG scenes get the same treatment with a tighter
+                <span class="mono">data-vb-narrow</span> frame — see the scrollytelling reference.</p>
+        </article>
+    </main>
 
     <nav class="post-nav">
         <a href="../index.html"><span class="dir">← ALL NOTES</span><span class="t">The index.</span></a>
-        <a href="../index.html"><span class="dir">NEXT NOTE →</span><span class="t">Your first note.</span></a>
+        <a href="../index.html"><span class="dir">NEXT NOTE →</span><span class="t">Your first story.</span></a>
     </nav>
 
     <footer>
@@ -357,112 +444,43 @@
             <span class="row"><span>BREAK.</span></span>
             <span class="row"><span><em>EXPLAIN.</em></span></span>
         </div>
-        <div class="foot"><span>© 2026 VÍCTOR BUSQUÉ</span><span>TEMPLATE · BUILDING BLOCKS</span></div>
+        <div class="foot"><span>© 2026 VÍCTOR BUSQUÉ</span><span>TEMPLATE · SCROLLYTELLING</span></div>
     </footer>
 
     <script>
         /* ────────────────────────────────────────────────────────────
-           Example scripts — real logic, rendered step by step.
-           site.js runs after this (defer), so we bootstrap the
-           registry here before registering the scripts below.
+           Template example — honest state, computed and written into
+           the DOM. The sticky scene needs no JS of its own (the shared
+           engine in site.js drives step activation); this script only
+           derives the probe counts from the real array and renders them
+           in the stage chips and the metrics evidence row.
            ──────────────────────────────────────────────────────────── */
-        window.__figScripts = window.__figScripts || {};
-
-        /* FIG 01 · the walker — 8 cells, one marker */
-        __figScripts.walker = {
-            steps: 8,
-            draw: function (i, body) {
-                var stage = body.querySelector('.w-stage');
-                if (!stage._built) {
-                    stage.innerHTML =
-                        '<div class="w-track"></div>' +
-                        '<div class="w-axis"></div>';
-                    var track = stage.querySelector('.w-track');
-                    var axis = stage.querySelector('.w-axis');
-                    for (var n = 1; n <= 8; n++) {
-                        var c = document.createElement('div');
-                        c.className = 'w-cell';
-                        c.textContent = n;
-                        track.appendChild(c);
-                        var a = document.createElement('span');
-                        a.textContent = n;
-                        axis.appendChild(a);
-                    }
-                    stage._built = true;
-                }
-                var cells = stage.querySelectorAll('.w-cell');
-                [].forEach.call(cells, function (c, k) {
-                    c.className = 'w-cell';
-                    if (k < i) c.classList.add('done');
-                    if (k === i) c.classList.add('on');
-                });
-                return 'STEP ' + (i + 1) + ' / 8 — MARKER AT CELL ' + (i + 1);
-            }
-        };
-
-        /* FIG 03 · linear vs binary search — real algorithm, recorded */
         (function () {
+            'use strict';
             var ARR = [3, 7, 12, 19, 24, 31, 42, 55, 63, 70, 81, 90];
             var TARGET = 55;
-            var FOUND_IDX = ARR.indexOf(TARGET);
+            var foundIdx = ARR.indexOf(TARGET);            /* 7 → linear needs 8 probes */
 
-            function binSeq() {
-                var out = [], lo = 0, hi = ARR.length - 1;
-                while (lo <= hi) {
-                    var mid = (lo + hi) >> 1;
-                    out.push(mid);
-                    if (ARR[mid] === TARGET) break;
-                    if (ARR[mid] < TARGET) lo = mid + 1; else hi = mid - 1;
-                }
-                return out;
+            var binProbes = [], lo = 0, hi = ARR.length - 1;
+            while (lo <= hi) {
+                var mid = (lo + hi) >> 1;
+                binProbes.push(mid);
+                if (ARR[mid] === TARGET) break;
+                if (ARR[mid] < TARGET) lo = mid + 1; else hi = mid - 1;
+            }                                              /* probes at 5, 8, 6, 7 → 4 */
+
+            var chipLin = document.getElementById('chipLin');
+            if (chipLin) chipLin.innerHTML = 'LINEAR · <b>' + (foundIdx + 1) + ' PROBES</b>';
+            var chipBin = document.getElementById('chipBin');
+            if (chipBin) chipBin.innerHTML = 'BINARY · <b>' + binProbes.length + ' PROBES</b>';
+
+            var ev = document.getElementById('evBin');
+            if (ev) {
+                ev.innerHTML = binProbes.map(function (i) {
+                    var hit = ARR[i] === TARGET;
+                    return '<span class="ev-chip' + (hit ? ' ev-hit' : '') + '">' + ARR[i] + '</span>';
+                }).join('');
             }
-            var BIN = binSeq(); /* 4 probes */
-
-            __figScripts.search = {
-                steps: 13,
-                draw: function (k, body) {
-                    var root = body.querySelector('.a-stage');
-                    if (!root._built) {
-                        root.innerHTML =
-                            '<div class="a-needle">FIND 55</div>' +
-                            '<div class="a-lane"><span class="lab">UNSORTED</span><div class="a-row-l"></div></div>' +
-                            '<div class="a-lane"><span class="lab">SORTED</span><div class="a-row-b"></div></div>';
-                        var rl = root.querySelector('.a-row-l');
-                        var rb = root.querySelector('.a-row-b');
-                        ARR.forEach(function (v) {
-                            var c = document.createElement('div');
-                            c.className = 'a-cell';
-                            c.textContent = v;
-                            rl.appendChild(c);
-                            rb.appendChild(c.cloneNode(true));
-                        });
-                        root._built = true;
-                    }
-                    var cellsL = root.querySelectorAll('.a-row-l .a-cell');
-                    var cellsB = root.querySelectorAll('.a-row-b .a-cell');
-                    var done = k >= 12;
-
-                    /* linear: probe until the found cell, then stop there */
-                    var linProbe = Math.min(k, FOUND_IDX);
-                    [].forEach.call(cellsL, function (c, i) {
-                        c.className = 'a-cell';
-                        if (i < linProbe) c.classList.add('past');
-                        else if (i === linProbe) c.classList.add(done || i === FOUND_IDX ? 'found' : 'probe');
-                    });
-
-                    /* binary: replay recorded probes */
-                    var visited = BIN.slice(0, Math.min(k + 1, BIN.length));
-                    var current = visited[visited.length - 1];
-                    [].forEach.call(cellsB, function (c, i) {
-                        c.className = 'a-cell';
-                        if (visited.indexOf(i) !== -1 && i !== current) c.classList.add('past');
-                        else if (i === current) c.classList.add(done || current === FOUND_IDX ? 'found' : 'probe');
-                    });
-
-                    if (done) return 'LINEAR 8 probes · BINARY 4 probes — order wins';
-                    return 'PROBES — LINEAR ' + Math.min(k + 1, 8) + '/12 · BINARY ' + Math.min(k + 1, 4) + '/4';
-                }
-            };
         })();
     </script>
 </body>

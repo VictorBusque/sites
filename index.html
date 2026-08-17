@@ -8,7 +8,7 @@
     <!-- Primary meta -->
     <title>Víctor Busqué — Living Engineering Notes (AI · Software Engineering · Cloud)</title>
     <meta name="description"
-        content="Víctor Busqué's engineering notes on AI, software engineering, and cloud. Every idea taught with diagrams that move. Don't just read it — see it run.">
+        content="Víctor Busqué's engineering notes on AI, software engineering, and cloud. Every idea told as a scrollytelling story. Don't just read it — scroll through it.">
     <meta name="author" content="Víctor Busqué">
     <meta name="keywords"
         content="Víctor Busqué, engineering blog, AI engineering, LLM, agents, MCP, tools, Python, FastAPI, AWS, cloud, software engineering, machine learning, generative AI, agent systems">
@@ -32,21 +32,21 @@
     <meta property="og:site_name" content="Víctor Busqué — Living Engineering Notes">
     <meta property="og:title" content="Víctor Busqué — Living Engineering Notes">
     <meta property="og:description"
-        content="Engineering notes on AI, software engineering, and cloud. Every idea taught with diagrams that move. Don't just read it, see it run.">
+        content="Engineering notes on AI, software engineering, and cloud. Every idea told as a scrollytelling story. Don't just read it, scroll through it.">
     <meta property="og:url" content="https://victorbusque.com/">
     <meta property="og:image" content="https://victorbusque.com/img/og.png">
     <meta property="og:image:secure_url" content="https://victorbusque.com/img/og.png">
     <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="Víctor Busqué — Living Engineering Notes: Don't just read it. See it run.">
+    <meta property="og:image:alt" content="Víctor Busqué — Living Engineering Notes: Don't just read it. Scroll through it.">
     <meta property="og:locale" content="en_US">
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Víctor Busqué — Living Engineering Notes">
     <meta name="twitter:description"
-        content="Engineering notes on AI, software engineering, and cloud. Every idea taught with diagrams that move. Don't just read it, see it run.">
+        content="Engineering notes on AI, software engineering, and cloud. Every idea told as a scrollytelling story. Don't just read it, scroll through it.">
     <meta name="twitter:image" content="https://victorbusque.com/img/og.png">
     <meta name="twitter:image:alt" content="Víctor Busqué — Living Engineering Notes">
 
@@ -83,7 +83,7 @@
           "@id": "https://victorbusque.com/#website",
           "url": "https://victorbusque.com/",
           "name": "Víctor Busqué — Living Engineering Notes",
-          "description": "Engineering notes on AI, software engineering, and cloud, taught with diagrams that move.",
+          "description": "Engineering notes on AI, software engineering, and cloud, told as scrollytelling stories.",
           "publisher": { "@id": "https://victorbusque.com/#person" },
           "inLanguage": "en",
           "potentialAction": {
@@ -108,7 +108,7 @@
           "name": "Víctor Busqué — Living Engineering Notes",
           "isPartOf": { "@id": "https://victorbusque.com/#website" },
           "about": { "@id": "https://victorbusque.com/#person" },
-          "description": "Engineering notes on AI, software engineering, and cloud, taught with diagrams that move.",
+          "description": "Engineering notes on AI, software engineering, and cloud, told as scrollytelling stories.",
           "inLanguage": "en",
           "primaryImageOfPage": "https://victorbusque.com/img/og.png"
         }
@@ -117,6 +117,58 @@
     </script>
     <style>
         /* ── Landing-only styles ──────────────────────────── */
+
+        /* ═══ Observatory theme (matches blog/token-by-token.html) ═══
+           Warm graphite night + bone + jade, steel-sky, ember. Page-scoped
+           overrides of the light system in css/site.css. All text pairs
+           verified >= 4.5:1 on their surfaces. */
+        :root {
+            --paper: #14110c;
+            --paper-2: #1b1812;
+            --ink: #eae3d2;
+            --muted: #a09a88;
+            --line: #464035;
+            --acid: #57d38c;
+            --blue: #7cb7ff;
+            --orange: #ff9a5c;
+            --stage: #181510;
+            --stage-2: #1e1a14;
+        }
+        html { background: #0c0b08; }
+        body {
+            background:
+                radial-gradient(1100px 480px at 50% -6%, #221d14 0%, transparent 62%),
+                var(--paper);
+        }
+        /* film grain — the one atmospheric layer, over everything */
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: 65;
+            pointer-events: none;
+            opacity: .045;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size: 180px 180px;
+        }
+        ::selection { background: var(--acid); color: #14110c; }
+        nav { background: rgba(18, 15, 11, .86); }
+        .cursor-ring { border-color: #eae3d244; }
+        .status { color: #8d8776; border-left-color: #eae3d226; }
+        nav .links a { border-bottom-color: rgba(234, 227, 210, .1); }
+        .marquee { background: #0c0b08; }
+        .marquee span { color: #8d8776; }
+        .marquee span i { color: var(--acid); }
+        footer { background: #0c0b08; }
+        .foot { color: #8d8776; border-top-color: #2c2820; }
+        @keyframes ping {
+            0% { box-shadow: 0 0 0 0 #57d38c55; }
+            70% { box-shadow: 0 0 0 9px #57d38c00; }
+            100% { box-shadow: 0 0 0 0 #57d38c00; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .d-cell, .d-strip .ph, .d-ticks i { animation: none !important; opacity: 1 !important; }
+        }
 
         /* Hero */
         .hero {
@@ -136,8 +188,8 @@
             position: absolute;
             inset: -20% 0;
             z-index: -1;
-            background-image: linear-gradient(#1111110a 1px, transparent 1px),
-                linear-gradient(90deg, #1111110a 1px, transparent 1px);
+            background-image: linear-gradient(#eae3d208 1px, transparent 1px),
+                linear-gradient(90deg, #eae3d208 1px, transparent 1px);
             background-size: 72px 72px;
             animation: grid-drift 26s linear infinite;
             mask-image: radial-gradient(120% 120% at 20% 40%, #000 30%, transparent 75%);
@@ -150,7 +202,7 @@
             top: 4vh;
             z-index: -1;
             font: italic 200px/1 "Instrument Serif";
-            color: #11111110;
+            color: #eae3d212;
             will-change: transform;
         }
 
@@ -162,7 +214,7 @@
             transform: rotate(90deg);
             font: 9px "DM Mono";
             letter-spacing: .25em;
-            color: #777;
+            color: #8d8776;
         }
 
         .kicker {
@@ -203,7 +255,7 @@
             font-size: 18px;
             line-height: 1.6;
             max-width: 630px;
-            color: #45433f;
+            color: #c9c2b1;
             opacity: 0;
             transform: translateY(20px);
             animation: fade-rise var(--t-slow) var(--ease-out) .5s both;
@@ -216,7 +268,7 @@
             gap: 12px;
             font: 10px "DM Mono";
             letter-spacing: .18em;
-            color: #777;
+            color: #8d8776;
             opacity: 0;
             animation: fade-rise var(--t-slow) var(--ease-out) .9s both;
         }
@@ -224,7 +276,7 @@
         .scroll-cue .wheel {
             width: 20px;
             height: 32px;
-            border: 1px solid #777;
+            border: 1px solid #8d8776;
             border-radius: 12px;
             position: relative;
         }
@@ -242,15 +294,20 @@
             animation: cue 1.8s ease-in-out infinite;
         }
 
-        /* Hero demo — the site's own pipeline, in motion */
+        /* Hero demo — every note, in miniature. The same vocabulary as the
+           articles' stages: a sentence builds token by token, the loop strip
+           cycles, the step meter fills. Pure CSS; the loop period is real. */
         .hero-demo {
             height: 500px;
             border: 1px solid var(--line);
-            background: #111;
-            color: #fff;
+            background-color: var(--stage);
+            background-image: linear-gradient(var(--grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 32px 32px;
+            color: var(--ink);
             position: relative;
             overflow: hidden;
-            box-shadow: 14px 14px 0 var(--acid);
+            box-shadow: 14px 14px 0 color-mix(in srgb, var(--acid) 30%, transparent);
             opacity: 0;
             transform: translateY(36px) scale(.97);
             animation: demo-in 1s var(--ease-out) .45s both;
@@ -263,20 +320,21 @@
             top: 30px;
             font: 160px/1 "Instrument Serif";
             font-style: italic;
-            color: #ffffff0a;
+            color: #eae3d20c;
             z-index: 0;
             animation: floaty 7s var(--ease-swift) infinite;
         }
 
         .demo-head {
             height: 48px;
-            border-bottom: 1px solid #ffffff2a;
+            border-bottom: 1px solid #eae3d226;
             display: flex;
             align-items: center;
+            gap: 18px;
             padding: 0 18px;
             font: 10px "DM Mono";
             letter-spacing: .12em;
-            color: #aaa;
+            color: #938d7c;
         }
 
         .demo-head b {
@@ -285,89 +343,125 @@
             font-weight: 500;
         }
 
-        .node {
+        .demo-stage {
             position: absolute;
-            border: 1px solid #ffffff80;
-            padding: 12px 15px;
-            background: #111;
-            font: 11px "DM Mono";
-            z-index: 3;
-        }
-
-        .n1 {
-            left: 6%;
-            top: 42%;
-        }
-
-        .n2 {
-            left: 37%;
-            top: 18%;
-            border-color: var(--blue);
-        }
-
-        .n3 {
-            right: 8%;
-            top: 42%;
-            border-color: var(--acid);
-        }
-
-        .n4 {
-            left: 38%;
-            bottom: 12%;
-            border-color: var(--orange);
-        }
-
-        .node::after {
-            content: "";
-            position: absolute;
-            inset: -3px;
-            border: 1px solid currentColor;
-            border-radius: inherit;
-            animation: node-ping 2.6s var(--ease-out) infinite;
-        }
-
-        .n2::after {
-            color: var(--blue);
-        }
-
-        .n3::after {
-            color: var(--acid);
-        }
-
-        .n4::after {
-            color: var(--orange);
-        }
-
-        svg.flow {
-            position: absolute;
-            inset: 48px 0 0;
-            width: 100%;
-            height: calc(100% - 48px);
+            inset: 48px 0 56px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 0 22px;
             z-index: 1;
         }
 
-        .path {
-            fill: none;
-            stroke: #777;
-            stroke-width: 1;
-            stroke-dasharray: 5 7;
-            animation: dash 12s linear infinite;
+        /* the sentence, building */
+        .d-rail {
+            display: flex;
+            gap: 7px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
         }
 
-        .path-glow {
-            fill: none;
-            stroke: #c7ff3d;
-            stroke-width: 2;
-            opacity: .5;
-            stroke-dasharray: 260;
-            stroke-dashoffset: 260;
-            filter: blur(1px);
-            animation: draw-glow 5s ease-in-out infinite;
+        .d-cell {
+            border: 1px solid #eae3d23a;
+            background: #14110cb8;
+            padding: 10px 13px;
+            font: 12px "DM Mono";
+            color: var(--ink);
         }
 
-        .packet {
-            fill: var(--acid);
-            filter: drop-shadow(0 0 8px var(--acid));
+        .d-cell.d-last {
+            font: italic 15px "Instrument Serif";
+            color: var(--acid);
+            border-color: color-mix(in srgb, var(--acid) 45%, transparent);
+        }
+
+        .js .d-cell {
+            opacity: 0;
+            animation: d-type 8s var(--ease-out) infinite both;
+            animation-delay: calc(.6s + var(--i, 0) * .5s);
+        }
+
+        .d-caret {
+            width: 9px;
+            height: 24px;
+            background: var(--acid);
+            animation: caret-blink 1.1s linear infinite;
+        }
+
+        @keyframes d-type {
+            0% { opacity: 0; transform: translateY(9px) scale(.85); }
+            6% { opacity: 1; transform: none; }
+            100% { opacity: 1; transform: none; }
+        }
+
+        @keyframes caret-blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: .12; }
+        }
+
+        /* the loop, cycling */
+        .d-strip {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            font: 9px "DM Mono";
+            letter-spacing: .18em;
+            color: #5c564a;
+            user-select: none;
+        }
+
+        .d-strip .ph {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            --phc: var(--blue);
+        }
+
+        .d-strip .ph::before {
+            content: "";
+            width: 5px;
+            height: 5px;
+            background: currentColor;
+        }
+
+        .d-strip .ph-pick { --phc: var(--orange); }
+        .d-strip .ph-append { --phc: var(--acid); }
+        .d-strip .sep { color: #403a2f; }
+        .js .d-strip .ph { animation: d-ph 4.4s infinite both; }
+        .js .d-strip .ph-score { animation-delay: .3s; }
+        .js .d-strip .ph-pick { animation-delay: .6s; }
+        .js .d-strip .ph-append { animation-delay: .9s; }
+
+        @keyframes d-ph {
+            0% { color: #5c564a; }
+            8% { color: var(--phc); }
+            78% { color: var(--phc); }
+            88%, 100% { color: #5c564a; }
+        }
+
+        /* the step meter */
+        .d-ticks { display: flex; gap: 5px; }
+
+        .d-ticks i {
+            width: 15px;
+            height: 3px;
+            background: #3f3a2f;
+        }
+
+        .js .d-ticks i { animation: d-tick 8s infinite both; }
+        .js .d-ticks i:nth-child(1) { animation-delay: 1s; }
+        .js .d-ticks i:nth-child(2) { animation-delay: 1.5s; }
+        .js .d-ticks i:nth-child(3) { animation-delay: 2s; }
+        .js .d-ticks i:nth-child(4) { animation-delay: 2.5s; }
+
+        @keyframes d-tick {
+            0%, 1% { background: #3f3a2f; box-shadow: none; }
+            3% { background: var(--acid); box-shadow: 0 0 6px color-mix(in srgb, var(--acid) 45%, transparent); }
+            80% { background: var(--acid); box-shadow: 0 0 6px color-mix(in srgb, var(--acid) 45%, transparent); }
+            84%, 100% { background: #3f3a2f; box-shadow: none; }
         }
 
         .demo-caption {
@@ -375,7 +469,8 @@
             left: 18px;
             bottom: 16px;
             font: 10px "DM Mono";
-            color: #888;
+            letter-spacing: .08em;
+            color: #938d7c;
             z-index: 3;
         }
 
@@ -445,7 +540,7 @@
             background: var(--paper-2);
             font: 10px "DM Mono";
             letter-spacing: .2em;
-            color: #777;
+            color: #8d8776;
             flex-shrink: 0;
         }
 
@@ -471,7 +566,7 @@
             height: 26px;
             display: grid;
             place-items: center;
-            border: 1px solid #b9b6ac;
+            border: 1px solid #4a443a;
             background: var(--paper);
             color: var(--ink);
             cursor: pointer;
@@ -489,7 +584,7 @@
 
         .ex-btn:hover {
             background: var(--ink);
-            color: var(--acid);
+            color: #14110c;
             border-color: var(--ink);
         }
 
@@ -502,7 +597,7 @@
             overflow-y: auto;
             padding: 10px 0 12px;
             scrollbar-width: thin;
-            scrollbar-color: #b9b6ac transparent;
+            scrollbar-color: #4a443a transparent;
             outline: none;
         }
 
@@ -525,7 +620,7 @@
         }
 
         .trow:hover {
-            background: #1010100d;
+            background: #eae3d20d;
         }
 
         .trow.d1 {
@@ -542,7 +637,7 @@
             flex-shrink: 0;
             display: grid;
             place-items: center;
-            color: #999;
+            color: #8d8776;
             transition: transform var(--t-med) var(--ease-out), color var(--t-med) var(--ease-swift);
         }
 
@@ -560,7 +655,7 @@
         }
 
         .trow.is-active .chev {
-            color: var(--acid);
+            color: #14110c;
         }
 
         .trow .ic {
@@ -569,7 +664,7 @@
             flex-shrink: 0;
             display: grid;
             place-items: center;
-            color: #716f68;
+            color: var(--muted);
             transition: color var(--t-med) var(--ease-swift);
         }
 
@@ -580,7 +675,7 @@
         }
 
         .trow.is-active .ic {
-            color: var(--acid);
+            color: #14110c;
         }
 
         .trow .fname {
@@ -596,12 +691,12 @@
             white-space: nowrap;
             font-size: 9px;
             letter-spacing: .12em;
-            color: #9a978e;
+            color: #8d8776;
             transition: color var(--t-med) var(--ease-swift);
         }
 
         .trow.is-active .sub {
-            color: #a8d92e;
+            color: #2e5c46;
         }
 
         .trow .cnt {
@@ -610,9 +705,9 @@
             font: 9px "DM Mono";
             letter-spacing: .1em;
             padding: 1px 7px;
-            border: 1px solid #b9b6ac;
+            border: 1px solid #4a443a;
             border-radius: 99px;
-            color: #999;
+            color: #8d8776;
             transition: border-color var(--t-fast) var(--ease-snap),
                 color var(--t-fast) var(--ease-snap),
                 background var(--t-fast) var(--ease-snap);
@@ -624,8 +719,8 @@
         }
 
         .trow.is-active .cnt {
-            border-color: var(--acid);
-            color: var(--acid);
+            border-color: #14110c55;
+            color: #14110c;
         }
 
         /* tree guides — vertical rules at each parent's icon column */
@@ -637,26 +732,26 @@
             top: 0;
             bottom: 0;
             width: 1px;
-            background: #1111111f;
+            background: #eae3d21f;
             pointer-events: none;
         }
 
         .trow.d2::before {
-            box-shadow: 18px 0 0 #1111111f;
+            box-shadow: 18px 0 0 #eae3d21f;
         }
 
         /* selection + focus */
         .trow.is-focus {
-            box-shadow: inset 0 0 0 1px #546cff66;
+            box-shadow: inset 0 0 0 1px #7cb7ff66;
         }
 
         .trow.is-active {
-            background: var(--ink);
-            color: var(--acid);
+            background: var(--acid);
+            color: #14110c;
         }
 
         .trow.is-active:hover {
-            background: var(--ink);
+            background: var(--acid);
         }
 
         .trow.is-active::after {
@@ -673,7 +768,7 @@
         /* empty leaves (folder with no notes yet) */
         .trow.trow-empty {
             height: 26px;
-            color: #9a978e;
+            color: #8d8776;
             cursor: default;
             font-style: italic;
         }
@@ -729,8 +824,8 @@
             align-items: center;
             gap: 12px;
             padding: 9px 14px;
-            background: var(--ink);
-            color: #999;
+            background: #171410;
+            color: #8d8776;
             font: 9px "DM Mono";
             letter-spacing: .14em;
             border-top: 1px solid var(--line);
@@ -778,7 +873,7 @@
             padding: 18px 0 0;
             font: 10px "DM Mono";
             letter-spacing: .16em;
-            color: #777;
+            color: #8d8776;
         }
 
         .panel-head .crumb {
@@ -791,12 +886,12 @@
         }
 
         .panel-head .hint {
-            color: #9a978e;
+            color: #8d8776;
         }
 
         .p-entries {
             margin-top: 16px;
-            border-top: 1px solid #11111122;
+            border-top: 1px solid #2e2a22;
         }
 
         .p-entry {
@@ -804,7 +899,7 @@
             grid-template-columns: 1fr auto;
             gap: 6px 28px;
             padding: 20px 4px;
-            border-bottom: 1px solid #11111122;
+            border-bottom: 1px solid #2e2a22;
             color: var(--ink);
             transition: background var(--t-med) var(--ease-swift);
         }
@@ -819,7 +914,7 @@
         }
 
         .e-deck {
-            color: #5a5852;
+            color: #a49d8d;
             font-size: 14px;
             line-height: 1.5;
         }
@@ -837,13 +932,13 @@
         .e-path {
             font: 9px "DM Mono";
             letter-spacing: .16em;
-            color: #777;
+            color: #8d8776;
         }
 
         .e-date {
             font: 9px "DM Mono";
             letter-spacing: .14em;
-            color: #777;
+            color: #8d8776;
         }
 
         .read-tag {
@@ -861,7 +956,7 @@
         }
 
         .p-entry:hover {
-            background: #fdfcf7;
+            background: #191611;
         }
 
         .p-entry:hover .e-title {
@@ -875,11 +970,11 @@
         .panel-empty {
             margin-top: 16px;
             padding: 38px 18px;
-            border: 1px dashed #b9b6ac;
+            border: 1px dashed #4a443a;
             text-align: center;
             font: 10px "DM Mono";
             letter-spacing: .16em;
-            color: #777;
+            color: #8d8776;
         }
 
         .panel-empty i {
@@ -897,7 +992,7 @@
             margin-top: 10px;
             font-size: 9px;
             letter-spacing: .14em;
-            color: #9a978e;
+            color: #8d8776;
         }
 
         /* entries re-render choreography */
@@ -956,7 +1051,7 @@
         .ix-date {
             font: 10px "DM Mono";
             letter-spacing: .14em;
-            color: #777;
+            color: #8d8776;
         }
 
         .ix-title {
@@ -974,12 +1069,12 @@
         .ix-path {
             font: 10px "DM Mono";
             letter-spacing: .14em;
-            color: #777;
+            color: #8d8776;
         }
 
         .ix-tags {
             font: 10px "DM Mono";
-            color: #999;
+            color: #8d8776;
         }
 
         .ix-arrow {
@@ -996,7 +1091,7 @@
             border-bottom: 1px solid var(--line);
             font: 10px "DM Mono";
             letter-spacing: .16em;
-            color: #777;
+            color: #8d8776;
         }
 
         .index-empty i {
@@ -1014,7 +1109,7 @@
             margin-top: 10px;
             font-size: 9px;
             letter-spacing: .14em;
-            color: #9a978e;
+            color: #8d8776;
         }
 
         /* Keyframes (landing) */
@@ -1060,42 +1155,8 @@
             }
         }
 
-        @keyframes node-ping {
-            0% {
-                transform: scale(1);
-                opacity: .8;
-            }
 
-            70%,
-            100% {
-                transform: scale(1.35);
-                opacity: 0;
-            }
-        }
 
-        @keyframes dash {
-            to {
-                stroke-dashoffset: -200;
-            }
-        }
-
-        @keyframes draw-glow {
-
-            0%,
-            12% {
-                stroke-dashoffset: 260;
-            }
-
-            45%,
-            62% {
-                stroke-dashoffset: 0;
-            }
-
-            88%,
-            100% {
-                stroke-dashoffset: -260;
-            }
-        }
 
         /* Responsive (landing) */
         @media (max-width: 850px) {
@@ -1123,10 +1184,6 @@
             .hero-demo {
                 height: 360px;
                 box-shadow: 8px 8px 0 var(--acid);
-            }
-
-            .hero-demo .node {
-                font-size: 12px;
             }
 
             .hero-demo .demo-caption {
@@ -1235,74 +1292,35 @@
             <h1>
                 <span class="h-line"><span>Don't just</span></span>
                 <span class="h-line"><span>read it.</span></span>
-                <span class="h-line"><span><em>See it run.</em></span></span>
+                <span class="h-line"><span><em>Scroll it.</em></span></span>
             </h1>
-            <p>Every note teaches one idea with diagrams that move. Classified by topic — AI, software engineering,
-                cloud — and ordered newest first. Pick a category and walk the notes.</p>
+            <p>Every article teaches one idea as a scrollytelling story — scenes pinned, steps scrolled, the page
+                itself the timeline. Classified by topic — AI, software engineering, cloud — and ordered newest
+                first. Pick a category and walk the notes.</p>
             <div class="scroll-cue"><span class="wheel"></span>SCROLL TO THE NOTES</div>
         </div>
 
-        <div class="hero-demo" aria-label="An animated idea becoming understanding">
+        <div class="hero-demo" aria-label="A scroll journey: one idea, scene by scene">
             <div class="demo-head">
-                <span>FIG. 00</span>
-                <span>AN IDEA, MADE VISIBLE</span>
-                <span>03.2s</span>
+                <span>ACT 00</span>
+                <span>ONE IDEA, SCROLLED</span>
+                <b>LOOP · 8S</b>
             </div>
 
-            ```
-            <div class="demo-stage">
-
-                <svg class="flow" viewBox="0 0 800 220" preserveAspectRatio="none" aria-hidden="true">
-                    <!-- quiet base line -->
-                    <path class="flow-base" d="M72 110 H728" />
-
-                    <!-- line revealed by the travelling signal -->
-                    <path class="flow-progress" pathLength="1" d="M72 110 H728" />
-
-                    <!-- exact node anchors -->
-                    <circle class="anchor a1" cx="72" cy="110" r="3" />
-                    <circle class="anchor a2" cx="290" cy="110" r="3" />
-                    <circle class="anchor a3" cx="510" cy="110" r="3" />
-                    <circle class="anchor a4" cx="728" cy="110" r="3" />
-
-                    <!-- travelling signal -->
-                    <circle class="signal" r="4">
-                        <animate attributeName="cx" values="72;290;510;728" keyTimes="0;0.333;0.666;1" dur="4.8s"
-                            repeatCount="indefinite" calcMode="spline" keySplines="
-                    .65 0 .35 1;
-                    .65 0 .35 1;
-                    .65 0 .35 1" />
-                        <animate attributeName="cy" values="110;110;110;110" dur="4.8s" repeatCount="indefinite" />
-                    </circle>
-                </svg>
-
-                <div class="node n1">
-                    <span class="node-mark"></span>
-                    <span class="node-label">QUESTION</span>
+            <div class="demo-stage" aria-hidden="true">
+                <div class="d-rail">
+                    <span class="d-cell" style="--i:0">One</span>
+                    <span class="d-cell" style="--i:1">idea,</span>
+                    <span class="d-cell d-last" style="--i:2">scrolled.</span>
+                    <span class="d-caret"></span>
                 </div>
-
-                <div class="node n2">
-                    <span class="node-mark"></span>
-                    <span class="node-label">DIAGRAM</span>
+                <div class="d-strip">
+                    <span class="ph ph-read">READ</span><span class="sep">→</span><span class="ph ph-score">SCORE</span><span class="sep">→</span><span class="ph ph-pick">PICK</span><span class="sep">→</span><span class="ph ph-append">APPEND</span>
                 </div>
-
-                <div class="node n3">
-                    <span class="node-mark"></span>
-                    <span class="node-label">MOTION</span>
-                </div>
-
-                <div class="node n4">
-                    <span class="node-mark"></span>
-                    <span class="node-label">UNDERSTANDING</span>
-                </div>
-
+                <div class="d-ticks"><i></i><i></i><i></i><i></i></div>
             </div>
 
-            <div class="demo-caption">
-                <span>Question</span>
-                <p>Complex ideas become easier when you can watch them unfold.</p>
-            </div>
-            ```
+            <div class="demo-caption">THE SCROLL IS THE TIMELINE — SCENES PIN, STEPS SCROLL, NOTHING IS FAKED</div>
 
         </div>
 
@@ -1311,8 +1329,8 @@
 
     <div class="marquee" aria-hidden="true">
         <div class="marquee-track">
-            <span>See it run <i>◆</i></span><span>The diagram is the article <i>◆</i></span><span>Motion has meaning
-                <i>◆</i></span><span>Nothing is faked <i>◆</i></span><span>Ideas that move <i>◆</i></span>
+            <span>The scroll is the timeline <i>◆</i></span><span>The story is the article <i>◆</i></span><span>Motion has meaning
+                <i>◆</i></span><span>Nothing is faked <i>◆</i></span><span>Walk the idea <i>◆</i></span>
         </div>
     </div>
 
@@ -1408,16 +1426,16 @@
         }];
 
         /* ── Real entries only ───────────────────────────────
-           One object per published page in blog/. Nothing here
-           is invented: no entry, no count, no row. When a note
+           One object per published article in blog/. Nothing here
+           is invented: no entry, no count, no row. When an article
            lands, add it below (slug is the href from this page,
            date 'YYYY-MM', path 'Topic/Category'). It then appears
            in both the explorer and the Latest index. */
         var ENTRIES = [
             {
-                slug: 'blog/next-token.html', title: 'The next token.',
-                deck: 'An LLM is a next-token predictor. Watch a toy model learn its tokens, build its probability table, then run the loop that writes every answer.',
-                date: '2026-02', path: 'AI/Basics', tags: ['LLM', 'Tokenization']
+                slug: 'blog/token-by-token.html', title: 'Token by token.',
+                deck: 'An LLM is a next-token predictor. Walk the loop with a toy model trained on twelve sentences — read, score, pick, append — and watch the whole vocabulary compete for every token.',
+                date: '2026-02', path: 'AI/Basics', tags: ['LLM', 'Sampling']
             }
         ];
 
@@ -1431,7 +1449,7 @@
             var expandAllBtn = document.getElementById('expandAll');
             var collapseAllBtn = document.getElementById('collapseAll');
             var MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-            var ACCENT = { 'AI': '#769a16', 'SOFTWARE ENGINEERING': '#546cff', 'CLOUD': '#ff6b2c' };
+            var ACCENT = { 'AI': '#57d38c', 'SOFTWARE ENGINEERING': '#7cb7ff', 'CLOUD': '#ff9a5c' };
 
             function esc(s) {
                 return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

@@ -1,16 +1,14 @@
 /* ==========================================================================
-   site.js — shared behaviors + figure engine
+   site.js — shared behaviors + scene engine (+ legacy figure engine)
    --------------------------------------------------------------------------
-   Looping figures (CSS choreography):  .fig > .fig-body
-       get PAUSE / REPLAY controls in the head bar.
-   Scripted figures:                    .fig > .fig-body[data-script="name"]
-       the page registers window.__figScripts["name"] = { steps, draw, label? }
-       get PREV / PLAY / NEXT / RESET controls.
-       data-autoplay  → starts playing when first visible
-       data-loop      → wraps to step 0 after the last step
-       data-speed     → ms per step (default 950)
-   draw(i, body) renders step i into the figure body and may return a string
-   to display in the .fig-readout element.
+   Sticky scenes (scrollytelling posts):  .sticky-scene > [data-step]
+       the engine toggles .is-active per step as it crosses mid-viewport,
+       sets data-active-step on the section (pages key stage states off it),
+       and fills [data-readout] with 'STEP k / n'. Overlay layout is CSS
+       under the .js gate; the page needs no scene JS of its own.
+   Legacy figures (about.html only):      .fig > .fig-body
+       looping figures get PAUSE / REPLAY; scripted figures get
+       PREV / PLAY / NEXT / RESET (window.__figScripts).
    ========================================================================== */
 
 (function () {
@@ -142,7 +140,33 @@
         else if (mq.addListener) mq.addListener(applyVB);
     })();
 
-    /* ── Figure engine ───────────────────────────────────── */
+    /* ── Sticky scene engine ─────────────────────────────────
+       Every .sticky-scene: observe [data-step] articles, toggle
+       .is-active while a step crosses the middle of the viewport, set
+       data-active-step on the section, and fill [data-readout]. */
+    document.querySelectorAll('.sticky-scene').forEach(function (scene) {
+        var steps = scene.querySelectorAll('[data-step]');
+        if (!steps.length) return;
+        var readout = scene.querySelector('[data-readout]');
+        var total = steps.length;
+        var sceneIO = new IntersectionObserver(function (es) {
+            es.forEach(function (e) {
+                var step = e.target;
+                if (e.isIntersecting) {
+                    /* exclusive: only one step card is active at a time */
+                    steps.forEach(function (s) { s.classList.remove('is-active'); });
+                    step.classList.add('is-active');
+                    scene.dataset.activeStep = step.getAttribute('data-step');
+                    if (readout) {
+                        readout.textContent = 'STEP ' + step.getAttribute('data-step') + ' / ' + total;
+                    }
+                }
+            });
+        }, { rootMargin: '-45% 0px -45% 0px' });
+        steps.forEach(function (s) { sceneIO.observe(s); });
+    });
+
+    /* ── Figure engine (legacy — about.html only) ─────────── */
     var scripts = window.__figScripts = window.__figScripts || {};
 
     function makeBtn(label) {
