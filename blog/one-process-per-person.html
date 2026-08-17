@@ -1,0 +1,1174 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+    <!-- Primary meta -->
+    <title>One process per person — Víctor Busqué</title>
+    <meta name="description" content="How WhatsApp carries a hundred billion messages a day: one Erlang process per connection, queues that live in memory, islands that replicate in one direction, and keys the servers never hold.">
+    <meta name="author" content="Víctor Busqué">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://victorbusque.com/blog/one-process-per-person.html">
+
+    <!-- Favicons / PWA (absolute paths resolve from /blog/) -->
+    <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/img/favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#101010">
+    <meta name="apple-mobile-web-app-title" content="VB Notes">
+    <meta name="application-name" content="VB Notes">
+    <meta name="color-scheme" content="light dark">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Víctor Busqué — Living Engineering Notes">
+    <meta property="og:title" content="One process per person — Víctor Busqué">
+    <meta property="og:description" content="The architecture of WhatsApp, walked end to end: connections, queues, islands, one-way replication, and end-to-end keys.">
+    <meta property="og:url" content="https://victorbusque.com/blog/one-process-per-person.html">
+    <meta property="og:image" content="https://victorbusque.com/img/og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="One process per person — Víctor Busqué">
+    <meta name="twitter:description" content="The architecture of WhatsApp, walked end to end: connections, queues, islands, one-way replication, and end-to-end keys.">
+    <meta name="twitter:image" content="https://victorbusque.com/img/og.png">
+
+    <!-- Performance: preconnect to font CDN -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- The .js gate: enables the scene overlay layout. Without it (no JS,
+         reduced motion) scenes render as a plain document — stage first,
+         steps stacked. Must run before the body parses. -->
+    <script>document.documentElement.className += ' js';</script>
+
+    <link rel="stylesheet" href="../css/site.css">
+    <script src="../js/site.js" defer></script>
+    <style>
+        /* ════════════════════════════════════════════════════════════════
+           NOTE 02 — ONE PROCESS PER PERSON (WhatsApp architecture)
+           Page-specific styles only. Shared pieces (tokens, nav, footer,
+           reveals, scene frame, step cards) live in css/site.css and
+           js/site.js. Dark stages use the shared --stage system; semantic
+           color: acid = settled/active flow, blue = examining/structure,
+           orange = the thing to watch.
+           ════════════════════════════════════════════════════════════════ */
+
+        /* ── hero: fact strip — every chip is a cited fact ── */
+        .hfacts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5vh; }
+        .hf {
+            font: 10px "DM Mono"; letter-spacing: .14em; color: var(--muted);
+            border: 1px solid var(--line); padding: 9px 14px; background: var(--paper-2);
+        }
+        .hf b { color: var(--ink); font-weight: 500; }
+        .hf i { font-style: normal; color: var(--orange); }
+
+        /* computed readouts inside prose */
+        .live-chip {
+            display: inline-block; font: 12px "DM Mono"; letter-spacing: .08em;
+            border: 1px solid var(--line); background: var(--paper-2); color: var(--muted);
+            padding: 8px 12px; margin: 10px 0;
+        }
+        .live-chip b { color: var(--ink); font-weight: 500; }
+
+        /* ════════════════════════════════════════════════════════════
+           ACT 01 · ONE PROCESS PER PERSON
+           Stage: phones / wires / the server plate with one pid per
+           connection / supervisor / density readout. States are named
+           after steps — driven by data-active-step from the engine.
+           ════════════════════════════════════════════════════════════ */
+        .w-stage {
+            position: absolute; inset: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 0; padding: 76px 4vw 40px;
+        }
+        .w-lab { font: 9px "DM Mono"; letter-spacing: .18em; color: #777; }
+
+        .w-phones { display: flex; gap: clamp(18px, 5vw, 64px); align-items: flex-end; position: relative; padding-top: 18px; }
+        .w-ph {
+            width: 30px; height: 46px; border: 1px solid #ffffff30; border-radius: 5px;
+            position: relative; transition: opacity .5s var(--ease-swift), border-color .5s var(--ease-swift);
+        }
+        .w-ph::before {           /* the screen */
+            content: ""; position: absolute; inset: 6px 5px 9px;
+            background: #ffffff10; border-radius: 2px; transition: background .5s var(--ease-swift);
+        }
+        .w-ph::after {            /* the home dot */
+            content: ""; position: absolute; left: 50%; bottom: 3.5px; width: 3px; height: 3px;
+            margin-left: -1.5px; border-radius: 50%; background: #ffffff38;
+        }
+        .w-phones .w-lab { position: absolute; top: 0; left: 0; }
+
+        /* wires — each carries a soft dash flow while the scene lives */
+        .w-wires { display: flex; gap: clamp(18px, 5vw, 64px); height: clamp(46px, 9vh, 84px); }
+        .w-wire {
+            width: 30px; position: relative; opacity: .9;
+            transition: opacity .6s var(--ease-swift);
+        }
+        .w-wire::before {
+            content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 1px;
+            margin-left: -.5px; background: linear-gradient(#ffffff54, #ffffff1c);
+        }
+        .w-wire::after {          /* packets flowing down */
+            content: ""; position: absolute; left: 50%; width: 3px; height: 7px; margin-left: -1.5px;
+            background: var(--blue); opacity: 0;
+        }
+        .w-wire.live::after { animation: w-drop 2.2s ease-in-out infinite; }
+        .w-wire:nth-child(2).live::after { animation-delay: .7s; }
+        .w-wire:nth-child(3).live::after { animation-delay: 1.3s; }
+        .w-wire:nth-child(4).live::after { animation-delay: 1.9s; }
+        @keyframes w-drop {
+            0% { top: 0; opacity: 0; }
+            12% { opacity: .9; }
+            88% { opacity: .9; }
+            100% { top: calc(100% - 7px); opacity: 0; }
+        }
+
+        /* the server plate */
+        .w-plate {
+            position: relative; border: 1px solid #ffffff30; background: #ffffff06;
+            padding: 26px clamp(20px, 4vw, 44px) 30px; min-width: min(78vw, 560px);
+            display: flex; flex-direction: column; align-items: center; gap: 16px;
+        }
+        .w-plate .w-lab { color: #9a9a92; }
+        .w-plate .w-lab b { color: #fff; font-weight: 500; }
+
+        .w-sup {
+            position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+            font: 9px "DM Mono"; letter-spacing: .16em; color: var(--orange);
+            border: 1px solid var(--orange); background: var(--stage);
+            padding: 4px 10px; opacity: .55; transition: opacity .4s var(--ease-swift);
+        }
+        .w-sup.ping { animation: sup-ping 2.6s ease-in-out infinite; }
+        @keyframes sup-ping {
+            0%, 100% { box-shadow: 0 0 0 0 #ff6b2c00; opacity: 1; }
+            50% { box-shadow: 0 0 16px 2px #ff6b2c33; opacity: 1; }
+        }
+
+        .w-pids { display: flex; gap: clamp(10px, 2.4vw, 22px); }
+        .w-pid {
+            min-width: clamp(64px, 12vw, 96px); padding: 9px 10px 8px; text-align: center;
+            border: 1px solid #ffffff2a; font: 10.5px "DM Mono"; color: #8f8f88;
+            position: relative; background: #ffffff05;
+            transition: border-color .45s var(--ease-swift), color .45s var(--ease-swift),
+                box-shadow .45s var(--ease-swift), opacity .45s var(--ease-swift);
+        }
+        .w-pid i { display: block; font-style: normal; font-size: 8.5px; letter-spacing: .14em; margin-top: 5px; color: #66665f; }
+        .w-pid.hero { border-color: var(--orange); color: #ffd9c4; box-shadow: 0 0 16px #ff6b2c2b; }
+        .w-pid.hero i { color: var(--orange); }
+
+        /* step 3 — the crash and the clean restart */
+        .w-pid .x {
+            position: absolute; inset: 0; display: grid; place-items: center;
+            color: var(--orange); font-size: 15px; opacity: 0; background: var(--stage);
+        }
+        .sticky-scene[data-active-step="3"] .w-pid.hero { animation: pid-crash 1.5s var(--ease-out) both; }
+        @keyframes pid-crash {
+            0% { opacity: 1; }
+            28% { opacity: 1; }
+            42% { color: #ff6b2c; border-color: #ff6b2c88; }
+            58% { opacity: .18; }
+            74% { opacity: 1; color: #c7ff3d; border-color: var(--acid); box-shadow: 0 0 18px #c7ff3d30; }
+            100% { opacity: 1; color: #c7ff3d; border-color: var(--acid); box-shadow: 0 0 18px #c7ff3d30; }
+        }
+        .sticky-scene[data-active-step="3"] .w-sup { opacity: 1; }
+        .sticky-scene[data-active-step="3"] .w-pid.hero.reborn,
+        .sticky-scene[data-active-step="4"] .w-pid.hero,
+        .sticky-scene[data-active-step="5"] .w-pid.hero {
+            border-color: var(--acid); color: var(--acid); box-shadow: 0 0 14px #c7ff3d2a;
+        }
+
+        /* step 4 — the density of a full box */
+        .w-grid {
+            position: absolute; inset: 0; opacity: 0; pointer-events: none;
+            display: grid; grid-template-columns: repeat(18, 1fr); gap: 7px; padding: 14px;
+            transition: opacity .8s var(--ease-out);
+        }
+        .w-grid i { border-radius: 50%; background: #c7ff3d; opacity: .13; width: 4px; height: 4px; }
+        .sticky-scene[data-active-step="4"] .w-grid { opacity: 1; }
+        .sticky-scene[data-active-step="4"] .w-pid { border-color: #c7ff3d66; color: #c7ff3d; }
+        .sticky-scene[data-active-step="4"] .w-phones, .sticky-scene[data-active-step="4"] .w-wires { opacity: .3; }
+
+        .w-readout {
+            font: 10px "DM Mono"; letter-spacing: .14em; color: #9a9a92;
+            opacity: 0; transform: translateY(8px); transition: opacity .6s var(--ease-out), transform .6s var(--ease-out);
+        }
+        .w-readout b { color: var(--acid); font-weight: 500; }
+        .sticky-scene[data-active-step="4"] .w-readout { opacity: 1; transform: none; }
+
+        /* step 5 — the exit */
+        .sticky-scene[data-active-step="5"] .w-wires { opacity: .16; }
+        .sticky-scene[data-active-step="5"] .w-wire.live::after { animation: none; opacity: 0; }
+        .sticky-scene[data-active-step="5"] .w-pid:not(.hero) { opacity: .18; }
+        .w-exit {
+            position: absolute; right: -12px; top: -12px; font: 9px "DM Mono"; letter-spacing: .12em;
+            color: #777; border: 1px solid #ffffff26; padding: 4px 8px; background: var(--stage);
+            opacity: 0; transform: scale(.9); transform-origin: 100% 0;
+            transition: opacity .5s var(--ease-out), transform .5s var(--ease-out);
+        }
+        .sticky-scene[data-active-step="5"] .w-exit { opacity: 1; transform: none; }
+
+        /* ════════════════════════════════════════════════════════════
+           ACT 02 · THE QUEUE THAT FORGIVES
+           sender / in-memory queue / disk shelf / recipient
+           ════════════════════════════════════════════════════════════ */
+        .q-stage {
+            position: absolute; inset: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 18px; padding: 76px 4vw 40px;
+        }
+        .q-lane { display: flex; align-items: center; gap: clamp(12px, 3vw, 28px); width: min(92vw, 760px); }
+        .q-end {
+            flex: 0 0 auto; width: 92px; text-align: center; font: 9px "DM Mono"; letter-spacing: .14em; color: #777;
+        }
+        .q-box { border: 1px solid #ffffff28; padding: 14px 14px 12px; position: relative; background: #ffffff05; flex: 1; }
+        .q-box .q-lab { display: block; font: 8.5px "DM Mono"; letter-spacing: .16em; color: #8f8f88; margin-bottom: 10px; }
+        .q-box .q-lab b { color: #fff; font-weight: 500; }
+        .q-slots { display: flex; gap: 8px; justify-content: center; }
+        .q-slot {
+            width: clamp(30px, 6vw, 44px); height: clamp(22px, 4vw, 30px);
+            border: 1px solid #ffffff2a; display: grid; place-items: center;
+            font: 9px "DM Mono"; color: #6e6e67; position: relative;
+            transition: border-color .4s var(--ease-swift), color .4s var(--ease-swift),
+                opacity .4s var(--ease-swift), box-shadow .4s var(--ease-swift);
+        }
+        .q-slot.full { border-color: var(--acid); color: var(--acid); box-shadow: 0 0 10px #c7ff3d26; }
+        .sticky-scene[data-active-step="4"] .q-slot.s1::before,
+        .sticky-scene[data-active-step="4"] .q-slot.s2::before,
+        .sticky-scene[data-active-step="4"] .q-slot.s3::before {
+            content: "✓"; position: absolute; inset: 0; display: grid; place-items: center;
+            color: var(--acid); background: var(--stage); font-size: 12px;
+        }
+        .q-drop { display: flex; gap: 8px; justify-content: center; padding-top: 12px; }
+        .q-arrow {
+            font: 10px "DM Mono"; color: #55555e; width: clamp(30px, 6vw, 44px); text-align: center;
+            transition: color .4s var(--ease-swift);
+        }
+        .q-arrow.on { color: var(--blue); animation: q-blink 1.6s ease-in-out infinite; }
+        @keyframes q-blink { 50% { opacity: .35; } }
+        .q-disk { border-style: dashed; }
+        .q-disk .q-slot.flush { border-color: var(--blue); color: #aebbff; }
+        .q-slot.empty { border-style: dotted; }
+
+        .q-phone {
+            width: 34px; height: 50px; border: 1px solid #ffffff30; border-radius: 5px;
+            margin: 0 auto 8px; position: relative; transition: border-color .4s var(--ease-swift);
+        }
+        .q-phone::before { content: ""; position: absolute; inset: 6px 5px 9px; background: #ffffff10; border-radius: 2px; }
+        .q-phone.off::after {
+            content: ""; position: absolute; inset: 6px 5px 9px; border-radius: 2px;
+            background: repeating-linear-gradient(45deg, #ffffff0e 0 4px, transparent 4px 8px);
+        }
+        .q-state { display: block; margin-top: 4px; }
+        .q-state.off { color: #777; }
+        .q-state.on { color: var(--acid); }
+
+        .q-chips { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .q-chip {
+            font: 9.5px "DM Mono"; letter-spacing: .13em; color: #9a9a92;
+            border: 1px solid #ffffff20; padding: 7px 12px; opacity: 0;
+            transform: translateY(8px); transition: opacity .6s var(--ease-out), transform .6s var(--ease-out);
+        }
+        .q-chip b { color: var(--acid); font-weight: 500; }
+        .q-chip.o { border-color: #ff6b2c66; } .q-chip.o b { color: var(--orange); }
+        .sticky-scene[data-active-step="4"] .q-chip.c3 { opacity: 0; }
+
+        /* step states */
+        .sticky-scene[data-active-step="1"] .q-slot.s1 { border-color: var(--acid); color: var(--acid); box-shadow: 0 0 10px #c7ff3d26; }
+        .sticky-scene[data-active-step="2"] .q-arrow.a2 { color: var(--blue); animation: q-blink 1.6s ease-in-out infinite; }
+        .sticky-scene[data-active-step="2"] .q-disk .q-slot.d2 { border-color: var(--blue); color: #aebbff; }
+        .sticky-scene[data-active-step="2"] .q-slot.s2 { border-color: #ffffff45; color: #9a9a92; }
+        .sticky-scene[data-active-step="3"] .q-chip.c3 { opacity: 1; transform: none; }
+        .sticky-scene[data-active-step="3"] .q-slot.s3 { animation: q-churn 1.8s ease-in-out infinite; }
+        @keyframes q-churn {
+            0%, 100% { border-color: #ffffff2a; color: #6e6e67; box-shadow: none; }
+            50% { border-color: var(--orange); color: #ffd9c4; box-shadow: 0 0 10px #ff6b2c26; }
+        }
+        .sticky-scene[data-active-step="4"] .q-chip.c4 { opacity: 1; transform: none; }
+        .sticky-scene[data-active-step="4"] .q-slot.s1,
+        .sticky-scene[data-active-step="4"] .q-slot.s2,
+        .sticky-scene[data-active-step="4"] .q-slot.s3 { border-style: dotted; color: #55555e; box-shadow: none; }
+
+        /* the recipient wakes up at step 4 */
+        .sticky-scene[data-active-step="4"] .q-phone.off { border-color: var(--acid); }
+        .sticky-scene[data-active-step="4"] .q-phone.off::after { background: none; }
+        .q-state .s-on { display: none; }
+        .sticky-scene[data-active-step="4"] .q-state .s-off { display: none; }
+        .sticky-scene[data-active-step="4"] .q-state .s-on { display: inline; color: var(--acid); }
+
+        /* lossy lane */
+        .q-lossy { display: flex; align-items: center; gap: 14px; opacity: .45; transition: opacity .5s var(--ease-swift); }
+        .sticky-scene[data-active-step="4"] .q-lossy { opacity: 1; }
+        .q-lossy .q-lab { color: #8f8f88; }
+        .q-dots { display: flex; gap: 12px; }
+        .q-dots i {
+            width: 14px; height: 3px; background: #ffffff38;
+        }
+        .sticky-scene[data-active-step="4"] .q-dots i { animation: q-fade 2.4s ease-in-out infinite; }
+        .sticky-scene[data-active-step="4"] .q-dots i:nth-child(2) { animation-delay: .5s; }
+        .sticky-scene[data-active-step="4"] .q-dots i:nth-child(3) { animation-delay: 1.1s; }
+        .sticky-scene[data-active-step="4"] .q-dots i:nth-child(4) { animation-delay: 1.7s; }
+        @keyframes q-fade { 0%, 100% { opacity: .9; } 55% { opacity: .12; } }
+
+        /* ════════════════════════════════════════════════════════════
+           §03 split — fragments, one owner each
+           ════════════════════════════════════════════════════════════ */
+        .f-visual { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+        .f-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .f-cell {
+            width: 64px; height: 52px; border: 1px solid var(--line); background: var(--paper-2);
+            display: grid; place-items: center; font: 9.5px "DM Mono"; color: var(--muted);
+            position: relative;
+        }
+        .f-cell::after {          /* the owner dot */
+            content: ""; position: absolute; right: 5px; bottom: 5px; width: 4px; height: 4px;
+            border-radius: 50%; background: var(--acid);
+        }
+        .f-cell:nth-child(7n+1) { animation: f-breathe 3.6s ease-in-out infinite; }
+        .f-cell:nth-child(7n+4) { animation: f-breathe 3.6s ease-in-out 1.2s infinite; }
+        @keyframes f-breathe { 0%, 100% { border-color: var(--line); } 50% { border-color: var(--acid); } }
+        .f-note { font: 9px "DM Mono"; letter-spacing: .14em; color: var(--muted); text-align: center; }
+        .f-note b { color: var(--ink); font-weight: 500; }
+
+        /* ════════════════════════════════════════════════════════════
+           ACT 03 · ISLANDS, REPLICATING ONE WAY
+           ════════════════════════════════════════════════════════════ */
+        .i-stage {
+            position: absolute; inset: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 22px; padding: 76px 4vw 40px;
+        }
+        .i-map {
+            font: 9.5px "DM Mono"; letter-spacing: .14em; color: #8f8f88;
+            border: 1px solid #ffffff20; padding: 7px 12px; opacity: 0;
+            transform: translateY(8px); transition: opacity .6s var(--ease-out), transform .6s var(--ease-out);
+        }
+        .i-map b { color: var(--blue); font-weight: 500; }
+        .sticky-scene[data-active-step="2"] .i-map, .sticky-scene[data-active-step="3"] .i-map,
+        .sticky-scene[data-active-step="4"] .i-map, .sticky-scene[data-active-step="5"] .i-map { opacity: 1; transform: none; }
+
+        .i-row { display: flex; gap: clamp(14px, 3vw, 30px); }
+        .i-card {
+            border: 1px solid #ffffff28; padding: 16px 16px 14px; background: #ffffff05;
+            position: relative; opacity: .35; transform: translateY(10px);
+            transition: opacity .6s var(--ease-out), transform .6s var(--ease-out),
+                border-color .6s var(--ease-swift), box-shadow .6s var(--ease-swift);
+        }
+        .i-card .i-lab { display: block; font: 9px "DM Mono"; letter-spacing: .16em; color: #8f8f88; margin-bottom: 10px; }
+        .sticky-scene[data-active-step="1"] .i-a { opacity: 1; transform: none; }
+        .sticky-scene[data-active-step="2"] .i-card, .sticky-scene[data-active-step="3"] .i-card,
+        .sticky-scene[data-active-step="4"] .i-card, .sticky-scene[data-active-step="5"] .i-card { opacity: 1; transform: none; }
+
+        .i-nodes { display: flex; gap: 10px; align-items: stretch; }
+        .i-node {
+            width: clamp(86px, 17vw, 116px); border: 1px solid #ffffff2a; padding: 9px 8px 8px;
+            font: 8.5px "DM Mono"; letter-spacing: .12em; color: #8f8f88; text-align: center;
+            position: relative; transition: border-color .5s var(--ease-swift), color .5s var(--ease-swift),
+                box-shadow .5s var(--ease-swift), background .5s var(--ease-swift), border-style .5s;
+        }
+        .i-node .frags { display: flex; gap: 4px; justify-content: center; margin-top: 8px; }
+        .i-node .frags i { width: 9px; height: 9px; border: 1px solid #ffffff30; }
+        .i-node.pri { border-color: #c7ff3d66; color: #c7ff3d; }
+        .i-node.pri .frags i { border-color: #c7ff3d99; background: #c7ff3d26; }
+        .i-node.sec { border-style: dashed; }
+        .i-node.dead { border-color: #ff6b2c; color: #ff6b2c; opacity: .75; }
+        .i-node.dead .frags i { border-color: #ffffff18; background: transparent; }
+        .i-node.promoted { border-style: solid; border-color: var(--acid); color: var(--acid); box-shadow: 0 0 14px #c7ff3d26; }
+        .i-node.promoted .frags i { border-color: #c7ff3d99; background: #c7ff3d26; }
+        .i-node .x {
+            position: absolute; inset: 0; display: grid; place-items: center; color: var(--orange);
+            font-size: 16px; background: #121212bb; opacity: 0; transition: opacity .4s var(--ease-swift);
+        }
+        /* step 4 — island B fails over, and the state persists into step 5 */
+        .sticky-scene[data-active-step="4"] .i-b .i-node.pri .x,
+        .sticky-scene[data-active-step="5"] .i-b .i-node.pri .x { opacity: 1; }
+        .sticky-scene[data-active-step="4"] .i-b .i-node.pri,
+        .sticky-scene[data-active-step="5"] .i-b .i-node.pri { border-color: #ff6b2c; color: #ff6b2c; opacity: .75; }
+        .sticky-scene[data-active-step="4"] .i-b .i-node.sec,
+        .sticky-scene[data-active-step="5"] .i-b .i-node.sec {
+            border-style: solid; border-color: var(--acid); color: var(--acid);
+            box-shadow: 0 0 14px #c7ff3d26;
+        }
+        .sticky-scene[data-active-step="4"] .i-b .i-node.sec .frags i,
+        .sticky-scene[data-active-step="5"] .i-b .i-node.sec .frags i { border-color: #c7ff3d99; background: #c7ff3d26; }
+        .sticky-scene[data-active-step="4"] .i-b .one-way .track { transform: scaleX(-1); }
+        .sticky-scene[data-active-step="4"] .i-b .one-way .track::after,
+        .sticky-scene[data-active-step="5"] .i-b .one-way .track::after { background: var(--orange); }
+        .sticky-scene[data-active-step="5"] .i-b .one-way .track { transform: scaleX(-1); }
+
+        .i-chip {
+            font: 9px "DM Mono"; letter-spacing: .13em; color: #9a9a92;
+            border: 1px solid #ffffff20; padding: 6px 10px; background: var(--stage);
+            position: absolute; left: 50%; transform: translate(-50%, 50%); bottom: 0;
+            opacity: 0; transition: opacity .5s var(--ease-out); white-space: nowrap;
+        }
+        .i-chip b { color: var(--acid); font-weight: 500; }
+        .sticky-scene[data-active-step="3"] .i-chip.r, .sticky-scene[data-active-step="4"] .i-chip.r,
+        .sticky-scene[data-active-step="5"] .i-chip.r { opacity: 1; }
+        .sticky-scene[data-active-step="4"] .i-chip.f { opacity: 1; }
+        .sticky-scene[data-active-step="5"] .i-chip.b { opacity: 1; animation: q-blink 2.2s ease-in-out infinite; }
+        .i-chip.b { bottom: -30px; }
+
+        /* the one-way arrows: primary → secondary, dashes always forward */
+        .i-card .one-way {
+            display: flex; align-items: center; gap: 6px; margin-top: 12px; font: 8.5px "DM Mono"; color: #6e6e67;
+            letter-spacing: .1em; justify-content: center;
+        }
+        .one-way .track { position: relative; width: 54px; height: 1px; background: #ffffff26; overflow: hidden; }
+        .one-way .track::after {
+            content: ""; position: absolute; top: 0; bottom: 0; width: 12px;
+            background: var(--acid); animation: i-forward 1.4s linear infinite;
+        }
+        @keyframes i-forward { from { left: -12px; } to { left: 54px; } }
+
+
+        /* step 5 — the blast ring */
+        .sticky-scene[data-active-step="5"] .i-b { border-color: var(--orange); animation: i-ring 2.4s ease-in-out infinite; }
+        @keyframes i-ring {
+            0%, 100% { box-shadow: 0 0 0 0 #ff6b2c00; }
+            50% { box-shadow: 0 0 22px 2px #ff6b2c30; }
+        }
+        .i-ok {
+            position: absolute; top: -9px; right: -9px; font: 8.5px "DM Mono"; letter-spacing: .12em;
+            color: var(--acid); border: 1px solid var(--acid); background: var(--stage);
+            padding: 3px 7px; opacity: 0; transition: opacity .5s var(--ease-out) .2s;
+        }
+        .sticky-scene[data-active-step="5"] .i-a .i-ok, .sticky-scene[data-active-step="5"] .i-c .i-ok { opacity: 1; }
+
+        /* ════════════════════════════════════════════════════════════
+           §04 comparison — two ways to ship a new server version
+           ════════════════════════════════════════════════════════════ */
+        .cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 4vh 0; }
+        .cmp-card { border: 1px solid var(--line); background: var(--paper-2); padding: 26px; }
+        .cmp-card h4 { font-size: 15px; margin-bottom: 8px; }
+        .cmp-card p { font-size: 13px; color: var(--muted); line-height: 1.55; }
+        .cmp-card .cmp-k { font: 9px "DM Mono"; letter-spacing: .16em; color: var(--orange); display: block; margin-bottom: 10px; }
+        .cmp-card.b .cmp-k { color: var(--blue); }
+
+        /* ════════════════════════════════════════════════════════════
+           ACT 04 · SEALED ON THE PHONE
+           ════════════════════════════════════════════════════════════ */
+        .e-stage {
+            position: absolute; inset: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 20px; padding: 76px 4vw 44px;
+        }
+        .e-lane { display: flex; align-items: stretch; gap: clamp(10px, 2.6vw, 26px); width: min(94vw, 780px); }
+        .e-dev {
+            flex: 0 0 auto; width: clamp(120px, 24vw, 168px); border: 1px solid #ffffff30;
+            padding: 12px 12px 14px; background: #ffffff05;
+            transition: border-color .5s var(--ease-swift), box-shadow .5s var(--ease-swift);
+        }
+        .e-dev .e-lab { display: block; font: 8.5px "DM Mono"; letter-spacing: .15em; color: #8f8f88; margin-bottom: 10px; }
+        .e-keys { display: flex; flex-direction: column; gap: 6px; }
+        .e-key {
+            display: flex; justify-content: space-between; align-items: center; gap: 8px;
+            font: 8.5px "DM Mono"; letter-spacing: .1em; color: #777;
+            border: 1px solid #ffffff20; padding: 6px 8px;
+            transition: border-color .4s var(--ease-swift), color .4s var(--ease-swift), opacity .4s var(--ease-swift);
+        }
+        .e-key i { font-style: normal; color: #66665f; }
+        .e-key.lit { border-color: var(--acid); color: var(--acid); }
+        .e-key.lit i { color: #c7ff3daa; }
+        .e-key.dim { opacity: .4; }
+
+        /* step 1 — the sender's keys come alive; step 2 — both sides hold the session */
+        .sticky-scene[data-active-step="1"] .e-lane .e-dev:first-child .e-key,
+        .sticky-scene[data-active-step="2"] .e-lane .e-dev .e-key,
+        .sticky-scene[data-active-step="3"] .e-lane .e-dev .e-key,
+        .sticky-scene[data-active-step="4"] .e-lane .e-dev .e-key,
+        .sticky-scene[data-active-step="5"] .e-lane .e-dev .e-key { border-color: var(--acid); color: var(--acid); }
+        .sticky-scene[data-active-step="1"] .e-lane .e-dev:first-child .e-key i,
+        .sticky-scene[data-active-step="2"] .e-lane .e-dev .e-key i,
+        .sticky-scene[data-active-step="3"] .e-lane .e-dev .e-key i,
+        .sticky-scene[data-active-step="4"] .e-lane .e-dev .e-key i,
+        .sticky-scene[data-active-step="5"] .e-lane .e-dev .e-key i { color: #c7ff3daa; }
+
+        .e-srv {
+            flex: 1; border: 1px dashed #ffffff2a; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 10px; padding: 12px 8px; text-align: center;
+        }
+        .e-srv .e-lab { font: 8.5px "DM Mono"; letter-spacing: .14em; color: #8f8f88; }
+        .e-srv .e-lab b { color: #fff; font-weight: 500; }
+        .e-srv .e-lock { font: 10px "DM Mono"; color: var(--orange); letter-spacing: .14em; opacity: 0; transition: opacity .5s var(--ease-out); }
+        .sticky-scene[data-active-step="3"] .e-lock, .sticky-scene[data-active-step="4"] .e-lock,
+        .sticky-scene[data-active-step="5"] .e-lock { opacity: 1; }
+        .e-cipher {
+            font: 10px "DM Mono"; color: #ffd9c4; border: 1px solid var(--orange);
+            background: var(--stage); padding: 8px 12px; letter-spacing: .06em;
+            opacity: 0; transform: translateY(10px) scale(.94);
+            transition: opacity .5s var(--ease-out), transform .5s var(--ease-out), border-color .4s, color .4s;
+            box-shadow: 0 0 14px #ff6b2c22;
+        }
+        .sticky-scene[data-active-step="3"] .e-cipher,
+        .sticky-scene[data-active-step="4"] .e-cipher,
+        .sticky-scene[data-active-step="5"] .e-cipher { opacity: 1; transform: none; }
+        .sticky-scene[data-active-step="4"] .e-cipher, .sticky-scene[data-active-step="5"] .e-cipher {
+            border-color: var(--acid); color: var(--acid); box-shadow: 0 0 14px #c7ff3d22;
+        }
+
+        /* handshake chip */
+        .e-dh {
+            font: 9px "DM Mono"; letter-spacing: .1em; color: #aebbff; border: 1px solid var(--blue);
+            background: var(--stage); padding: 6px 10px; opacity: 0;
+            transition: opacity .5s var(--ease-out);
+        }
+        .sticky-scene[data-active-step="2"] .e-dh { opacity: 1; animation: q-blink 2s ease-in-out infinite; }
+        .sticky-scene[data-active-step="3"] .e-dh { opacity: .35; animation: none; }
+
+        /* the ratchet ladder under the lane */
+        .e-ratchet { display: flex; align-items: center; gap: 8px; }
+        .e-ticks { display: flex; gap: 6px; }
+        .e-tick {
+            width: clamp(24px, 4.4vw, 34px); height: 20px; border: 1px solid #ffffff24;
+            font: 8px "DM Mono"; color: #55555e; display: grid; place-items: center;
+            position: relative; transition: border-color .4s var(--ease-swift), color .4s var(--ease-swift), opacity .4s;
+        }
+        .e-tick.used { opacity: .3; text-decoration: line-through; }
+        .sticky-scene[data-active-step="3"] .e-tick.t1,
+        .sticky-scene[data-active-step="3"] .e-tick.t2,
+        .sticky-scene[data-active-step="4"] .e-tick.t1,
+        .sticky-scene[data-active-step="4"] .e-tick.t2,
+        .sticky-scene[data-active-step="4"] .e-tick.t3,
+        .sticky-scene[data-active-step="4"] .e-tick.t4,
+        .sticky-scene[data-active-step="5"] .e-tick.t1,
+        .sticky-scene[data-active-step="5"] .e-tick.t2,
+        .sticky-scene[data-active-step="5"] .e-tick.t3,
+        .sticky-scene[data-active-step="5"] .e-tick.t4 { opacity: .3; text-decoration: line-through; }
+        .sticky-scene[data-active-step="3"] .e-tick.t3 { border-color: var(--orange); color: var(--orange); box-shadow: 0 0 10px #ff6b2c26; }
+        .sticky-scene[data-active-step="4"] .e-tick.t5,
+        .sticky-scene[data-active-step="5"] .e-tick.t5 { border-color: var(--acid); color: var(--acid); box-shadow: 0 0 10px #c7ff3d26; }
+        .e-ratchet .e-lab { font: 8.5px "DM Mono"; letter-spacing: .14em; color: #6e6e67; }
+
+        /* step 4 — fan-out chips */
+        .e-fan { display: flex; gap: 8px; align-items: center; opacity: 0; transform: translateY(8px); transition: opacity .6s var(--ease-out), transform .6s var(--ease-out); }
+        .sticky-scene[data-active-step="4"] .e-fan, .sticky-scene[data-active-step="5"] .e-fan { opacity: 1; transform: none; }
+        .e-fan i { width: 26px; height: 16px; border: 1px solid #c7ff3d66; }
+        .e-fan .e-lab { font: 8.5px "DM Mono"; letter-spacing: .12em; color: #8f8f88; }
+        .e-fan .e-lab b { color: var(--acid); font-weight: 500; }
+
+        /* step 5 — companion device */
+        .e-comp {
+            margin-top: 8px; border: 1px dashed #ffffff30; padding: 6px 9px;
+            font: 8.5px "DM Mono"; letter-spacing: .1em; color: #777;
+            opacity: 0; transform: translateY(6px);
+            transition: opacity .5s var(--ease-out), transform .5s var(--ease-out), border-color .4s, color .4s;
+        }
+        .e-comp b { color: var(--orange); font-weight: 500; }
+        .sticky-scene[data-active-step="5"] .e-comp { opacity: 1; transform: none; border-color: #ff6b2c88; color: #ffd9c4; }
+
+        .e-note { font: 9px "DM Mono"; letter-spacing: .14em; color: #8f8f88; opacity: 0; transition: opacity .5s var(--ease-out); }
+        .e-note b { color: var(--acid); font-weight: 500; }
+        .sticky-scene[data-active-step="5"] .e-note { opacity: 1; }
+
+        /* ════════════════════════════════════════════════════════════
+           metrics + misc
+           ════════════════════════════════════════════════════════════ */
+        .m-evidence { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .ev-chip { border: 1px solid var(--line); padding: 10px 16px; font: 12px "DM Mono"; color: var(--muted); }
+        .ev-chip.ev-hit { border-color: var(--acid); color: var(--ink); background: var(--acid); box-shadow: 0 0 14px #c7ff3d44; }
+        .m-note { font: 10px "DM Mono"; letter-spacing: .14em; color: var(--muted); margin-top: 14px; }
+
+        .src { font: 10.5px "DM Mono"; letter-spacing: .06em; line-height: 2; color: var(--muted); border-top: 1px solid var(--line); margin-top: 5vh; padding-top: 14px; }
+        .src b { color: var(--ink); font-weight: 500; }
+
+        /* ── responsive ── */
+        @media (max-width: 850px) {
+            .cmp-grid { grid-template-columns: 1fr; }
+            .w-plate { min-width: 88vw; }
+            .q-lane { flex-direction: column; gap: 10px; }
+            .q-end { width: auto; }
+            .i-row { flex-direction: column; gap: 44px; }
+            .i-card { width: min(88vw, 420px); }
+            .i-chip { white-space: normal; max-width: 92%; text-align: center; }
+            .e-lane { flex-direction: column; }
+            .e-dev { width: 100%; }
+            .e-keys { flex-direction: row; flex-wrap: wrap; }
+            .e-key { flex: 1 1 30%; justify-content: center; }
+            .e-srv { flex: none; padding: 16px 8px; }
+            .f-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 480px) {
+            .hf { font-size: 9px; padding: 8px 10px; }
+            .w-pid { font-size: 9px; min-width: 58px; }
+            .w-grid { grid-template-columns: repeat(12, 1fr); gap: 6px; }
+            .i-node { width: 38%; flex: 1; }
+            .e-key { font-size: 8px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="progress" id="progress"></div>
+    <div class="cursor-dot" id="cDot"></div>
+    <div class="cursor-ring" id="cRing"></div>
+
+    <nav>
+        <a class="logo" href="../index.html">VB<i></i></a>
+        <div class="links">
+            <a href="../index.html#notes">Notes</a>
+            <a href="../index.html#recent">Latest</a>
+            <a href="../about.html">About</a>
+        </div>
+        <div class="status">NOTE 02 / <b>SYSTEMS</b></div>
+    </nav>
+
+    <header class="post-hero">
+        <div class="ghost" aria-hidden="true">02</div>
+        <div class="crumb"><a href="../index.html">Index</a> / NOTE 02 — SYSTEMS · DISTRIBUTED</div>
+        <h1>
+            <span class="h-line"><span>One process</span></span>
+            <span class="h-line"><span>per <em>person.</em></span></span>
+        </h1>
+        <p class="dek">How WhatsApp carries a hundred billion messages a day: an Erlang process for every connection,
+            queues that live in memory, islands of two nodes that replicate in one direction, and keys the servers
+            never hold. The whole machine, walked end to end.</p>
+        <div class="post-meta"><span>AUG <b>2026</b></span><span>~<b>11</b> MIN</span><span><b>8</b> SCENES</span><span>TOPIC: <b>SYSTEMS</b></span></div>
+
+        <div class="hfacts" aria-label="Key facts">
+            <span class="hf">STACK <i>·</i> <b>FREEBSD + ERLANG/OTP</b></span>
+            <span class="hf">ORIGIN <i>·</i> <b>A REWRITTEN EJABBERD</b></span>
+            <span class="hf">TEAM, 2014 <i>·</i> <b>32 ENGINEERS · 450M USERS</b></span>
+            <span class="hf">PRIVACY <i>·</i> <b>SIGNAL PROTOCOL SINCE 2016</b></span>
+        </div>
+    </header>
+
+    <main>
+        <article class="post-prose">
+            <h2><span class="sec-no">01</span>The bet on an old runtime</h2>
+            <p>A messenger makes a promise most software never has to make: every message arrives, it arrives fast,
+                and nobody gets disconnected so the company can ship a fix. In a single day in 2014, WhatsApp moved
+                <strong>64 billion</strong> messages — a volume rivaling what the entire planet sent by SMS at the
+                time. Lose one, and a person somewhere loses a sentence they meant for someone specific.</p>
+            <p>WhatsApp was started in 2009 by two ex-Yahoo engineers, Jan Koum and Brian Acton, and its servers were
+                built on a strange-sounding stack: <strong>Erlang</strong>, a language Ericsson created in the
+                mid-1980s for telephone switches, running on <strong>FreeBSD</strong>. The first server was a heavily
+                rewritten <span class="mono">ejabberd</span>, an open-source chat server that already spoke Erlang.
+                Most of it was eventually replaced, but the language stayed.</p>
+            <p>The choice was not nostalgia. Erlang was designed for equipment where a crash meant emergency calls
+                failing: its unit of computation is the <em>process</em>, thousands of which live inside one virtual
+                machine, each with private memory, each able to die without dragging a neighbor down. The runtime
+                expects failure and is built to contain it. That is exactly the shape of a messenger's world — flaky
+                phones, dropped sockets, whole countries waking up at midnight on New Year's Eve.</p>
+            <p>When Facebook agreed to buy WhatsApp in February 2014, the deal was announced at about
+                <strong>$19&nbsp;billion</strong> for a company with 450&nbsp;million monthly users and
+                <strong>32 engineers</strong>. Today Meta says WhatsApp serves more than two billion daily users and
+                carries well over a hundred billion messages a day — and the servers still speak Erlang at the core.</p>
+            <div class="callout">WhatsApp bet that a runtime built for telephone exchanges in 1986 was the right tool
+                for a planetary messenger. The rest of its architecture is the discipline of keeping that bet small.
+            </div>
+        </article>
+
+        <!-- ════ ACT 01 · sticky — the connection layer ════ -->
+        <section class="sticky-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 01</span>
+                    <span class="scene-name">ONE PROCESS PER PERSON</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="w-stage">
+                    <div class="w-phones">
+                        <span class="w-lab">PHONES · PERSISTENT TCP</span>
+                        <span class="w-ph"></span><span class="w-ph"></span><span class="w-ph"></span><span class="w-ph"></span>
+                    </div>
+                    <div class="w-wires">
+                        <span class="w-wire live"></span><span class="w-wire live"></span><span class="w-wire live"></span><span class="w-wire live"></span>
+                    </div>
+                    <div class="w-plate">
+                        <span class="w-sup">SUPERVISOR</span>
+                        <div class="w-grid" id="wGrid"></div>
+                        <span class="w-lab"><b>CHAT SERVER</b> · BEAM ON FREEBSD</span>
+                        <div class="w-pids">
+                            <span class="w-pid hero">&lt;0.902.0&gt;<i>SESSION</i><span class="w-exit">EXIT · HEAP FREED</span></span>
+                            <span class="w-pid">&lt;0.903.0&gt;<i>SESSION</i></span>
+                            <span class="w-pid">&lt;0.904.0&gt;<i>SESSION</i></span>
+                            <span class="w-pid">&lt;0.905.0&gt;<i>SESSION</i></span>
+                        </div>
+                        <span class="w-readout" id="wHeap"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <span class="step-k">STEP 01 / 05</span>
+                    <p>A phone opens the app and dials one persistent TCP connection to a chat server. No pooling, no
+                        multiplexing — one socket per online phone, held open for hours.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <span class="step-k">STEP 02 / 05</span>
+                    <p>On the server, that socket belongs to exactly one Erlang process. It owns the connection, the
+                        session state, and a private mailbox. Nothing about this user is shared with any other
+                        process.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <span class="step-k">STEP 03 / 05</span>
+                    <p>The phone's network dies mid-send. The process crashes — and that is the cleanup. A supervisor
+                        restarts it in a known-clean state. One broken session, zero bystanders.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <span class="step-k">STEP 04 / 05</span>
+                    <p>Now fill the box. WhatsApp's 2012 goal was one million connections per server; a month of
+                        fixes got them to two million, and a peak measurement hit 2.8 million on one FreeBSD machine
+                        — every one a live process.</p>
+                </article>
+                <article class="step" data-step="5">
+                    <span class="step-k">STEP 05 / 05</span>
+                    <p>When the phone goes offline, the process simply exits and its memory returns to the VM. The
+                        frontier is designed to be cheap to lose — the durable copy of everything lives further in,
+                        in queues.</p>
+                </article>
+            </div>
+        </section>
+
+        <article class="post-prose">
+            <h2><span class="sec-no">02</span>The path of a message</h2>
+            <p>The servers you just walked through are only the front door. Behind them, WhatsApp runs dozens of
+                separate backend clusters — message queues, presence, groups, media, push notifications, spam
+                filtering, authentication — each cluster one job, each deployed and scaled on its own hardware. A
+                spam-filter crash cannot take delivery down, because they never shared a process to begin with.</p>
+            <p>Inside a cluster, nodes are fully meshed and pass messages between themselves at the protocol level.
+                Work moves asynchronously by default: a process hands a message to the next hop and moves on, never
+                blocking to wait for an answer. Under a New Year's spike, that asynchrony is the shock absorber —
+                queues grow, then drain, instead of a backlog of blocked callers seizing the machine.</p>
+            <span class="live-chip" id="mpsChip"></span>
+            <p>And what does a frontend session do besides hold the socket? On connect it pulls what this user needs
+                — pending messages, notification state, blocking rules — in parallel, close to the edge. Typing
+                indicators and presence updates are batched and rate-limited before they ever reach the core; load
+                stays proportional to activity, not to connection count.</p>
+            <div class="aside">The 64-billion figure is WhatsApp's own record announcement of April 2, 2014: 20
+                billion sent, 44 billion received, one day. The per-second figure above is computed from it by the
+                code on this page.</div>
+        </article>
+
+        <!-- ════ ACT 02 · sticky — the offline queue ════ -->
+        <section class="sticky-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 02</span>
+                    <span class="scene-name">THE QUEUE THAT FORGIVES</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="q-stage">
+                    <div class="q-lane">
+                        <div class="q-end">
+                            <span class="q-phone"></span>
+                            SENDER
+                        </div>
+                        <div class="q-box">
+                            <span class="q-lab"><b>RECIPIENT QUEUE</b> · MEMORY (ETS)</span>
+                            <div class="q-slots">
+                                <span class="q-slot s1">M1</span><span class="q-slot s2">M2</span><span class="q-slot s3">M3</span><span class="q-slot">M4</span><span class="q-slot">M5</span>
+                            </div>
+                            <div class="q-drop">
+                                <span class="q-arrow a1">↓</span><span class="q-arrow a2">↓</span><span class="q-arrow">↓</span><span class="q-arrow">↓</span><span class="q-arrow">↓</span>
+                            </div>
+                        </div>
+                        <div class="q-end">
+                            <span class="q-phone off"></span>
+                            <span class="q-state"><span class="s-off">OFFLINE</span><span class="s-on">ONLINE</span></span>
+                        </div>
+                    </div>
+                    <div class="q-lane">
+                        <div class="q-end"></div>
+                        <div class="q-box q-disk">
+                            <span class="q-lab">DISK · WRITE-BEHIND</span>
+                            <div class="q-slots">
+                                <span class="q-slot d1">D1</span><span class="q-slot d2">D2</span><span class="q-slot">D3</span><span class="q-slot">D4</span><span class="q-slot">D5</span>
+                            </div>
+                        </div>
+                        <div class="q-end"></div>
+                    </div>
+                    <div class="q-chips">
+                        <span class="q-chip c3 o">HOLIDAY SPIKE <b>· MEMORY ABSORBS IT</b></span>
+                        <span class="q-chip c3"><b>&gt;98%</b> DELIVERED BEFORE TOUCHING DISK</span>
+                        <span class="q-chip c4"><b>ACK → DELETE</b> · THE QUEUE EMPTIES</span>
+                    </div>
+                    <div class="q-lossy">
+                        <span class="q-lab">RECEIPTS · TYPING · PRESENCE</span>
+                        <span class="q-dots"><i></i><i></i><i></i><i></i></span>
+                        <span class="q-lab">LOSSY ON PURPOSE</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <span class="step-k">STEP 01 / 04</span>
+                    <p>You send a message to someone whose phone is off. It lands in that recipient's personal queue,
+                        held in memory in an Erlang term store — one queue per user, keyed by user, nothing shared.
+                    </p>
+                </article>
+                <article class="step" data-step="2">
+                    <span class="step-k">STEP 02 / 04</span>
+                    <p>If it lingers, it is flushed to disk asynchronously, behind the write path, never blocking the
+                        send. The message is now safe twice — and the sender was never made to wait for either copy.
+                    </p>
+                </article>
+                <article class="step" data-step="3">
+                    <span class="step-k">STEP 03 / 04</span>
+                    <p>On holidays, disks fall behind while memory doesn't. WhatsApp engineers reported that over
+                        98% of queued messages are delivered from memory before they ever need the disk copy. The
+                        spike passes; the queue drains.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <span class="step-k">STEP 04 / 04</span>
+                    <p>The phone reconnects — to any node — and the queue follows the user: deliver, wait for the
+                        recipient's acknowledgment, then delete. Not everything gets this guarantee: typing
+                        indicators and receipts ride the same wires with no delivery promise. Messages are certain;
+                        "typing…" is not.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="breather">
+            <p class="breather-line reveal">A message is a promise. <em>Everything else is containment.</em></p>
+        </section>
+
+        <!-- ════ §03 split — storage as fragments ════ -->
+        <section class="scene split">
+            <div class="scene__copy">
+                <h2><span class="sec-no">03</span>Storage, shrunk to keys</h2>
+                <p>There are no joins in the hot path, and no cross-table transactions. WhatsApp's server state looks
+                    like a key-value store: every user, session, and message pointer is a key with a compact value,
+                    held in Erlang's in-memory term stores, with Mnesia tables underneath for what must survive a
+                    restart.</p>
+                <p>Writes go through in <span class="mono">async_dirty</span> mode — accepted immediately, without
+                    transaction ceremony — and land on disk through separate transaction managers, spread across
+                    directories and devices so a slow disk cannot serialize the system.</p>
+                <p>The trick that makes it scale: every table is cut into <strong>fragments</strong>, and each
+                    fragment is owned by a single process on a single node. One owner means serialized access with
+                    no locks. More fragments, more owners, more throughput — without reshuffling anyone else.</p>
+            </div>
+            <div class="scene__visual">
+                <div class="f-visual">
+                    <div class="f-grid">
+                        <span class="f-cell">F·01</span><span class="f-cell">F·02</span><span class="f-cell">F·03</span><span class="f-cell">F·04</span>
+                        <span class="f-cell">F·05</span><span class="f-cell">F·06</span><span class="f-cell">F·07</span><span class="f-cell">F·08</span>
+                        <span class="f-cell">F·09</span><span class="f-cell">F·10</span><span class="f-cell">F·11</span><span class="f-cell">F·12</span>
+                    </div>
+                    <span class="f-note">EACH FRAGMENT · ONE OWNER PROCESS · <b>NO LOCKS</b></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ════ ACT 03 · sticky — islands ════ -->
+        <section class="sticky-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 03</span>
+                    <span class="scene-name">ISLANDS, REPLICATING ONE WAY</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="i-stage">
+                    <span class="i-map">hash(user) → <b>ONE ISLAND</b> · DETERMINISTIC, NO COORDINATOR</span>
+                    <div class="i-row">
+                        <div class="i-card i-a">
+                            <span class="i-ok">UNTOUCHED</span>
+                            <span class="i-lab">ISLAND A</span>
+                            <div class="i-nodes">
+                                <span class="i-node pri">PRIMARY<span class="frags"><i></i><i></i><i></i></span></span>
+                                <span class="i-node sec">SECONDARY<span class="frags"><i></i><i></i><i></i></span></span>
+                            </div>
+                            <span class="one-way"><span class="track"></span>ONE-WAY</span>
+                            <span class="i-chip r">ASYNC · <b>NO QUORUM</b></span>
+                        </div>
+                        <div class="i-card i-b">
+                            <span class="i-lab">ISLAND B</span>
+                            <div class="i-nodes">
+                                <span class="i-node pri">PRIMARY<span class="frags"><i></i><i></i><i></i></span><span class="x">✕</span></span>
+                                <span class="i-node sec">SECONDARY<span class="frags"><i></i><i></i><i></i></span></span>
+                            </div>
+                            <span class="one-way"><span class="track"></span>ONE-WAY</span>
+                            <span class="i-chip f">FAILOVER · <b>SECONDARY PROMOTES</b></span>
+                            <span class="i-chip b">BLAST RADIUS · <b>ONE ISLAND</b></span>
+                        </div>
+                        <div class="i-card i-c">
+                            <span class="i-ok">UNTOUCHED</span>
+                            <span class="i-lab">ISLAND C</span>
+                            <div class="i-nodes">
+                                <span class="i-node pri">PRIMARY<span class="frags"><i></i><i></i><i></i></span></span>
+                                <span class="i-node sec">SECONDARY<span class="frags"><i></i><i></i><i></i></span></span>
+                            </div>
+                            <span class="one-way"><span class="track"></span>ONE-WAY</span>
+                            <span class="i-chip r">ASYNC · <b>NO QUORUM</b></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <span class="step-k">STEP 01 / 05</span>
+                    <p>Take the fragments from the last section and give each exactly one home: an <strong>island</strong>
+                        — a small group of nodes that owns a slice of the keyspace and nothing else.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <span class="step-k">STEP 02 / 05</span>
+                    <p>Which island holds which user? A hash decides, deterministically, with no lookup service and
+                        no master to ask. Every node can compute the answer alone — including a client reconnecting
+                        after a failure.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <span class="step-k">STEP 03 / 05</span>
+                    <p>Inside an island, one node is primary and owns the writes; a secondary receives a one-way,
+                        asynchronous replication stream. No two-phase commit, no distributed locks, no bidirectional
+                        sync to get wrong.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <span class="step-k">STEP 04 / 05</span>
+                    <p>The primary dies. The secondary promotes and becomes the new owner; replication flips to point
+                        at it. Clients reconnect to the promoted node and resume. Failover is scoped to one island,
+                        and takes seconds.</p>
+                </article>
+                <article class="step" data-step="5">
+                    <span class="step-k">STEP 05 / 05</span>
+                    <p>This is the whole resilience story in one picture: one-way replication because coordination is
+                        what kills distributed systems, and islands because the smallest possible blast radius is two
+                        nodes — never the fleet.</p>
+                </article>
+            </div>
+        </section>
+
+        <article class="post-prose">
+            <h2><span class="sec-no">04</span>Deploy without goodbye</h2>
+            <p>The last piece of the availability puzzle is the most Erlang-flavored one. A fleet of restart-based
+                servers can only ship a new version by disconnecting everyone, politely, one box at a time. Erlang
+                was built for switches that could not hang up on a caller, so the runtime can load a new version of a
+                module into a live virtual machine: running processes finish their loop and pick up the new code on
+                the next call, sockets and queues untouched.</p>
+
+            <div class="cmp-grid">
+                <div class="cmp-card">
+                    <span class="cmp-k">MODE A · THE CLASSIC</span>
+                    <h4>Restart the fleet.</h4>
+                    <p>Drain a server, disconnect its sessions, restart the process, let phones reconnect and repeat
+                        the storm across the fleet. Safe if you are careful, slow even when you are, and every
+                        deploy is a small outage rehearsed at scale.</p>
+                </div>
+                <div class="cmp-card b">
+                    <span class="cmp-k">MODE B · WHATSAPP</span>
+                    <h4>Swap the code, keep the socket.</h4>
+                    <p>Load the new module into the running VM. Processes migrate to it on their next message loop;
+                        state lives in shapes both versions understand. Upgrades roll across the fleet with zero
+                        disconnects — engineers shipped routinely without dropping a single connection.</p>
+                </div>
+            </div>
+        </article>
+
+        <article class="post-prose">
+            <h2><span class="sec-no">05</span>When it broke</h2>
+            <p>None of this made WhatsApp unbreakable; it made breakage survivable. Two incidents from the
+                engineering talks became legend. In one, two subsystems used the same hash function with the same
+                seed, so their keys collided and thousands of entries piled into single buckets. Changing the seed —
+                a two-line patch — improved that subsystem's throughput by roughly <strong>4×</strong>.</p>
+            <p>The other started in a router. A VLAN was silently dropped, a cluster's connections collapsed, and
+                millions of phones began reconnecting at once — a thundering herd. Internal queues jumped from empty
+                to four million messages; even Erlang's normally robust process groups started behaving badly. The
+                recovery was deliberate: shut it down, bring nodes back one by one, let the mesh re-form. The lesson
+                stuck — WhatsApp treats failure as an input to the design, not a surprise.</p>
+            <div class="callout">Isolation did not prevent the storm. It decided <em>whose problem</em> the storm was.
+            </div>
+        </article>
+
+        <!-- ════ ACT 04 · sticky — end-to-end encryption ════ -->
+        <section class="sticky-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 04</span>
+                    <span class="scene-name">SEALED ON THE PHONE</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="e-stage">
+                    <div class="e-lane">
+                        <div class="e-dev">
+                            <span class="e-lab">SENDER'S PHONE</span>
+                            <div class="e-keys">
+                                <span class="e-key">IDENTITY <i>Curve25519</i></span>
+                                <span class="e-key">SIGNED PRE-KEY <i>rotates</i></span>
+                                <span class="e-key">ONE-TIME KEYS <i>×N</i></span>
+                            </div>
+                        </div>
+                        <div class="e-srv">
+                            <span class="e-lab"><b>WHATSAPP SERVER</b></span>
+                            <span class="e-dh">ECDH ×3–4 → HKDF → ROOT KEY</span>
+                            <span class="e-cipher" id="eCipher">8f3b·c2·a91d···7e</span>
+                            <span class="e-lock">SEES ONLY CIPHERTEXT</span>
+                        </div>
+                        <div class="e-dev">
+                            <span class="e-lab">RECIPIENT'S PHONE</span>
+                            <div class="e-keys">
+                                <span class="e-key">IDENTITY <i>private</i></span>
+                                <span class="e-key">PRE-KEYS <i>private</i></span>
+                                <span class="e-key">SAME SESSION <i>derived</i></span>
+                            </div>
+                            <div class="e-comp">+ COMPANION · <b>OWN KEYS</b></div>
+                        </div>
+                    </div>
+                    <div class="e-ratchet">
+                        <span class="e-lab">MESSAGE KEYS</span>
+                        <span class="e-ticks">
+                            <span class="e-tick t1 used">K1</span><span class="e-tick t2 used">K2</span><span class="e-tick t3">K3</span><span class="e-tick t4">K4</span><span class="e-tick t5">K5</span><span class="e-tick t6">K6</span>
+                        </span>
+                        <span class="e-lab">USED ONCE · DESTROYED</span>
+                    </div>
+                    <div class="e-fan">
+                        <span class="e-lab"><b>1 CIPHERTEXT → SERVER FAN-OUT</b> (GROUPS, SENDER KEYS) ·</span>
+                        <i></i><i></i><i></i>
+                        <span class="e-lab">MEDIA = <b>ENCRYPTED BLOB + POINTER</b></span>
+                    </div>
+                    <span class="e-note">MULTI-DEVICE, 2021 · EVERY DEVICE <b>ITS OWN IDENTITY</b> · CLIENT FAN-OUT</span>
+                </div>
+            </div>
+
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <span class="step-k">STEP 01 / 05</span>
+                    <p>April 2016: WhatsApp turned on end-to-end encryption for every chat, using the Signal
+                        Protocol. Keys are generated on your phone at install — a long-term identity key, a signed
+                        pre-key, a stack of one-time keys. The server stores the public halves, and only those.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <span class="step-k">STEP 02 / 05</span>
+                    <p>To open a session, your phone fetches the recipient's public keys and mixes them with a
+                        fresh ephemeral key through three or four ECDH handshakes. Both phones derive the same root
+                        key. The server watched the exchange happen and learned nothing it can use.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <span class="step-k">STEP 03 / 05</span>
+                    <p>Every message gets its own key — 80 bytes: an AES-256 key, an HMAC key, an IV. Keys ratchet
+                        forward per message and per round trip, and used keys are destroyed. Steal today's key and
+                        you read nothing tomorrow; steal the phone and yesterday stays sealed.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <span class="step-k">STEP 04 / 05</span>
+                    <p>The server's job shrinks to routing opaque blobs. Groups use Sender Keys: one ciphertext, and
+                        the server fans it out to every member. A photo is encrypted on your phone and stored as a
+                        blob; what travels in the message is a pointer and the keys.</p>
+                </article>
+                <article class="step" data-step="5">
+                    <span class="step-k">STEP 05 / 05</span>
+                    <p>2021, multi-device: your laptop links without your phone online, because every device now has
+                        its own identity — and your phone encrypts separately to each device of each recipient. The
+                        account is a mapping; the trust lives on the devices.</p>
+                </article>
+            </div>
+        </section>
+
+        <!-- ════ metrics — the measured peak ════ -->
+        <section class="metrics-scene">
+            <div class="metric reveal">2.8M</div>
+            <div class="reveal" style="--d:.15s">
+                <p>Concurrent connections carried by a single WhatsApp server, measured in 2012 — one live Erlang
+                    process each. The goal had been one million; two months of hunting lock contention in the VM and
+                    the kernel got there, then doubled it, then some.</p>
+                <div class="m-evidence">
+                    <span class="ev-chip ev-hit">2.8M CONNECTIONS</span>
+                    <span class="ev-chip">24 LOGICAL CPUS</span>
+                    <span class="ev-chip">100 GB RAM</span>
+                    <span class="ev-chip">FREEBSD 8.3</span>
+                    <span class="ev-chip">OTP R14B03</span>
+                    <span class="ev-chip">571K PACKETS/S</span>
+                </div>
+                <p class="m-note">MEASURED ON ONE PRODUCTION BOX — RICK REED, WHATSAPP, ERLANG FACTORY SF 2012. FROM
+                    200K TO 2.8M, EVERY FIX WAS A CONTENTION FIX.</p>
+            </div>
+        </section>
+
+        <article class="post-prose">
+            <h2><span class="sec-no">06</span>Why it worked</h2>
+            <p>Strip the details and WhatsApp's architecture is four walls of containment. Processes contain crashes:
+                one user's broken session dies alone. Islands contain hardware: one failed box is two nodes' problem.
+                One-way replication contains coordination: there is no distributed transaction to wedge under load.
+                And end-to-end encryption contains the operator itself — even a compromised server learns nothing it
+                can read.</p>
+            <p>The deeper lesson is about team size. Thirty-two engineers ran a planet-scale service because the
+                system fit in their heads: one language, one VM, small clusters, one job per cluster, every line of
+                early backend code reviewed by the founders. Simplicity was not an aesthetic — it was carrying
+                capacity. Every abstraction they skipped was an outage they never had.</p>
+            <p>The stack was old and the discipline was modern. That combination — a runtime built in 1986 for
+                equipment that could not fail visibly, operated like a product that could not fail at all — is what
+                let a team smaller than most startups' platform groups carry a significant fraction of human
+                conversation.</p>
+            <div class="callout">Scale was never the trick. <em>Containment</em> was.</div>
+
+            <p class="src"><b>Sources</b> — Rick Reed, <i>Scaling to Millions of Simultaneous Connections</i> (Erlang
+                Factory SF 2012) and <i>That's 'Billion' with a 'B'</i> (Erlang Factory SF 2014); <i>WhatsApp
+                Encryption Overview</i> technical white paper (April 2016, revised December 2017); Engineering at
+                Meta, <i>How WhatsApp Enables Multi-Device</i> (July 2021); WhatsApp record announcement, April 2,
+                2014; Facebook acquisition announcement, February 2014; ByteByteGo, <i>How WhatsApp Handles 40+
+                Billion Messages a Day</i> (2025), summarizing the WhatsApp engineering talk <i>A Reflection on
+                Building the WhatsApp Server</i> (Code BEAM 2018). Figures are cited to their sources; the two
+                computed numbers on this page are derived by its code.</p>
+        </article>
+    </main>
+
+    <nav class="post-nav">
+        <a href="../index.html"><span class="dir">← ALL NOTES</span><span class="t">The index.</span></a>
+        <a href="token-by-token.html"><span class="dir">NEXT NOTE →</span><span class="t">Token by token.</span></a>
+    </nav>
+
+    <footer>
+        <div class="footer-big mask">
+            <span class="row"><span>BUILD.</span></span>
+            <span class="row"><span>BREAK.</span></span>
+            <span class="row"><span><em>EXPLAIN.</em></span></span>
+        </div>
+        <div class="foot"><span>© 2026 VÍCTOR BUSQUÉ</span><span>NOTE 02 · ONE PROCESS PER PERSON</span></div>
+    </footer>
+
+    <script>
+        /* ────────────────────────────────────────────────────────────
+           Honest state, computed and written into the DOM. The scene
+           wiring is the shared engine's (js/site.js); this script only
+           derives the two computed figures on the page and builds the
+           density grid for ACT 01.
+           ──────────────────────────────────────────────────────────── */
+        (function () {
+            'use strict';
+
+            /* 1 · BEAM default initial heap = 233 words ≈ 1.8 KB on a
+               64-bit VM (233 × 8 bytes). Real BEAM default, computed. */
+            var heapBytes = 233 * 8;
+            var wHeap = document.getElementById('wHeap');
+            if (wHeap) {
+                wHeap.innerHTML = 'INITIAL HEAP 233 WORDS ≈ <b>' +
+                    (heapBytes / 1024).toFixed(1) + ' KB</b> PER PROCESS';
+            }
+
+            /* 2 · WhatsApp's own record day — 64B messages on April 2,
+               2014 — turned into a sustained per-second rate. Computed. */
+            var perSec = Math.round(64e9 / 86400).toLocaleString('en-US');
+            var mps = document.getElementById('mpsChip');
+            if (mps) {
+                mps.innerHTML = '64,000,000,000 ÷ 86,400 = <b>' + perSec + ' MESSAGES / SECOND</b>, SUSTAINED FOR A DAY';
+            }
+
+            /* 3 · density grid for step 04 — one <i> per dot, sized to
+               the plate by CSS. Decorative density, count fixed. */
+            var wGrid = document.getElementById('wGrid');
+            if (wGrid) {
+                var dots = '';
+                for (var d = 0; d < 90; d++) dots += '<i></i>';
+                wGrid.innerHTML = dots;
+            }
+
+            /* 4 · the cipher chip gets a fresh-looking hex string per
+               visit — every state real, nothing hardcoded to look busy. */
+            var eCipher = document.getElementById('eCipher');
+            if (eCipher) {
+                var hex = '';
+                for (var h = 0; h < 4; h++) {
+                    hex += (Math.floor(Math.random() * 256)).toString(16).padStart(2, '0');
+                    if (h < 3) hex += '·';
+                }
+                eCipher.textContent = hex + '···' + (Math.floor(Math.random() * 256)).toString(16).padStart(2, '0');
+            }
+        })();
+    </script>
+</body>
+
+</html>
