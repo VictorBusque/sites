@@ -45,27 +45,80 @@
            band — otherwise the text vanishes after a few vh of scroll. */
         var band = portraitMob.matches ? '-20% 0px -20% 0px' : '-45% 0px -45% 0px';
 
+        /* A step card only reads well once the stage is pinned. While the
+           stage is still scrolling into place, the first step overlaps its
+           activation window early, so its card is caught mid-fade, off its
+           settled position — barely readable. Every later step activates
+           only once the stage is already pinned, which is why they look
+           right. So we never light a card until the stage has reached the
+           top of the viewport, and we bootstrap the first (or any missed)
+           step the moment it does. */
+        function stagePinned() {
+            var stage = scene.querySelector('.sticky-scene__stage');
+            return !stage || stage.getBoundingClientRect().top <= 0;
+        }
+        /* engaged = a card is lit while the stage is pinned. Reset whenever
+           the stage scrolls away, so re-entering the scene re-bootstraps. */
+        var engaged = false;
+        function activate(step) {
+            /* exclusive: only one step card is active at a time */
+            steps.forEach(function (s) { s.classList.remove('is-active'); });
+            step.classList.add('is-active');
+            scene.dataset.activeStep = step.getAttribute('data-step');
+            if (readout) {
+                readout.textContent = 'STEP ' + step.getAttribute('data-step') + ' / ' + total;
+            }
+            /* the mobile progress rail sweeps to this step's place */
+            var fill = step.querySelector('.step-progress i');
+            if (fill) {
+                var pi = parseInt(step.getAttribute('data-step'), 10) || 1;
+                fill.style.width = (total > 1 ? ((pi - 1) / (total - 1)) * 100 : 100) + '%';
+            }
+            engaged = true;
+            /* let page hooks react (window.VBScene.onStep) */
+            notifyHooks(scene, step, total);
+        }
+
         var io = new IntersectionObserver(function (es) {
             es.forEach(function (e) {
-                var step = e.target;
-                if (!e.isIntersecting) return;
-                /* exclusive: only one step card is active at a time */
-                steps.forEach(function (s) { s.classList.remove('is-active'); });
-                step.classList.add('is-active');
-                scene.dataset.activeStep = step.getAttribute('data-step');
-                if (readout) {
-                    readout.textContent = 'STEP ' + step.getAttribute('data-step') + ' / ' + total;
-                }
-                /* the mobile progress rail sweeps to this step's place */
-                var fill = step.querySelector('.step-progress i');
-                if (fill) {
-                    var pi = parseInt(step.getAttribute('data-step'), 10) || 1;
-                    fill.style.width = (total > 1 ? ((pi - 1) / (total - 1)) * 100 : 100) + '%';
-                }
-                /* let page hooks react (window.VBScene.onStep) */
-                notifyHooks(scene, step, total);
+                /* wait until the stage is pinned; the observer re-fires on
+                   later band entries (steps 2..n) once it is */
+                if (!e.isIntersecting || !stagePinned()) return;
+                activate(e.target);
             });
         }, { rootMargin: band });
+
+        /* While the stage pins, step 1 was deliberately blocked — so its
+           card would otherwise stay dark until a later band entry fires. As
+           soon as the stage reaches the top, light the step sitting at the
+           viewport center, then hand back to the observer. Running only
+           while nothing is engaged keeps it from racing the observer during
+           normal scroll (it never re-flips a step the observer already
+           set). */
+        var ticking = false;
+        function bootstrap() {
+            if (engaged || !stagePinned()) return;
+            var c = innerHeight / 2;
+            for (var i = 0; i < steps.length; i++) {
+                var r = steps[i].getBoundingClientRect();
+                if (r.top <= c && r.bottom >= c) {
+                    activate(steps[i]);
+                    return;
+                }
+            }
+        }
+        function onScroll() {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(function () {
+                ticking = false;
+                if (!stagePinned()) engaged = false; /* stage scrolled away */
+                bootstrap();
+            });
+        }
+        addEventListener('scroll', onScroll, { passive: true });
+        addEventListener('resize', onScroll);
+        bootstrap(); /* in case the scene is already in view on load */
 
         steps.forEach(function (s) {
             /* The article is a full-height transparent track over the pinned

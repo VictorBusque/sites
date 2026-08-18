@@ -49,3 +49,7 @@ from `blog/template.html` and behavior is done. Do not add per-page scene
 JS; page scripts only compute honest state and key stage visuals off
 `data-active-step` (react via `window.VBScene.onStep(fn)`, never a
 hand-rolled MutationObserver).
+
+# Rules
+
+- Do not attempt to do screenshots using browser.
