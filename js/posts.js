@@ -8,6 +8,15 @@
    it directly. */
 window.VB_POSTS = [
     {
+        "slug": "blog/apollo-to-phone.html",
+        "no": "06",
+        "title": "How compute went from Apollo to the iPhone.",
+        "date": "2026-08",
+        "topic": "Hardware · Silicon",
+        "tags": ["Apollo", "iPhone", "Silicon", "Compute"],
+        "deck": "From Apollo's 2 KB of RAM to a phone in your pocket: scroll the curves — frequency, transistor density, memory, parallelism and specialization — that made the leap."
+    },
+    {
         "slug": "blog/gps-is-not-just-gps.html",
         "no": "05",
         "title": "How GPS Turns Time Into Location.",

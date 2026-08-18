@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+
+    <!-- Primary meta -->
+    <title>How Compute Went from Apollo to the iPhone — Víctor Busqué</title>
+    <meta name="description" content="From Apollo's 2 KB of RAM to a phone in your pocket: scroll the curves — frequency, transistor density, memory, parallelism and specialization — that made the leap.">
+    <meta name="author" content="Víctor Busqué">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://victorbusque.com/blog/apollo-to-phone.html">
+
+    <!-- Favicons / PWA (absolute paths resolve from /blog/) -->
+    <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/img/favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#0b0b0a">
+    <meta name="apple-mobile-web-app-title" content="VB Posts">
+    <meta name="application-name" content="VB Posts">
+    <meta name="color-scheme" content="light dark">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Víctor Busqué — Curiosities">
+    <meta property="og:title" content="How Compute Went from Apollo to the iPhone">
+    <meta property="og:description" content="From Apollo's 2 KB of RAM to a phone in your pocket: frequency, transistor density, memory, parallelism and specialization, one scene at a time.">
+    <meta property="og:url" content="https://victorbusque.com/blog/apollo-to-phone.html">
+    <meta property="og:image" content="https://victorbusque.com/img/og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="How Compute Went from Apollo to the iPhone">
+    <meta name="twitter:description" content="From Apollo's 2 KB of RAM to a phone in your pocket: frequency, transistor density, memory, parallelism and specialization, one scene at a time.">
+    <meta name="twitter:image" content="https://victorbusque.com/img/og.png">
+
+    <!-- Performance: preconnect to font CDN -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": "How compute went from Apollo to the iPhone.",
+      "description": "From Apollo's 2 KB of RAM to a phone in your pocket: scroll the curves — frequency, transistor density, memory, parallelism and specialization — that made the leap.",
+      "datePublished": "2026-08",
+      "author": { "@id": "https://victorbusque.com/#person" },
+      "publisher": { "@id": "https://victorbusque.com/#person" },
+      "url": "https://victorbusque.com/blog/apollo-to-phone.html",
+      "mainEntityOfPage": "https://victorbusque.com/blog/apollo-to-phone.html",
+      "inLanguage": "en",
+      "keywords": ["Apollo", "iPhone", "Silicon", "Moore", "Compute"],
+      "articleSection": "Hardware · Silicon"
+    }
+    </script>
+
+    <!-- The .js gate -->
+    <script>document.documentElement.className += ' js';</script>
+
+    <link rel="stylesheet" href="../css/site.css">
+    <script src="../js/site.js" defer></script>
+    <script src="../js/scene.js" defer></script>
+    <script src="../js/vb.js"></script>
+    <style>
+        /* ════════════════════════════════════════════════════════════════
+           POST 06 — FROM THE MOON TO YOUR POCKET
+           Page-specific styles only. Shared pieces (tokens, nav, footer,
+           reveals, scene frame, step cards) live in css/site.css and
+           js/site.js / scene.js / vb.js.
+
+           THEME — "Cockpit" (page-scoped, overrides the light system).
+           Warm graphite night, bone text, jade settled, ember watch,
+           steel context. One continuous dark world from hero to sources.
+           Semantic mapping stays consistent with the rest of the site.
+           ════════════════════════════════════════════════════════════════ */
+
+        :root {
+            --paper: #0c0c0a;      /* page — warm graphite night */
+            --paper-2: #11110f;    /* surfaces */
+            --ink: #f1ede3;        /* bone foreground */
+            --muted: #9b988f;      /* warm gray text */
+            --line: #2a2925;       /* hairline rules on dark */
+            --acid: #8fd6a6;       /* jade — settled / found */
+            --blue: #9db7c7;       /* steel — context / structure */
+            --orange: #ff7a3c;     /* ember — the thing to watch */
+            --stage: #0f100f;
+            --stage-2: #15160f;
+            --grid: #ffffff0d;
+        }
+
+        html { background: #080807; }
+        body {
+            background:
+                radial-gradient(1100px 460px at 50% -6%, #1c1610 0%, transparent 62%),
+                var(--paper);
+            color: var(--ink);
+        }
+        ::selection { background: var(--acid); color: #0c0c0a; }
+        .scene-readout { color: #8a877f; }
+        .scene-head { border-bottom-color: rgba(241,237,227,.12); }
+        .foot { color: #8a877f; border-top-color: #2a2925; }
+
+        /* ── HERO ── */
+        .hero-metrics { display: flex; gap: 22px; flex-wrap: wrap; margin: 30px 0 0; }
+        .hero-metrics .m { border-left: 1px solid #3a382f; padding-left: 14px; }
+        .hero-metrics .m b { display: block; font: 500 clamp(22px,3vw,34px)/1 "DM Mono"; color: var(--ink); }
+        .hero-metrics .m span { display: block; margin-top: 6px; font: 9px "DM Mono"; letter-spacing: .1em; text-transform: uppercase; color: #7d7b73; }
+
+        /* ── shared stage layout ── */
+        .die { position: absolute; inset: 56px 0 0; display: flex; align-items: center; justify-content: center; }
+        svg.die { width: min(880px, 90%); height: auto; }
+        .lab { font: 9px "DM Mono"; fill: #848179; letter-spacing: .05em; }
+        .lab.hot { fill: #ffb48a; }
+        .lab.soft { fill: #6f6d65; }
+        .lab.bone { fill: #dcd7cb; }
+        .big { font: 11px "DM Mono"; fill: #dcd7cb; }
+        .big.hot { fill: #ff8a4a; }
+        .big.jade { fill: var(--acid); }
+        .node { fill: #14150f; stroke: #4b4d46; stroke-width: 1; }
+        .node-hot { fill: #241a12; stroke: var(--orange); }
+        .node-jade { fill: #10150f; stroke: #4f6a58; }
+        .wire { stroke: #43453f; stroke-width: 1; fill: none; }
+        .wire-hot { stroke: var(--orange); stroke-width: 1.5; fill: none; }
+        .flow { stroke-dasharray: 6 10; stroke-dashoffset: 0; transition: stroke-dashoffset .9s linear, opacity .5s var(--ease-swift); }
+
+        /* ════ SCENE 01 · AGC — memory as a physical budget ════ */
+        .agc .rom { opacity: .35; transition: opacity .7s var(--ease-swift); }
+        .agc .ram { opacity: .45; transition: opacity .7s var(--ease-swift), box-shadow .7s var(--ease-swift); }
+        .agc .cpu { opacity: .5; transition: opacity .7s var(--ease-swift); }
+        .agc .f1, .agc .f2 { opacity: 0; }
+        .sticky-scene[data-active-step="2"] .agc .rom,
+        .sticky-scene[data-active-step="3"] .agc .rom,
+        .sticky-scene[data-active-step="4"] .agc .rom { opacity: 1; }
+        .sticky-scene[data-active-step="2"] .agc .ram,
+        .sticky-scene[data-active-step="3"] .agc .ram { opacity: 1; }
+        .sticky-scene[data-active-step="2"] .agc .ram { filter: drop-shadow(0 0 14px #ff7a3c55); }
+        .sticky-scene[data-active-step="3"] .agc .cpu,
+        .sticky-scene[data-active-step="4"] .agc .cpu { opacity: 1; }
+        .sticky-scene[data-active-step="3"] .agc .f1,
+        .sticky-scene[data-active-step="4"] .agc .f1 { opacity: 1; stroke-dashoffset: -120; }
+        .sticky-scene[data-active-step="4"] .agc .f2 { opacity: 1; stroke-dashoffset: 80; }
+        .sticky-scene[data-active-step="4"] .agc .rom { filter: drop-shadow(0 0 12px #8fd6a644); }
+
+        /* ════ SCENE 02 · SILICON — the chip densifies ════ */
+        .sil .chip { transition: opacity .7s var(--ease-swift), transform .9s var(--ease-out); opacity: .4; }
+        .sil .dots { transition: opacity .7s var(--ease-swift); }
+        .sil .c4004 { transform-box: fill-box; transform-origin: center; }
+        .sticky-scene[data-active-step="1"] .sil .c4004 { opacity: 1; }
+        .sticky-scene[data-active-step="2"] .sil .c8086 { opacity: 1; transform: scale(1.04); }
+        .sticky-scene[data-active-step="2"] .sil .c4004 { opacity: .2; }
+        .sticky-scene[data-active-step="3"] .sil .c486 { opacity: 1; transform: scale(1.04); }
+        .sticky-scene[data-active-step="3"] .sil .c4004, .sticky-scene[data-active-step="3"] .sil .c8086 { opacity: .2; }
+        .sticky-scene[data-active-step="4"] .sil .c486 { opacity: .5; }
+        .sticky-scene[data-active-step="4"] .sil .cp3 { opacity: 1; transform: scale(1.04); }
+
+        /* ════ SCENE 03 · PHONE — the computer changes shape ════ */
+        .ph .desktop, .ph .mint { transition: opacity .8s var(--ease-swift), transform .9s var(--ease-out); }
+        .ph .ph-arrow { opacity: 0; transition: opacity .6s var(--ease-swift); }
+        .sticky-scene[data-active-step="1"] .ph .desktop { opacity: 1; }
+        .sticky-scene[data-active-step="2"] .ph .desktop { opacity: .55; }
+        .sticky-scene[data-active-step="2"] .ph .ph-arrow { opacity: 1; }
+        .sticky-scene[data-active-step="2"] .ph .mint,
+        .sticky-scene[data-active-step="3"] .ph .mint,
+        .sticky-scene[data-active-step="4"] .ph .mint { opacity: 1; transform: scale(1.1); }
+        .sticky-scene[data-active-step="3"] .ph .mint { filter: drop-shadow(0 0 16px #ff7a3c44); }
+        .sticky-scene[data-active-step="4"] .ph .desktop { opacity: .18; }
+
+        /* ════ SCENE 04 · HETERO — one chip, many engines ════ */
+        .he .block { transition: opacity .7s var(--ease-swift), box-shadow .7s var(--ease-swift); opacity: .55; }
+        .he .sig { opacity: 0; transition: opacity .6s var(--ease-swift); }
+        .he .a17 { opacity: 0; transition: opacity .7s var(--ease-swift); }
+        .sticky-scene[data-active-step="1"] .he .block { opacity: .75; }
+        .sticky-scene[data-active-step="2"] .he .b-cpu { opacity: 1; box-shadow: inset 0 0 0 1px var(--acid); }
+        .sticky-scene[data-active-step="2"] .he .sig-cpu { opacity: 1; }
+        .sticky-scene[data-active-step="3"] .he .a17 { opacity: 1; }
+        .sticky-scene[data-active-step="3"] .he .b-gpu { opacity: 1; box-shadow: inset 0 0 0 1px var(--orange); }
+        .sticky-scene[data-active-step="3"] .he .sig-npu { opacity: 1; }
+        .sticky-scene[data-active-step="4"] .he .block { opacity: 1; }
+
+        /* ════ SCENE 05 · FINAL — the whole trajectory in a phone ════ */
+        .fin .phone { transition: transform 1s var(--ease-out), opacity .7s var(--ease-swift); transform: scale(.82); }
+        .fin .ring { transition: opacity .8s var(--ease-swift), transform 1s var(--ease-out); transform-origin: center; opacity: .4; }
+        .fin .cpu-die { opacity: .5; transition: opacity .8s var(--ease-swift); }
+        .sticky-scene[data-active-step="2"] .fin .phone { transform: scale(.9); }
+        .sticky-scene[data-active-step="3"] .fin .phone { transform: scale(.97); }
+        .sticky-scene[data-active-step="4"] .fin .phone { transform: scale(1); }
+        .sticky-scene[data-active-step="2"] .fin .ring.r1,
+        .sticky-scene[data-active-step="3"] .fin .ring.r1,
+        .sticky-scene[data-active-step="3"] .fin .ring.r2,
+        .sticky-scene[data-active-step="4"] .fin .ring.r1,
+        .sticky-scene[data-active-step="4"] .fin .ring.r2,
+        .sticky-scene[data-active-step="4"] .fin .ring.r3 { opacity: .9; }
+        .sticky-scene[data-active-step="2"] .fin .cpu-die,
+        .sticky-scene[data-active-step="3"] .fin .cpu-die,
+        .sticky-scene[data-active-step="4"] .fin .cpu-die { opacity: 1; }
+        .fin-callout { position: absolute; right: 7%; top: 18%; width: min(300px, 34%); z-index: 3; }
+        .fin-callout .row { padding: 11px 0; border-top: 1px solid #30302a; }
+        .fin-callout .row b { display: block; font: 18px "DM Mono"; color: var(--ink); }
+        .fin-callout .row span { font: 8.5px "DM Mono"; color: #79776e; text-transform: uppercase; letter-spacing: .09em; }
+
+        /* ── timeline ── */
+        .tl-shell { padding: 8vh 5vw 12vh; max-width: 1180px; margin: auto; }
+        .tl-shell h2 { font: 500 clamp(32px,5vw,62px)/1 "Instrument Serif"; letter-spacing: -.04em; margin: 0 0 8px; }
+        .tl-shell .tl-sub { color: var(--muted); max-width: 460px; margin: 0 0 34px; }
+        .tl { position: relative; height: 250px; border-top: 1px solid #292924; border-bottom: 1px solid #292924; overflow: hidden; }
+        .tl-line { position: absolute; left: 0; right: 0; top: 51%; height: 1px; background: #3b3a35; }
+        .tl .dot { position: absolute; top: calc(51% - 6px); width: 12px; height: 12px; border-radius: 50%; background: #171813; border: 1px solid #77756b; transform: translateX(-50%); }
+        .tl .dot::before { content: ""; position: absolute; left: 50%; top: 50%; width: 3px; height: 3px; background: #b5b0a5; border-radius: 50%; transform: translate(-50%,-50%); }
+        .tl .dot span { position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; font: 9px "DM Mono"; color: #77756e; line-height: 1.5; text-align: center; }
+        .tl .dot.top span { bottom: 20px; }
+        .tl .dot.bottom span { top: 20px; }
+        .tl .dot.current { border-color: var(--orange); box-shadow: 0 0 0 5px #ff7a3c1a; }
+        .tl-cap { margin-top: 18px; color: #8a877f; font: 10px/1.7 "DM Mono"; max-width: 720px; }
+        .tl-cap strong { color: var(--ink); }
+
+        /* ── final ── */
+        .final-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7vw; margin-top: 55px; }
+        .final-card { border-top: 1px solid #30302a; padding-top: 18px; }
+        .final-card h3 { margin: 0 0 14px; font: 11px "DM Mono"; letter-spacing: .12em; text-transform: uppercase; color: #8b887f; }
+        .final-card p { color: #85817a; font-size: 14px; margin: 0; line-height: 1.6; }
+
+        @media (max-width: 850px) {
+            .fin-callout { right: 5%; top: auto; bottom: 8%; width: 44%; }
+            .final-grid { grid-template-columns: 1fr; gap: 32px; }
+        }
+        @media (max-width: 600px) {
+            .hero-metrics { gap: 16px; }
+            .die { inset: 56px 0 0; }
+            svg.die { width: 100%; padding: 0 6px; }
+            .lab { font-size: 7.5px; }
+            .big { font-size: 9px; }
+            .fin-callout { width: 56%; }
+            .fin-callout .row b { font-size: 14px; }
+            .tl { height: 210px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .flow, .sil .chip, .ph .desktop, .ph .mint, .he .block, .he .sig, .fin .phone { transition: none; }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Shared chrome (nav, footer, progress, cursor) is embedded by js/site.js -->
+    <div data-vb-nav data-depth="1" data-status="POST 06" data-status-em="HARDWARE">
+        <noscript><a href="../index.html">VB</a> · <a href="../index.html#posts">Posts</a> · <a href="../about.html">About</a></noscript>
+    </div>
+
+    <header class="post-hero">
+        <div class="ghost" aria-hidden="true">M</div>
+        <div class="crumb"><a href="../index.html">Index</a> / HARDWARE — SILICON</div>
+        <h1>
+            <span class="h-line"><span>From the Moon</span></span>
+            <span class="h-line"><span><em>to your pocket.</em></span></span>
+        </h1>
+        <p class="dek">In 1969 Apollo flew a computer with 2 KB of erasable memory and roughly 85,000 instructions per
+            second. Today a phone in your pocket carries a six-core CPU, a sixteen-core Neural Engine and about 12 GB of
+            working memory. Scroll the curves — frequency, density, memory, parallelism, specialization — that made the
+            leap.</p>
+        <div class="post-meta"><span>AUG <b>2026</b></span><span>~<b>8</b> MIN</span><span><b>5</b> SCENES</span><span>MODE: <b>VISUAL HISTORY</b></span></div>
+        <div class="hero-metrics">
+            <div class="m"><b>56 yrs</b><span>1969 → 2025</span></div>
+            <div class="m"><b>4.26 GHz</b><span>reported A19 Pro frequency</span></div>
+            <div class="m"><b>≈3.2M×</b><span>RAM, byte for byte</span></div>
+        </div>
+    </header>
+
+    <main>
+        <article class="post-prose">
+            <h2><span class="sec-no">01</span>The baseline</h2>
+            <p>The Apollo Guidance Computer was not a modern CPU with <em>less power</em>. It was a radically different
+                machine optimized to do one job — guidance, navigation and control — in real time, under brutal mass,
+                power and reliability constraints.</p>
+            <p>Its program lived mostly in fixed core-rope memory; a tiny erasable store held the variables. Software
+                architecture had to become a physical property of the machine, because memory simply did not exist to be
+                wasted.</p>
+            <div class="aside">Block II AGC: 15 data bits + parity · 36,864 fixed-memory words · 2,048 erasable-memory
+                words · 34 normal instructions · 1.024 MHz internal computer clock. Sources at the bottom.</div>
+        </article>
+
+        <!-- ════ SCENE 01 · AGC ════ -->
+        <section class="sticky-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 01</span>
+                    <span class="scene-name">THE BASELINE</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="die agc">
+                    <svg class="die" viewBox="0 0 1000 700" role="presentation">
+                        <g>
+                            <rect x="535" y="150" width="290" height="170" rx="2" class="node"></rect>
+                            <text x="556" y="178" class="big">FIXED / CORE ROPE</text>
+                            <text x="556" y="198" class="lab">36,864 words</text>
+                            <g id="romGrid" class="rom"></g>
+                            <rect x="535" y="350" width="122" height="98" rx="2" class="node-hot ram"></rect>
+                            <text x="552" y="377" class="big">RAM</text>
+                            <text x="552" y="396" class="lab hot">2,048 words</text>
+                            <rect x="686" y="350" width="140" height="98" rx="2" class="node cpu"></rect>
+                            <text x="703" y="377" class="big">CPU</text>
+                            <text x="703" y="396" class="lab">1.024 MHz</text>
+                            <text x="703" y="414" class="lab">~85k instr/s</text>
+                            <path d="M 748 350 C 772 322 756 305 686 305" class="wire-hot flow f1" stroke-linecap="round"></path>
+                            <path d="M 657 400 C 645 388 634 388 622 388" class="wire-hot flow f2" stroke-linecap="round"></path>
+                            <text x="70" y="150" class="big">THE CONSTRAINT</text>
+                            <text x="70" y="176" class="lab">Memory scarce enough that</text>
+                            <text x="70" y="194" class="lab">software architecture became</text>
+                            <text x="70" y="212" class="lab">a physical property of the machine.</text>
+                            <text x="70" y="280" class="lab soft">≈3.75 KiB DATA RAM</text>
+                            <text x="70" y="300" class="lab soft">≈67.5 KiB FIXED DATA</text>
+                            <text x="70" y="320" class="lab soft">31.8 kg · 55 W REPORTED</text>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>A whole spacecraft, concentrated into a tiny memory. The AGC's program lived mostly in fixed
+                        core-rope memory; variables lived in a small erasable store. The machine reused addresses
+                        aggressively because there simply was not much to work with.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>Now the memory budget becomes visible. The fixed store dominates; the erasable store is tiny
+                        because variables, counters and state have nowhere else to live. 2,048 words is a hard ceiling,
+                        not a soft one.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p>Every instruction had a price. At roughly 85,000 instructions per second, the machine operated in
+                        a completely different performance regime from modern silicon.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <p>And yet it guided a spacecraft. The achievement is not that the AGC was "fast" — it is that
+                        software, hardware and mission constraints were designed as one system, tuned by necessity.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="breather">
+            <p class="breather-line reveal"><em>"More powerful"</em> begins as a misleading question.</p>
+        </section>
+
+        <article class="post-prose">
+            <p>Apollo and the iPhone do not execute the same instruction set, benchmark the same way, or solve the same
+                workload. The useful story is the convergence of several curves at once: frequency, transistor density,
+                memory, parallelism and specialization.</p>
+        </article>
+
+        <!-- ════ SCENE 02 · SILICON ════ -->
+        <section class="sticky-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 02</span>
+                    <span class="scene-name">SILICON ACCELERATES</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="die sil">
+                    <svg class="die" viewBox="0 0 1000 700" role="presentation">
+                        <g>
+                            <line x1="120" y1="430" x2="900" y2="430" class="wire"></line>
+                            <g class="chip c4004">
+                                <rect x="120" y="305" width="120" height="125" rx="3" class="node"></rect>
+                                <g id="d4004" class="dots"></g>
+                                <text x="120" y="468" class="big">4004 · 1971</text>
+                                <text x="120" y="490" class="lab">2,300 transistors</text>
+                                <text x="120" y="508" class="lab">108 kHz</text>
+                            </g>
+                            <g class="chip c8086">
+                                <rect x="410" y="285" width="150" height="145" rx="3" class="node"></rect>
+                                <g id="d8086" class="dots"></g>
+                                <text x="410" y="468" class="big">8086 · 1978</text>
+                                <text x="410" y="490" class="lab">29,000 transistors</text>
+                                <text x="410" y="508" class="lab">4.77–10 MHz</text>
+                            </g>
+                            <g class="chip c486">
+                                <rect x="690" y="225" width="185" height="205" rx="3" class="node-hot"></rect>
+                                <g id="d486" class="dots"></g>
+                                <text x="690" y="468" class="big hot">i486 · 1989</text>
+                                <text x="690" y="490" class="lab hot">1.2M transistors</text>
+                                <text x="690" y="508" class="lab hot">15–20 MIPS</text>
+                            </g>
+                            <g class="chip cp3">
+                                <rect x="690" y="120" width="185" height="205" rx="3" class="node-jade"></rect>
+                                <g id="dp3" class="dots"></g>
+                                <text x="690" y="350" class="big jade">Pentium III · 1999</text>
+                                <text x="690" y="372" class="lab">9.5M transistors</text>
+                                <text x="690" y="390" class="lab">550 MHz</text>
+                            </g>
+                            <text x="70" y="120" class="lab soft">DOTS = RELATIVE DENSITY, STYLIZED</text>
+                            <text x="70" y="140" class="lab soft">COUNTS IN THE LABELS ARE THE REAL FIGURES</text>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>Once the processor became a mass-manufactured integrated circuit, the machine stopped being a
+                        spacecraft component and started becoming a platform. The 1971 Intel 4004 put 2,300 transistors
+                        on a single chip.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>The chip gets denser. The 8086 raised the transistor budget by more than an order of magnitude
+                        while becoming the foundation of the IBM PC era — 29,000 transistors.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p>Now arithmetic becomes a system. The i486 crossed one million transistors and was rated at
+                        roughly 15–20 million instructions per second.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <p>The desktop jumps another order of magnitude. By the Pentium III era, 9.5 million transistors
+                        could run at 550 MHz in a mainstream consumer processor.</p>
+                </article>
+            </div>
+        </section>
+
+        <article class="post-prose">
+            <h2><span class="sec-no">02</span>The desktop era</h2>
+            <p>The Pentium III shipped at 550 MHz with 9.5 million transistors. A few years later, a computer that once
+                needed a desk could fit into a pocket — and still be a general-purpose computer with a browser, a
+                graphics stack and a real operating system.</p>
+        </article>
+
+        <!-- ════ SCENE 03 · PHONE ════ -->
+        <section class="sticky-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 03</span>
+                    <span class="scene-name">THE FORM FACTOR CHANGES</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="die ph">
+                    <svg class="die" viewBox="0 0 1000 700" role="presentation">
+                        <g>
+                            <g class="desktop">
+                                <rect x="535" y="205" width="245" height="170" rx="5" class="node"></rect>
+                                <rect x="565" y="235" width="185" height="108" rx="4" fill="#13150f" stroke="#525950"></rect>
+                                <g id="screenDots"></g>
+                                <text x="550" y="410" class="big">PENTIUM III · 1999</text>
+                                <text x="550" y="432" class="lab">550 MHz · 9.5M transistors</text>
+                            </g>
+                            <g class="mint" transform="translate(300 150)">
+                                <rect x="0" y="0" width="92" height="186" rx="12" fill="#252722" stroke="#767a72"></rect>
+                                <rect x="7" y="14" width="78" height="152" rx="9" fill="#0e110d"></rect>
+                                <circle cx="46" cy="178" r="3" fill="#777b73"></circle>
+                                <text x="46" y="216" class="big" style="text-anchor:middle">iPHONE · 2007</text>
+                                <text x="46" y="238" class="lab" style="text-anchor:middle">412 MHz · 128 MB RAM</text>
+                            </g>
+                            <path d="M 470 250 C 505 250 508 290 533 290" class="wire-hot ph-arrow" id="formArrow"></path>
+                            <text x="70" y="200" class="big">THE COMPUTER BECOMES</text>
+                            <text x="70" y="226" class="lab">a general-purpose object</text>
+                            <text x="70" y="244" class="lab">people carry all day.</text>
+                            <text x="70" y="300" class="lab soft">RAM vs AGC ≈ 33,000×</text>
+                            <text x="70" y="320" class="lab soft">CLOCK vs AGC ≈ 4.5×</text>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>Then the computer stopped looking like a computer. The original iPhone arrived in 2007 with a 412
+                        MHz ARM11 processor and 128 MB RAM.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>A pocket computer appears. Its memory was already 128 MB — roughly 33,000 times the AGC's ~3.75
+                        KiB of erasable data memory. Same word, "computer"; a different physical object.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p>And the software stack grows around it. Browser, graphics, sensors, networking, an operating
+                        system — the "computer" now lives inside a product people call a phone.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <p>The trajectory is now obvious. The next eighteen years will multiply cores, caches, memory and
+                        specialization far faster than the eye can follow.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="breather">
+            <p class="breather-line reveal">The remarkable part wasn't the first smartphone. <em>It was what came
+                next.</em></p>
+        </section>
+
+        <article class="post-prose">
+            <p>Once mobile silicon adopted multi-core CPUs, large caches, programmable GPUs and neural accelerators, the
+                "phone" became a heterogeneous computer — different engines, each built for a different kind of work.</p>
+            <div class="callout">Raw speed was no longer the whole game. Specialization is the new multiplier.</div>
+        </article>
+
+        <!-- ════ SCENE 04 · HETERO ════ -->
+        <section class="sticky-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 04</span>
+                    <span class="scene-name">HETEROGENEOUS COMPUTE</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="die he">
+                    <svg class="die" viewBox="0 0 1000 700" role="presentation">
+                        <g>
+                            <rect x="545" y="150" width="330" height="300" rx="8" fill="#11130f" stroke="#474b45"></rect>
+                            <rect x="570" y="180" width="112" height="96" rx="4" fill="#15190f" stroke="#5a6a5c" class="block b-cpu"></rect>
+                            <rect x="712" y="180" width="138" height="96" rx="4" fill="#1a1710" stroke="#c0875a" class="block b-gpu"></rect>
+                            <rect x="570" y="300" width="112" height="100" rx="4" fill="#10150f" stroke="#8fd6a6" class="block b-npu"></rect>
+                            <rect x="712" y="300" width="138" height="100" rx="4" fill="#14160f" stroke="#70756e" class="block b-io"></rect>
+                            <text x="588" y="210" class="big">CPU</text><text x="588" y="230" class="lab">2 performance</text><text x="588" y="248" class="lab">4 efficiency</text>
+                            <text x="730" y="210" class="big">GPU</text><text x="730" y="230" class="lab">6 cores</text><text x="730" y="248" class="lab">ray tracing</text>
+                            <text x="588" y="330" class="big jade">NEURAL</text><text x="588" y="350" class="lab">16 cores</text><text x="588" y="368" class="lab">AI inference</text>
+                            <text x="730" y="330" class="big">MEDIA / IO</text><text x="730" y="350" class="lab">video + display</text><text x="730" y="368" class="lab">specialized engines</text>
+                            <circle cx="420" cy="228" r="4" fill="#8fd6a6"></circle>
+                            <circle cx="420" cy="350" r="4" fill="#ff9a5c"></circle>
+                            <circle cx="420" cy="430" r="4" fill="#9db7c7"></circle>
+                            <path d="M426 228 C 480 228 500 228 570 228" class="wire-hot flow sig sig-cpu"></path>
+                            <path d="M426 350 C 500 350 510 228 712 228" class="wire flow sig sig-gpu"></path>
+                            <path d="M426 430 C 500 430 530 350 570 350" class="wire flow sig sig-npu"></path>
+                            <g class="a17">
+                                <text x="70" y="120" class="big jade">A17 PRO · 2023</text>
+                                <text x="70" y="146" class="lab">19B transistors</text>
+                                <text x="70" y="166" class="lab">35 TOPS neural engine</text>
+                            </g>
+                            <text x="70" y="430" class="big">SAME PROGRAM</text>
+                            <text x="70" y="456" class="lab">can route work to</text>
+                            <text x="70" y="474" class="lab">completely different engines.</text>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>One chip, many kinds of computers. Modern mobile silicon routes different work to different
+                        engines — CPU for general logic, GPU for massively parallel math, Neural Engine for
+                        matrix-heavy inference, media blocks for video.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>The CPU stops doing everything. Graphics move to the GPU, matrix-heavy inference moves to the
+                        Neural Engine, video uses dedicated media blocks. Generality plus specialization.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p>The A17 Pro, introduced in 2023, reached 19 billion transistors and a Neural Engine rated at up
+                        to 35 trillion operations per second.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <p>The A19 Pro pushes the same idea forward — a 6-core CPU, a 6-core GPU with neural accelerators,
+                        and a 16-core Neural Engine. The chip is a city of engines, not a single faster core.</p>
+                </article>
+            </div>
+        </section>
+
+        <article class="post-prose">
+            <h2><span class="sec-no">03</span>The endpoint</h2>
+            <p>Now put the whole trajectory inside a 233-gram object. The iPhone 17 Pro Max is not simply "a faster
+                Apollo computer." It is a heterogeneous compute platform whose CPU, GPU, neural accelerators, media
+                engines, memory system and thermal design all work together.</p>
+        </article>
+
+        <!-- ════ SCENE 05 · FINAL ════ -->
+        <section class="sticky-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 05</span>
+                    <span class="scene-name">THE ENDPOINT</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="die fin">
+                    <div class="fin-callout">
+                        <div class="row"><b>4.26 GHz</b><span>reported A19 Pro frequency</span></div>
+                        <div class="row"><b>6 + 6 + 16</b><span>CPU + GPU + Neural cores</span></div>
+                        <div class="row"><b>≈12 GB</b><span>installed memory class</span></div>
+                        <div class="row"><b>233 g</b><span>whole phone mass</span></div>
+                    </div>
+                    <svg class="die" viewBox="0 0 1000 700" role="presentation">
+                        <g class="phone">
+                            <circle cx="500" cy="350" r="200" fill="none" stroke="#8fd6a644" stroke-width="1" class="ring r1"></circle>
+                            <circle cx="500" cy="350" r="258" fill="none" stroke="#ff7a3c33" stroke-width="1" class="ring r2"></circle>
+                            <circle cx="500" cy="350" r="316" fill="none" stroke="#ffffff14" stroke-width="1" class="ring r3"></circle>
+                            <rect x="372" y="180" width="256" height="340" rx="26" fill="#2a2c24" stroke="#6d7167"></rect>
+                            <rect x="382" y="192" width="236" height="314" rx="20" fill="#0e110d"></rect>
+                            <rect x="456" y="200" width="88" height="8" rx="4" fill="#040403"></rect>
+                            <g class="cpu-die" transform="translate(500 350)">
+                                <rect x="-62" y="-62" width="124" height="124" rx="6" fill="#1a2017" stroke="#6d7a67" transform="rotate(17)"></rect>
+                                <rect x="-48" y="-48" width="96" height="96" rx="4" fill="none" stroke="#8fd6a63a" transform="rotate(17)"></rect>
+                            </g>
+                            <text x="500" y="560" class="big" style="text-anchor:middle">A19 PRO · 3NM CLASS</text>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>The machine is getting smaller. The Apollo computer was physically large, memory-starved and
+                        mission-specific; the modern phone carries vastly more compute in the palm of a hand.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>The capability is getting denser. Transistors, caches, memory and specialized engines are packed
+                        into a fraction of the mass — the rings trace a whole history of capability accumulating.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p>The architecture becomes heterogeneous. A modern SoC is not one faster CPU; it is a federation of
+                        compute engines sharing memory and power.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <p>The computer is now the thing you forget you are carrying. The word "computer" survived; the
+                        physical constraints changed beyond recognition.</p>
+                </article>
+            </div>
+        </section>
+
+        <!-- ════ TIMELINE ════ -->
+        <section class="timeline">
+            <div class="tl-shell">
+                <h2>One curve is not enough.</h2>
+                <p class="tl-sub">The fastest way to understand the leap is to keep several scales visible at once.</p>
+                <div class="tl" aria-hidden="true">
+                    <div class="tl-line"></div>
+                    <div class="dot top" style="left:4%"><span>1969 · AGC<br>~85k instr/s</span></div>
+                    <div class="dot bottom" style="left:15%"><span>1971 · 4004<br>2,300 tr</span></div>
+                    <div class="dot top" style="left:27%"><span>1978 · 8086<br>29k tr</span></div>
+                    <div class="dot bottom" style="left:41%"><span>1989 · 486<br>15–20 MIPS</span></div>
+                    <div class="dot top" style="left:57%"><span>1999 · PIII<br>9.5M tr</span></div>
+                    <div class="dot bottom" style="left:70%"><span>2007 · iPhone<br>128 MB RAM</span></div>
+                    <div class="dot top" style="left:84%"><span>2023 · A17 Pro<br>19B tr</span></div>
+                    <div class="dot bottom current" style="left:96%"><span>2025 · A19 Pro<br>6 CPU + 6 GPU + 16 NE</span></div>
+                </div>
+                <p class="tl-cap">Scale warning: <strong>clock, MIPS, transistor count, memory and benchmark scores are
+                        different measurements.</strong> The timeline uses each because the history of computing is a
+                    history of all of them becoming abundant at once.</p>
+            </div>
+        </section>
+
+        <article class="post-prose">
+            <h2><span class="sec-no">04</span>The takeaway</h2>
+            <p>We didn't make the computer on the Moon slightly faster — we changed what "a computer" could afford to
+                contain. The Apollo Guidance Computer had to ration memory, arithmetic and power. Modern mobile silicon
+                spends that budget on parallel engines, caches, graphics, machine learning, video, sensors and an
+                operating system, all inside a device that weighs less than a soda can.</p>
+            <div class="final-grid">
+                <div class="final-card">
+                    <h3>What really changed</h3>
+                    <p>Transistor density made more logic economically possible. Better process technology made that
+                        logic smaller and more energy-efficient. Architecture learned to exploit parallelism.
+                        Specialized blocks took work away from the general-purpose CPU. Software grew into the machine
+                        instead of being squeezed into it.</p>
+                </div>
+                <div class="final-card">
+                    <h3>What did not change</h3>
+                    <p>The fundamental problem is still the same: turn information into actions under constraints.
+                        Apollo did it with fixed-point arithmetic, core-rope memory and hand-optimized software. The
+                        iPhone does it with billions of transistors, heterogeneous acceleration and an enormous software
+                        stack.</p>
+                </div>
+            </div>
+        </article>
+    </main>
+
+    <nav class="post-nav" aria-label="Post navigation">
+        <a href="gps-is-not-just-gps.html"><span class="dir">PREVIOUS</span><span class="t">How GPS turns time<br><em>into location.</em></span></a>
+        <a href="token-by-token.html"><span class="dir">NEXT</span><span class="t">How LLMs write text,<br><em>token by token.</em></span></a>
+    </nav>
+
+    <div data-vb-footer data-label="POST 06 · FROM THE MOON TO YOUR POCKET">
+        <noscript><a href="../index.html">Index</a> · <a href="../about.html">About</a></noscript>
+    </div>
+
+    <script>
+        /* ────────────────────────────────────────────────────────────
+           Post 06 — the only computed work is the decorative density
+           dots on each silicon chip. Every count in the visible labels
+           is a real, sourced figure (see the sources in the prose). The
+           dots are stylized density, seeded for determinism so the art
+           is identical on every load.
+           ──────────────────────────────────────────────────────────── */
+        (function () {
+            'use strict';
+            function dots(id, count, cols, ox, oy, w, h, r, o) {
+                var g = document.getElementById(id);
+                if (!g) return;
+                var rows = Math.ceil(count / cols);
+                var out = '';
+                for (var i = 0; i < count; i++) {
+                    var cx = ox + (i % cols) * (w / (cols - 1 || 1));
+                    var cy = oy + Math.floor(i / cols) * (h / (rows - 1 || 1));
+                    var a = o * (0.35 + ((i * 17) % 7) * 0.09);
+                    out += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) +
+                        '" r="' + r + '" fill="#9aa39a" opacity="' + a.toFixed(2) + '"/>';
+                }
+                g.innerHTML = out;
+            }
+            /* relative density — more dots, same physical box */
+            dots('d4004', 42, 6, 134, 318, 92, 92, 2.2, 0.8);
+            dots('d8086', 62, 8, 424, 298, 122, 120, 2.2, 0.85);
+            dots('d486', 108, 10, 704, 238, 156, 180, 2.4, 1);
+            dots('dp3', 150, 12, 704, 133, 156, 180, 2.6, 1);
+
+            /* screen dots on the desktop mock */
+            var sd = document.getElementById('screenDots');
+            if (sd) {
+                var s = '', n = 90;
+                for (var k = 0; k < n; k++) {
+                    var cxx = 585 + (k % 12) * (128 / 11);
+                    var cyy = 262 + Math.floor(k / 12) * (62 / 7);
+                    s += '<circle cx="' + cxx.toFixed(1) + '" cy="' + cyy.toFixed(1) +
+                        '" r="1.6" fill="#9aa39a" opacity="' + (0.3 + ((k * 13) % 5) * 0.08).toFixed(2) + '"/>';
+                }
+                sd.innerHTML = s;
+            }
+        })();
+    </script>
+</body>
+
+</html>
