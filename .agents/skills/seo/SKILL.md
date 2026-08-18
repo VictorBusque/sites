@@ -77,6 +77,9 @@ hides "LLM" entirely.
 - Include the primary fact/number ("a hundred billion messages a day",
   "a toy model trained on twelve sentences").
 - No quotes around it, no exclamation marks, no "click to find out".
+- Keep the site's casual voice: "things I find curious, shown with
+  animated visuals" — never formal or intense ("walked through step by
+  step", "nothing is faked" are retired phrasing, don't bring them back).
 
 ## Slugs and URLs
 
