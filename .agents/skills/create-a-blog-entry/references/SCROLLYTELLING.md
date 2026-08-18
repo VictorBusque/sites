@@ -33,7 +33,7 @@ All classes below are shared in `css/site.css` unless marked (page).
 
 ### sticky-scene — the workhorse
 
-A tall track (`n` × 64svh on portrait phones, `n` × 100svh on desktop) with a
+A tall track (`n` × 100svh) with a
 pinned dark stage; step cards scroll over it. The stage is the visual; the
 steps carry the narrative in DOM order. On mobile the step text is a rounded
 bottom sheet with a progress rail; the scene module (`js/scene.js`) handles
@@ -54,7 +54,6 @@ all of it.
 
   <div class="sticky-scene__steps">
     <article class="step" data-step="1">
-      <span class="step-k">STEP 01 / 05</span>
       <p>One short paragraph. Real text, real conclusion.</p>
     </article>
     <article class="step" data-step="2"><!-- … --></article>
@@ -66,7 +65,8 @@ all of it.
 Engine contract (already in `js/scene.js`, don't rewrite it):
 
 - Each `.step` with `[data-step]` is wrapped in a `.step-card` (with a
-  `.step-progress` rail injected), gets `.is-active` while it crosses its
+  `.step-progress` rail and conventional `.step-k` label injected), gets
+  `.is-active` while it crosses its
   activation window; the section's `data-active-step` is set to the current
   step number; `[data-readout]` receives `STEP k / n`.
 - Style the *text cards* with `.step.is-active` (show/hide/position).
@@ -82,6 +82,8 @@ Progressive enhancement for the overlay:
   (negative-margin steps, dimmed cards) exists only under `.js`.
 - Without JS: the stage renders as a plain block and the steps stack below it
   — a complete, readable article.
+- Without IntersectionObserver: the module removes the `.js` enhancement gate
+  and preserves that same plain-document state.
 - Under `prefers-reduced-motion: reduce`: the same stacked-document layout
   (see the shared reduced-motion block). Do not rely on the overlay there.
 
@@ -165,7 +167,7 @@ Already in `js/scene.js` (load it after `js/site.js`, both `defer`). Do not
 duplicate it per page. For every `.sticky-scene` it:
 
 - wraps each `[data-step]`'s content in a `.step-card` and injects a
-  `.step-progress` rail (the mobile bottom-sheet affordance);
+  `.step-progress` rail plus a conventional label when one is not authored;
 - toggles `.is-active` on the crossing `[data-step]` and sets
   `data-active-step` on the section (pages key stage states off it);
 - fills `[data-readout]` with `STEP k / n`;
@@ -211,7 +213,8 @@ Prefer CSS/IO unless the extra machinery clearly buys comprehension.
   diagram centered, labels ≥ 8px rendered.
 - On portrait phones the step text becomes a **bottom sheet** (shared in
   `css/site.css`): a rounded, docked card capped at `44vh` (scrolls if its
-  text is long) with a progress rail. The scene module exposes
+  text is long) with a progress rail. Each step owns one `100svh` viewport,
+  so the card boots at the bottom and has a stable reading interval. The scene module exposes
   `--card-reserve` on the stage so the diagram centers in the space above the
   card and never runs underneath. Choreography is animation-then-text: the
   diagram state changes, the outgoing sheet clears, then after a beat the
@@ -230,6 +233,10 @@ restores document flow (stage static, steps stacked, all text visible). Do
 not weaken it. If a scene's *meaning* depends on a diagram state, ensure the
 step text states the conclusion — it always should.
 
+The shared navigation also exposes `Motion: on/off`, which pauses ambient
+loops without changing the reader-controlled scroll states. Do not add a
+second pause button inside a normal scene.
+
 ## Validation
 
 Run these checks before delivery:
@@ -237,8 +244,9 @@ Run these checks before delivery:
 1. `grep -n "http://\|https://\|@import" blog/<slug>.html` — only the font
    preconnect and `og:image` URLs may appear; no CDN scripts, no `fetch()`.
 2. Extract and syntax-check inline scripts with `node --check`.
-3. Confirm every `.sticky-scene` has `[data-step]` children and that stage
-   states use `[data-active-step="N"]` selectors that exist in the HTML.
+3. Confirm every `.sticky-scene` has 2–6 sequential `[data-step]` children,
+   an `aria-hidden` stage, readable paragraph fallback text, and stage states
+   use `[data-active-step="N"]` selectors that exist in the HTML.
 4. Confirm the page reads top to bottom with JS disabled (temporarily remove
    the `js` class / engine) and under reduced motion: stage + stacked steps,
    every paragraph visible.

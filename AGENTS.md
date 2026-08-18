@@ -1,55 +1,63 @@
-# Víctor Busqué Engineering Blog site
+# Víctor Busqué — A Notebook of Curiosities
 
-This is the project for Víctor Busqué (victorbusque.com) engineering blog site.
+This repository publishes `victorbusque.com`: one curious idea per
+scroll-driven document. Engineering is the centre, not a boundary; topics can
+include AI, systems, Python, cloud, craft, or anything that benefits from a
+slow, visual explanation.
 
-# Structure
+## Source of truth
 
-This is the project for Víctor Busqué (victorbusque.com): a notebook of
-curiosities ("documents"). One idea per document, told as a scroll-driven
-page — each entry is something Víctor found curious. Engineering is the
-core, not the boundary — any topic that deserves a slow walk can become a
-document (AI and agents, systems, Python, cloud, craft, curiosity).
+- Published posts: `blog/<slug>.html` (one idea per file).
+- Post manifest and landing-shelf data: `js/posts.js` (`window.VB_POSTS`).
+  Do not add post data to `index.html`; topics and tags remain free-form.
+- New-idea queue: `docs/ideas.md`.
+- Shared visual and interaction system: `css/site.css`, `js/site.js`,
+  `js/scene.js`, and `js/vb.js`.
+- The canonical post scaffold: `blog/template.html`.
 
-- Posts live at `blog/<slug>.html`, one idea each.
-- Topics are free-form metadata on each entry (`topic` + `tags` in the
-  `ENTRIES` list in `index.html`) — no fixed taxonomy, no folder tree.
-- The idea queue lives in `docs/ideas.md`.
+## Required guidance
 
-# Posts
+Use `.agents/skills/create-a-blog-entry/SKILL.md` for any post, landing-page,
+or shared-system change. Use `.agents/skills/seo/SKILL.md` for every public
+page change that may affect search or social metadata. Keep those instructions
+and their references accurate when changing a shared contract.
 
-Blog posts are scrollytelling articles (one idea, scroll-driven scenes). Follow
-`.agents/skills/create-a-blog-entry` when writing or editing posts, the landing
-page, or the shared css/js system. Follow `.agents/skills/seo` for anything
-that affects how a page appears in search or social previews (titles, meta
-descriptions, OG/Twitter cards, slugs, structured data, sitemap).
+## Shared-system contract
 
-# Shared system (every article works the same)
+- Pages load `js/site.js`, then `js/scene.js`, both with `defer`; load
+  `js/vb.js` without `defer` before page scripts. Use the relative paths from
+  `blog/template.html` for posts.
+- Shared nav/footer are mounts (`[data-vb-nav]`, `[data-vb-footer]`) rendered
+  by `js/site.js`. Keep their `<noscript>` fallback; do not hand-copy chrome.
+- `js/scene.js` owns sticky-scene activation, cards, progress rails, and
+  `data-active-step`; it also supplies conventional step labels when omitted.
+  Page scripts may compute honest state and subscribe with `VBScene.onStep`;
+  never add a competing `MutationObserver` or scroll handler.
+- `js/site.js` owns reading progress, the keyboard skip link, responsive
+  navigation, and the reader's ambient-motion pause preference. Do not copy
+  those controls into a post.
+- A sticky stage is decorative (`aria-hidden="true"`); its step paragraphs
+  carry the complete conclusion in document order. The modules fall back to
+  that document if JavaScript or IntersectionObserver is unavailable.
+- `js/vb.js` owns reusable helpers on `window.VB`. Reuse them instead of
+  copying escaping, formatting, PRNG, or motion helpers into pages.
+- New page styles are page-scoped. Change shared CSS only for a behaviour that
+  genuinely belongs to every document. Never edit `mock.html` or `mock-1.html`.
 
-The scrollytelling behavior is centralized in the shared modules so no article
-hand-writes scene wiring:
+## Quality gates
 
-- `css/site.css` — design system, scene styles, the mobile bottom-sheet step
-  card, progress rail, reduced-motion fallback.
-- `js/site.js` — shared chrome (nav, footer, progress, cursor, mobile menu),
-  scroll reveals, marquee, legacy figure engine.
-- `js/scene.js` — the sticky-scene module. Wraps `.step` content in
-  `.step-card`, injects the `.step-progress` rail, toggles `.is-active`,
-  sets `data-active-step`, fills `[data-readout]`, and measures
-  `--card-reserve` so the mobile diagram centers above the bottom-docked
-  card. Exposes `window.VBScene` (`.onStep(fn)`, `.refresh()`).
-- `js/vb.js` — shared micro-helpers for page scripts on one namespace,
-  `window.VB`: `VB.reduceMotion`, `VB.esc(str)`, `VB.mulberry32(seed)`,
-  `VB.fmt.pct/ordinal/sup`, and `VB.motion.retrig/countUp`. Use these
-  instead of re-implementing them per page.
+After a content or shared-system change, run the relevant checks. The post
+checker verifies the manifest, public metadata, sitemap, shared shell, and
+sticky-scene contract:
 
-Every page loads **all three** shared scripts (`js/site.js` and
-`js/scene.js` with defer, in that order, then `js/vb.js` **without** defer
-so the helpers exist before page scripts run) — write the scene markup
-from `blog/template.html` and behavior is done. Do not add per-page scene
-JS; page scripts only compute honest state and key stage visuals off
-`data-active-step` (react via `window.VBScene.onStep(fn)`, never a
-hand-rolled MutationObserver).
+```sh
+python3 scripts/check_posts.py
+node --check js/site.js
+node --check js/scene.js
+node --check js/vb.js
+git diff --check
+```
 
-# Rules
-
-- Do not attempt to do screenshots using browser.
+Verify narrow mobile layout, keyboard navigation, and reduced motion whenever
+layout or interaction changes. Do not attempt browser screenshots in this
+repository.

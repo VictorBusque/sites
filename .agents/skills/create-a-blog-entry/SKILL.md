@@ -10,8 +10,8 @@ description: >
   so every agent produces consistent, polished pages.
 metadata:
   author: Víctor Busqué
-  version: "4.0.0"
-  site: living-engineering-notes
+  version: "4.3.0"
+  site: notebook-of-curiosities
 ---
 
 # Create a Scrollytelling Blog Entry
@@ -66,6 +66,30 @@ it.
 
 Full file ownership and contracts: [references/FILE-MAP.md](references/FILE-MAP.md).
 Scene engine and recipes: [references/SCROLLYTELLING.md](references/SCROLLYTELLING.md).
+Browser-platform rationale: [references/PLATFORM.md](references/PLATFORM.md).
+
+## Defaults the shared system already provides
+
+Write semantic content and named scene states; the modules supply the
+repeated interaction work:
+
+- `js/site.js` renders chrome, a keyboard skip link, responsive navigation,
+  a reader-controlled ambient-motion pause, and the reading-progress rail.
+  The rail uses a CSS scroll timeline when supported and an rAF fallback
+  otherwise.
+- `js/scene.js` turns a `.sticky-scene` into the full interaction: exclusive
+  step activation, `data-active-step`, the card wrapper, mobile progress rail,
+  a conventional `STEP 01 / 05` label if one is omitted, card-reserve
+  measurement, and a safe document fallback when IntersectionObserver is
+  unavailable.
+- `css/site.css` keeps the stage pinned through the final step, docks mobile
+  cards at the bottom, handles safe-area space, and restores document flow for
+  reduced motion.
+
+This means an author normally writes a decorative `aria-hidden` stage plus
+ordered `<article class="step" data-step="…">` paragraphs. Do not add local
+scroll handlers, `MutationObserver`s, progress bars, pause buttons, or step
+label plumbing.
 
 ## Workflow
 
@@ -115,7 +139,7 @@ canonical starting point and is kept current — always copy from it.
 `<slug>`: lowercase, hyphenated, one idea per article (e.g. `the-queue.html`,
 `token-budget.html`, `kv-cache.html`).
 
-### 3. Edit the new file only
+### 3. Build the post, then update its registration
 
 Replace in order: `<title>` and meta → hero (`crumb`, `h1`, `dek`,
 `post-meta`) → acts (prose sections + scenes) → `post-nav` links → footer
@@ -207,6 +231,10 @@ After adding or editing a post, run the consistency guard:
 
 ```sh
 python3 scripts/check_posts.py
+node --check js/site.js
+node --check js/scene.js
+node --check js/vb.js
+git diff --check
 ```
 
 It fails unless every file in `blog/` has a matching `js/posts.js` entry
@@ -224,8 +252,9 @@ handing an article over.
   `post-prose`. Section headings are concrete, not cute ("The problem",
   "Selection sort, step by step").
 - **Scenes:** each scene gets a `scene-head` with an act label (e.g.
-  `ACT 02`) and a concrete name (e.g. `THE MECHANISM`). Step cards carry a
-  mono `STEP k / n` label — author it by hand, it never lies.
+  `ACT 02`) and a concrete name (e.g. `THE MECHANISM`). The shared engine
+  derives the mono `STEP k / n` label from ordered `data-step` values; only
+  author `.step-k` when its wording genuinely needs to differ.
 - **Captions** (`.fig-caption` and scene captions) open with `<b>What to
   watch</b>` and tell the reader exactly which element moves and what it
   means. Max ~2 sentences.
@@ -304,8 +333,10 @@ Full reference: [references/MOTION.md](references/MOTION.md).
 - [ ] Document-first: the page reads as a complete article with JS disabled
       and with reduced motion (stage + stacked steps, all text visible)
 - [ ] Every `sticky-scene` uses the shared engine contract: `[data-step]`
-      articles, stage states keyed off `data-active-step`, `[data-readout]`
-      if a live step indicator is wanted
+      articles in an unbroken 1…n sequence, a decorative `aria-hidden` stage,
+      readable paragraph fallback text, stage states keyed off
+      `data-active-step`, and `[data-readout]` if a live stage indicator is
+      wanted
 - [ ] Every readout/caption number is computed state or a verified fact,
       re-checked by running the logic (REPL) or citing the source
 - [ ] Inline scripts parse (`node --check` equivalent); page has no console
@@ -313,12 +344,20 @@ Full reference: [references/MOTION.md](references/MOTION.md).
       `aria-hidden` with the conclusion in adjacent DOM text
 - [ ] Scroll-timeline enhancements sit inside `@supports (animation-timeline:
       view())` and have a working discrete fallback
-- [ ] No network requests beyond the site's own fonts and `og:image`;
-      no CDN, no remote script, no `fetch()`
+- [ ] Do not add CDN scripts, analytics, or `fetch()` without an explicit
+      product need and approval. The existing Google Fonts stylesheet is the
+      only third-party presentation dependency.
 - [ ] `js/posts.js` entry added with a slug that matches the file, title/deck
       matching the post's `<title>` and meta description; no stale rows;
       `python3 scripts/check_posts.py` passes; the shelf shows the new post
 - [ ] Post carries the matching `BlogPosting` JSON-LD in its `<head>`
 - [ ] Mobile check at 390px: sticky stage fits (labels ≥ 8px rendered), step
-      cards legible, lanes/rails stack, nothing clips or overflows
+      cards boot bottom-docked and stay readable, lanes/rails stack, nothing
+      clips or crosses into the next section; reverse scrolling remains stable
+- [ ] Keyboard check: the shared “Skip to content” link reaches `<main>`,
+      the navigation and motion control are focusable, and no scene requires
+      a pointer to understand
+- [ ] Motion check: `prefers-reduced-motion` exposes the document fallback;
+      the shared “Motion: on/off” control pauses ambient loops without hiding
+      the scroll-controlled states
 - [ ] Copy follows the tone rules; no fake stats, no slang, no emoji

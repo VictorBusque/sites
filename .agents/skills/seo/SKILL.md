@@ -9,7 +9,7 @@ description: >
   presents in search results and social previews.
 metadata:
   author: Víctor Busqué
-  version: "1.0.0"
+  version: "1.1.0"
   site: notebook-of-curiosities
 ---
 
@@ -29,7 +29,7 @@ if a phrase wouldn't survive in the dek, it doesn't belong in a title tag.
 - **The `<h1>` is the contract with the reader.** Evocative, display-set,
   part of the scrollytelling experience ("One process per person.").
 
-They are allowed to differ. The shelf title in `ENTRIES` follows the h1;
+They are allowed to differ. The shelf title in `js/posts.js` follows the h1;
 the `<title>`/`og:title`/`twitter:title` follow the searcher. Never make
 the `<title>` poetic at the cost of clarity — that's the mistake this
 skill exists to prevent.
@@ -108,7 +108,7 @@ Every public page ships the full card set (see `blog/template.html`):
 - **index.html:** `WebSite` (name, url) and `Person` (name, url, sameAs
   to GitHub/LinkedIn) — one `<script type="application/ld+json">` block.
 - **Posts:** `BlogPosting` with headline (the descriptive title),
-  description, datePublished (from `ENTRIES` date), author Person, image
+  description, datePublished (from `js/posts.js`), author Person, image
   (the og:image), mainEntityOfPage the canonical URL.
 - No other schema needed; don't add `Article` *and* `BlogPosting`.
 - Validate markup at validator.schema.org after editing.
@@ -130,7 +130,7 @@ Every public page ships the full card set (see `blog/template.html`):
 
 - Every post links its neighbors via `post-nav`; when shipping a post,
   update the prev/next links of adjacent posts.
-- The landing `ENTRIES` shelf is the hub: deck text doubles as the
+- The landing `js/posts.js` shelf is the hub: deck text doubles as the
   SERP-snippet voice of the site. No entry without a file, no file
   without an entry (create-a-blog-entry rule).
 - Cross-link between posts only where the reader genuinely benefits
@@ -156,7 +156,7 @@ Every public page ships the full card set (see `blog/template.html`):
 - [ ] JSON-LD present and valid; headline matches `<title>`
 - [ ] `sitemap.xml` lists the page; `lastmod` bumped for changed pages
 - [ ] h2 headings concrete; dek could serve as the description
-- [ ] `node --check`-clean if `ENTRIES` or scripts were touched
+- [ ] `node --check`-clean if `js/posts.js` or scripts were touched
 
 ## Workflow integration
 

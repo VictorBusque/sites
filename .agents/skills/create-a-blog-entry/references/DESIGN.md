@@ -43,8 +43,10 @@ line-height ~ `.86`. One line per span; an `<em>` adds the serif accent.
   and `<div data-vb-footer data-label="…">`, each with a `<noscript>`
   fallback row. Links are root-relative. Never hand-write them.
 - **Nav:** fixed 70px, sticky, `#f2f0e9e8` + backdrop blur, logo left, links
-  right (`.links a::after` underline scales from right), `.status` far right
-  (`POST NN / TOPIC`).
+  right (`.links a::after` underline scales from right), reader `Motion:
+  on/off` control, `.status` far right (`POST NN / TOPIC`). `js/site.js` also
+  inserts a keyboard-only “Skip to content” link before the chrome whenever a
+  page has `<main>`.
 - **Post hero:** `post-hero` — crumb (link back to `../index.html`), `h1` with
   `.h-line` spans, `.dek` (max 620px, fades up on load), `.post-meta`
   (`MON YEAR · ~N MIN · N SCENES`), plus a `.ghost` numeral (`01`, `02`, …).
@@ -90,16 +92,18 @@ conventions:
     .scene-head                         ACT NN / NAME / live STEP k / n readout
     .stage                              the diagram
   .sticky-scene__steps                  overlays the stage (only under .js)
-    article.step[data-step]             card: STEP k / n label + 1 short ¶
+    article.step[data-step]             card: generated STEP k / n + 1 short ¶
 ```
 
 - The scene module `js/scene.js` wraps each `.step` in a `.step-card`
-  (injecting a `.step-progress` rail) and toggles `.is-active`; it sets
+  (injecting a `.step-progress` rail and conventional label) and toggles
+  `.is-active`; it sets
   `data-active-step` and fills the `[data-readout]`.
 - Step cards: paper background, ink border, mono `step-k` label, one short
   paragraph (1–2 sentences). On portrait phones the card becomes a rounded
-  bottom sheet (capped `44vh`, scrollable) and steps pace at `64svh`; the
-  module measures `--card-reserve` so the diagram centers above it. Inactive
+  bottom sheet (capped `44vh`, scrollable) and each step owns one `100svh`
+  viewport so it starts docked at the bottom and remains readable; the module
+  measures `--card-reserve` so the diagram centers above it. Inactive
   cards rest dimmed; the active sheet rises in after a beat (animation-
 then-text, reverses on scroll up).
 - Stage states key off `data-active-step` attribute selectors, e.g.

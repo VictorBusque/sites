@@ -61,6 +61,7 @@
             var html = '<a class="logo" href="' + home + '">VB<i></i></a><div class="links">'
                 + link(home + '#posts', 'posts', 'Posts')
                 + link(pre + 'about.html', 'about', 'About')
+                + '<button class="motion-toggle" type="button" aria-pressed="false">Motion: on</button>'
                 + '</div>';
             if (status || em) {
                 html += '<div class="status">' + (status ? status + ' / ' : '') + (em ? '<b>' + em + '</b>' : '') + '</div>';
@@ -81,40 +82,69 @@
                 + ' VÍCTOR BUSQUÉ</span><span>' + label + '</span></div>';
             mount.replaceWith(foot);
         });
+
+        /* Every page that has a document body gets a reliable keyboard route
+           past the shared navigation. A page only needs semantic <main> — no
+           per-page link markup. */
+        var main = document.querySelector('main');
+        if (main && !document.querySelector('.skip-link')) {
+            if (!main.id) main.id = 'main-content';
+            var skip = document.createElement('a');
+            skip.className = 'skip-link';
+            skip.href = '#' + main.id;
+            skip.textContent = 'Skip to content';
+            document.body.insertBefore(skip, document.body.firstChild);
+        }
     })();
 
     /* ── Scroll progress ─────────────────────────────────── */
     var progress = document.getElementById('progress');
+    var progressTicking = false;
+    var nativeScrollProgress = window.CSS && window.CSS.supports &&
+        window.CSS.supports('animation-timeline: scroll(root block)');
     function onScroll() {
-        if (!progress) return;
-        var h = document.documentElement;
-        var max = h.scrollHeight - h.clientHeight;
-        progress.style.transform = 'scaleX(' + (max > 0 ? h.scrollTop / max : 0) + ')';
+        if (progressTicking) return;
+        progressTicking = true;
+        requestAnimationFrame(function () {
+            progressTicking = false;
+            if (!progress) return;
+            var h = document.documentElement;
+            var max = h.scrollHeight - h.clientHeight;
+            progress.style.transform = 'scaleX(' + (max > 0 ? h.scrollTop / max : 0) + ')';
+        });
     }
-    addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
+    if (!nativeScrollProgress) {
+        addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+    }
 
     /* ── Intersection reveals ────────────────────────────── */
-    var io = new IntersectionObserver(function (es) {
-        es.forEach(function (e) {
-            if (e.isIntersecting) {
-                e.target.classList.add('seen');
-                io.unobserve(e.target);
-            }
-        });
-    }, { threshold: .15 });
-    document.querySelectorAll('.reveal, .stagger').forEach(function (x) { io.observe(x); });
+    if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (es) {
+            es.forEach(function (e) {
+                if (e.isIntersecting) {
+                    e.target.classList.add('seen');
+                    io.unobserve(e.target);
+                }
+            });
+        }, { threshold: .15 });
+        document.querySelectorAll('.reveal, .stagger').forEach(function (x) { io.observe(x); });
 
-    /* ── Masked line reveals ─────────────────────────────── */
-    var maskIO = new IntersectionObserver(function (es) {
-        es.forEach(function (e) {
-            if (e.isIntersecting) {
-                e.target.querySelectorAll('.row > span').forEach(function (s) { s.style.transform = 'translateY(0)'; });
-                maskIO.unobserve(e.target);
-            }
-        });
-    }, { threshold: .25 });
-    document.querySelectorAll('.mask').forEach(function (x) { maskIO.observe(x); });
+        /* ── Masked line reveals ─────────────────────────── */
+        var maskIO = new IntersectionObserver(function (es) {
+            es.forEach(function (e) {
+                if (e.isIntersecting) {
+                    e.target.querySelectorAll('.row > span').forEach(function (s) { s.style.transform = 'translateY(0)'; });
+                    maskIO.unobserve(e.target);
+                }
+            });
+        }, { threshold: .25 });
+        document.querySelectorAll('.mask').forEach(function (x) { maskIO.observe(x); });
+    } else {
+        /* Old browsers get the complete document, never a partly hidden one. */
+        document.querySelectorAll('.reveal, .stagger').forEach(function (x) { x.classList.add('seen'); });
+        document.querySelectorAll('.mask .row > span').forEach(function (x) { x.style.transform = 'translateY(0)'; });
+    }
 
     /* ── Marquee: duplicate for a seamless loop ──────────── */
     document.querySelectorAll('.marquee-track').forEach(function (t) { t.innerHTML += t.innerHTML; });
@@ -140,12 +170,17 @@
         btn.innerHTML = '<span class="nav-toggle-icon" aria-hidden="true"><i></i><i></i><i></i></span>';
         nav.appendChild(btn);
 
+        var mobileNav = window.matchMedia('(max-width: 850px)');
         function setOpen(open) {
-            nav.classList.toggle('is-open', open);
-            btn.classList.toggle('is-open', open);
-            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-            btn.setAttribute('aria-label', open ? 'Close menu' : 'Menu');
-            links.inert = !open;
+            /* A visually collapsed menu must not stay in the tab order.
+               On desktop the links are always available, regardless of
+               which state the mobile menu had before a resize. */
+            var shouldOpen = mobileNav.matches && open;
+            nav.classList.toggle('is-open', shouldOpen);
+            btn.classList.toggle('is-open', shouldOpen);
+            btn.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+            btn.setAttribute('aria-label', shouldOpen ? 'Close menu' : 'Menu');
+            links.inert = mobileNav.matches && !shouldOpen;
         }
         btn.addEventListener('click', function () {
             setOpen(!nav.classList.contains('is-open'));
@@ -156,6 +191,33 @@
         addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && nav.classList.contains('is-open')) setOpen(false);
         });
+        function syncNav() { setOpen(false); }
+        if (mobileNav.addEventListener) mobileNav.addEventListener('change', syncNav);
+        else if (mobileNav.addListener) mobileNav.addListener(syncNav);
+        setOpen(false);
+    })();
+
+    /* ── Reader motion preference ───────────────────────── */
+    (function () {
+        var key = 'vb-motion-paused';
+        var root = document.documentElement;
+        var paused = false;
+        try { paused = window.localStorage.getItem(key) === 'true'; } catch (ignore) {}
+        function apply() {
+            root.classList.toggle('vb-motion-paused', paused);
+            document.querySelectorAll('.motion-toggle').forEach(function (button) {
+                button.setAttribute('aria-pressed', paused ? 'true' : 'false');
+                button.textContent = paused ? 'Motion: off' : 'Motion: on';
+            });
+        }
+        document.querySelectorAll('.motion-toggle').forEach(function (button) {
+            button.addEventListener('click', function () {
+                paused = !paused;
+                try { window.localStorage.setItem(key, String(paused)); } catch (ignore) {}
+                apply();
+            });
+        });
+        apply();
     })();
 
     /* ── Custom cursor ───────────────────────────────────── */

@@ -26,17 +26,29 @@
    Optional hook for page scripts: window.VBScene.onStep(fn) — fn(sceneEl,
    stepEl, index, total) is called each time a step becomes active. Page
    scripts that must react to step changes (e.g. apply a computed state)
-   may use it, or keep watching data-active-step via a MutationObserver.
+   may use it. Do not observe data-active-step separately: this module is
+   already the single source of truth for scene activation.
    ========================================================================== */
 (function () {
     'use strict';
 
     var portraitMob = window.matchMedia('(max-width: 850px) and (min-height: 521px)');
 
+    /* The semantic document is the fallback. If IntersectionObserver is not
+       available, remove the enhancement gate instead of leaving step cards
+       hidden over a stage the reader cannot control. */
+    if (!('IntersectionObserver' in window)) {
+        document.documentElement.classList.remove('js');
+        window.VBScene = { init: function () {}, refresh: function () {}, onStep: function () {} };
+        return;
+    }
+
     /* each scene is one observer; steps are exclusive (one card active) */
     function wireScene(scene) {
+        if (scene.dataset.vbSceneWired === 'true') return;
         var steps = scene.querySelectorAll('[data-step]');
         if (!steps.length) return;
+        scene.dataset.vbSceneWired = 'true';
         var readout = scene.querySelector('[data-readout]');
         var total = steps.length;
 
@@ -55,11 +67,22 @@
            step the moment it does. */
         function stagePinned() {
             var stage = scene.querySelector('.sticky-scene__stage');
-            return !stage || stage.getBoundingClientRect().top <= 0;
+            if (!stage) return false;
+            var rect = stage.getBoundingClientRect();
+            /* `top <= 0` alone remains true after a sticky stage has reached
+               its container's end. Require the whole viewport-height stage
+               too, so an active card cannot spill into the next section. */
+            return rect.top <= 1 && rect.bottom >= innerHeight - 1;
         }
         /* engaged = a card is lit while the stage is pinned. Reset whenever
            the stage scrolls away, so re-entering the scene re-bootstraps. */
         var engaged = false;
+        function deactivate() {
+            steps.forEach(function (s) { s.classList.remove('is-active'); });
+            delete scene.dataset.activeStep;
+            if (readout) readout.textContent = '';
+            engaged = false;
+        }
         function activate(step) {
             /* exclusive: only one step card is active at a time */
             steps.forEach(function (s) { s.classList.remove('is-active'); });
@@ -112,7 +135,10 @@
             ticking = true;
             requestAnimationFrame(function () {
                 ticking = false;
-                if (!stagePinned()) engaged = false; /* stage scrolled away */
+                if (!stagePinned()) {
+                    deactivate();
+                    return;
+                }
                 bootstrap();
             });
         }
@@ -126,6 +152,16 @@
                (see css/site.css). The wrap exists only with JS — the no-JS
                document keeps .step as a plain card. */
             if (!s.querySelector(':scope > .step-card')) {
+                /* Step labels are conventional, so make them a default. A
+                   post can still supply a custom .step-k when it needs one. */
+                if (!s.querySelector(':scope > .step-k')) {
+                    var label = document.createElement('span');
+                    var number = parseInt(s.getAttribute('data-step'), 10) || 1;
+                    label.className = 'step-k';
+                    label.textContent = 'STEP ' + (number < 10 ? '0' : '') + number + ' / ' +
+                        (total < 10 ? '0' : '') + total;
+                    s.insertBefore(label, s.firstChild);
+                }
                 var card = document.createElement('div');
                 card.className = 'step-card';
                 /* mobile bottom-sheet progress rail (hidden on desktop) */
@@ -138,6 +174,10 @@
             }
             io.observe(s);
         });
+
+        /* Keep the public init() safe to call after dynamically adding
+           scenes. It must not duplicate observers or global listeners for
+           scenes that have already been wired. */
     }
 
     /* On portrait phones the step card docks at the bottom of the pinned
@@ -188,4 +228,7 @@
     addEventListener('resize', measureCardReserve);
     addEventListener('orientationchange', measureCardReserve);
     addEventListener('load', measureCardReserve);
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', measureCardReserve);
+    }
 })();

@@ -91,6 +91,12 @@ feel alive without demanding attention: 2.4–3s for pings, 7–10s for slow
 floats, and marquee/grid drift at 26–30s. If two loops share a beat, offset
 them (stagger delays) instead of syncing them.
 
+The shared `Motion: on/off` control pauses these ambient loops and persists
+the reader's choice. It is the default pause mechanism for movement that runs
+beside content; do not create a local duplicate. Keep scroll-driven scene
+states separate: they are controlled by the reader and must remain legible at
+every position.
+
 ## Reduced motion
 
 The global `prefers-reduced-motion` block in `css/site.css` is the safety

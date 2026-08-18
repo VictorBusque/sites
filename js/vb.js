@@ -11,7 +11,7 @@
    Everything lives on one namespace, window.VB:
 
      VB.reduceMotion   boolean — (prefers-reduced-motion: reduce) at load
-     VB.esc(str)       HTML-escape &, <, > for safe innerHTML of computed text
+     VB.esc(str)       HTML-escape &, <, >, quotes for safe computed HTML
      VB.mulberry32(seed) → fn() deterministic float PRNG in [0,1)
      VB.fmt.pct(p[, d])   d=0..100 → "88.2%"
      VB.fmt.ordinal(n)    21 → "ST", 3 → "RD"  (n≥1)
@@ -37,7 +37,8 @@
 
     /* HTML-escape computed strings before writing them into innerHTML. */
     function esc(s) {
-        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
     /* Deterministic seeded PRNG (mulberry32) — identical sequence for the
@@ -78,16 +79,16 @@
        parseFloat(txt) over ~480ms (eased), then sets the exact string.
        Non-numeric or reduced-motion → set instantly. Safe to re-call:
        a later call cancels the earlier one. */
-    var cuId = 0;
     function countUp(el, txt, opts) {
         opts = opts || {};
         var target = parseFloat(txt);
         if (reduceMotion || isNaN(target)) { el.textContent = txt; return; }
         var ms = opts.ms || 480;
         var digits = opts.digits == null ? 1 : opts.digits;
-        var id = ++cuId, t0 = performance.now();
+        var id = (el._vbCountUpId || 0) + 1;
+        el._vbCountUpId = id;
         (function frame(t) {
-            if (id !== cuId) return;
+            if (id !== el._vbCountUpId) return;
             var k = Math.max(0, Math.min(1, (t - t0) / ms));
             var e = 1 - Math.pow(1 - k, 3);
             el.textContent = (target * e).toFixed(digits) + '%';

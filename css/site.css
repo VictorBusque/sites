@@ -46,6 +46,25 @@ html {
     scroll-padding-top: 84px;
 }
 
+/* A document must be traversable before any visual choreography matters.
+   site.js inserts this link when a page has a <main>; it stays out of sight
+   until keyboard users need it. */
+.skip-link {
+    position: fixed;
+    left: max(16px, env(safe-area-inset-left, 0px));
+    top: max(12px, env(safe-area-inset-top, 0px));
+    z-index: 100;
+    padding: 10px 14px;
+    background: var(--acid);
+    color: var(--ink);
+    font: 10px "DM Mono", monospace;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    transform: translateY(-160%);
+    transition: transform var(--t-fast) var(--ease-out);
+}
+.skip-link:focus { transform: none; }
+
 body {
     background: var(--paper);
     color: var(--ink);
@@ -85,6 +104,15 @@ a {
     transform: scaleX(0);
     z-index: 60;
     pointer-events: none;
+}
+@keyframes vb-progress-scroll { to { transform: scaleX(1); } }
+/* Native scroll timelines keep the reading rail on the compositor where the
+   browser supports them. site.js retains an rAF fallback elsewhere. */
+@supports (animation-timeline: scroll(root block)) {
+    .progress {
+        animation: vb-progress-scroll 1ms linear both;
+        animation-timeline: scroll(root block);
+    }
 }
 
 /* ── Cursor ─────────────────────────────────────────────── */
@@ -177,6 +205,46 @@ nav .links a::after {
 nav .links a:hover::after {
     transform: scaleX(1);
     transform-origin: 0 50%;
+}
+
+/* Reader-controlled pause for ambient movement. It does not remove the
+   scroll-driven states themselves; those remain a direct consequence of the
+   reader's own input. */
+.motion-toggle {
+    appearance: none;
+    border: 0;
+    padding: 6px 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    font-size: 10px;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: color var(--t-fast) var(--ease-snap);
+}
+.motion-toggle::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin: 0 7px 1px 0;
+    border-radius: 50%;
+    background: var(--acid);
+    box-shadow: 0 0 0 0 #c7ff3d66;
+    vertical-align: middle;
+}
+.motion-toggle:hover { color: var(--blue); }
+.motion-toggle[aria-pressed="true"]::before {
+    background: var(--orange);
+    box-shadow: none;
+}
+html.vb-motion-paused { scroll-behavior: auto; }
+html.vb-motion-paused *,
+html.vb-motion-paused *::before,
+html.vb-motion-paused *::after {
+    animation-play-state: paused !important;
 }
 
 .status {
@@ -522,6 +590,13 @@ nav .links a:hover::after {
     position: relative;
     border-top: 1px solid var(--line);
     border-bottom: 1px solid var(--line);
+}
+.js .sticky-scene {
+    /* Steps begin over the stage because of their negative margin. Reserve
+       one extra viewport so the stage remains pinned through the final card
+       instead of releasing that card into the following prose section. */
+    padding-bottom: 100vh;
+    padding-bottom: 100svh;
 }
 .sticky-scene__stage {
     background-color: var(--stage);
@@ -923,7 +998,8 @@ footer::after {
         transition: transform var(--t-med) var(--ease-out),
             visibility 0s;
     }
-    nav .links a {
+    nav .links a,
+    .motion-toggle {
         padding: 13px 2px;
         font-size: 15px;
         border-bottom: 1px solid #11111114;
@@ -932,9 +1008,11 @@ footer::after {
         transition: opacity var(--t-fast) var(--ease-out),
             transform var(--t-fast) var(--ease-out);
     }
-    nav .links a:last-child { border-bottom: 0; }
+    nav .links > :last-child { border-bottom: 0; }
+    .motion-toggle { text-align: left; }
     nav .links a::after { bottom: 6px; }
-    nav.is-open .links a {
+    nav.is-open .links a,
+    nav.is-open .links .motion-toggle {
         opacity: 1;
         transform: none;
         transition: opacity var(--t-med) var(--ease-out),
@@ -1037,13 +1115,12 @@ footer::after {
         justify-content: center !important;
         padding: 10px 4vw calc(var(--card-reserve, 36vh) + 4px) !important;
     }
-    /* pace the steps to a phone-sized scroll range (default was a full
-       100vh per step, which made the card sit static through a whole
-       screen of scroll before advancing). 64vh keeps a comfortable,
-       continuous rhythm: the card advances as you scroll instead of
-       making you scroll a lot to make the text move. */
+    /* Each card owns one viewport. Besides giving the reader enough time to
+       read, that lets flex-end place the card at the bottom from its first
+       frame; a shorter track made step one appear high in the stage. */
     .js .sticky-scene__steps > * {
-        min-height: 64svh;
+        min-height: 100vh;
+        min-height: 100svh;
     }
     /* ── the step text: a bottom sheet ──
        The step text is presented as a docked, rounded sheet at the bottom
@@ -1138,6 +1215,7 @@ footer::after {
     }
     /* scenes → plain document flow: stage block first, steps stacked */
     .js .sticky-scene__stage { position: relative; height: auto; min-height: 50vh; }
+    .js .sticky-scene { padding-bottom: 0; }
     .js .sticky-scene__steps { margin-top: 0; }
     .js .sticky-scene__steps > * { min-height: auto; display: block; padding: 0 4vw; }
     .js .step {
