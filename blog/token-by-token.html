@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 
     <!-- Primary meta -->
     <title>How LLMs Write Text, Token by Token — Víctor Busqué</title>
@@ -50,6 +50,8 @@
 
     <link rel="stylesheet" href="../css/site.css">
     <script src="../js/site.js" defer></script>
+    <script src="../js/scene.js" defer></script>
+    <script src="../js/vb.js" defer></script>
     <style>
         /* ════════════════════════════════════════════════════════════════
            NOTE 01 — TOKEN BY TOKEN
@@ -112,7 +114,7 @@
         .post-meta { color: #8d8776; }
         .post-prose > p { color: #cdc6b5; }
         .scene__copy p, .step p, .metrics-scene p { color: #cdc6b5; }
-        .step {
+        .step-card {
             background: #1e1a13;
             box-shadow: 0 24px 48px -24px #000000cc;
         }
@@ -675,9 +677,11 @@
             .post-hero .ghost { animation: none !important; }
         }
 
-        @media (max-width: 850px) {
+        @media (max-width: 850px), (max-height: 520px) and (max-width: 960px) {
             .tk-cell { min-width: 44px; padding: 10px 4px; font-size: 11px; }
-            .tl-stage { gap: 11px; padding-top: 74px; }
+            /* the diagram is centered by the shared portrait rule (css/site.css)
+               in the space above the bottom-docked card; keep just its rhythm */
+            .tl-stage { gap: 10px; }
             .rail-cell { min-width: 34px; height: 42px; font-size: 10.5px; }
             .vc { min-width: 38px; height: 42px; }
             .vc b { font-size: 9.5px; }
@@ -687,11 +691,12 @@
             .ht-cell { min-width: 40px; font-size: 11px; }
         }
         @media (max-width: 480px) {
-            .rail-cell { min-width: 28px; height: 36px; font-size: 9.5px; }
+            .rail-cell { min-width: 24px; height: 30px; font-size: 9.5px; }
             .rail { gap: 5px; }
-            .vc { min-width: 33px; }
+            .vc { min-width: 29px; height: 36px; }
             .vfield { gap: 4px; }
             .loop-strip { gap: 7px; }
+            .tl-stage { gap: 8px; }
             .frow { padding-left: 44px; }
             .frow::after { width: 22px; }
         }
@@ -699,19 +704,10 @@
 </head>
 
 <body>
-    <div class="progress" id="progress"></div>
-    <div class="cursor-dot" id="cDot"></div>
-    <div class="cursor-ring" id="cRing"></div>
-
-    <nav>
-        <a class="logo" href="../index.html">VB<i></i></a>
-        <div class="links">
-            <a href="../index.html#notes">Notes</a>
-            <a href="../index.html#recent">Latest</a>
-            <a href="../about.html">About</a>
-        </div>
-        <div class="status">NOTE 01 / <b>AI-BASICS</b></div>
-    </nav>
+    <!-- Shared chrome (nav, footer, progress, cursor) is embedded by js/site.js -->
+    <div data-vb-nav data-depth="1" data-status="NOTE 01" data-status-em="AI-BASICS">
+        <noscript><a href="../index.html">VB</a> · <a href="../index.html#notes">Notes</a> · <a href="../about.html">About</a></noscript>
+    </div>
 
     <header class="post-hero">
         <div class="ghost" aria-hidden="true">01</div>
@@ -928,14 +924,9 @@
         <a href="one-process-per-person.html"><span class="dir">NEXT NOTE →</span><span class="t">One process per person.</span></a>
     </nav>
 
-    <footer>
-        <div class="footer-big mask">
-            <span class="row"><span>BUILD.</span></span>
-            <span class="row"><span>BREAK.</span></span>
-            <span class="row"><span><em>EXPLAIN.</em></span></span>
-        </div>
-        <div class="foot"><span>© 2026 VÍCTOR BUSQUÉ</span><span>NOTE 01 · TOKEN BY TOKEN</span></div>
-    </footer>
+    <div data-vb-footer data-label="NOTE 01 · TOKEN BY TOKEN">
+        <noscript><div class="foot"><span>© 2026 VÍCTOR BUSQUÉ</span></div></noscript>
+    </div>
 
     <script>
         /* ────────────────────────────────────────────────────────────
@@ -948,7 +939,7 @@
 
            The sticky stage is built once, then driven by the shared
            engine: a MutationObserver watches data-active-step (set by
-           js/site.js as step cards cross mid-viewport) and applies one
+           js/scene.js as step cards cross mid-viewport) and applies one
            named state — bet header, field heat, pick, rail, strip.
            Scroll maps to states, never to pixels.
            ──────────────────────────────────────────────────────────── */

@@ -536,6 +536,7 @@ nav .links a:hover::after {
 .js .sticky-scene__stage {
     position: sticky;
     top: 0;
+    height: 100vh;   /* fallback for engines without svh */
     height: 100svh;
     min-height: 0;
 }
@@ -574,14 +575,19 @@ nav .links a:hover::after {
     margin-left: auto;
 }
 
-/* steps overlay — only under .js */
+/* steps overlay — only under .js. Each article is a full-height track
+   through the pinned stage; js/site.js wraps its content in .step-card,
+   the visual card (bg, border, 420px max). Without JS there is no
+   track — .step itself is the plain-document card. */
 .js .sticky-scene__steps {
     position: relative;
+    margin-top: -100vh;   /* fallback for engines without svh */
     margin-top: -100svh;
     pointer-events: none;
     z-index: 1;
 }
 .js .sticky-scene__steps > * {
+    min-height: 100vh;   /* fallback for engines without svh */
     min-height: 100svh;
     display: flex;
     align-items: center;
@@ -595,16 +601,35 @@ nav .links a:hover::after {
     color: var(--ink);
 }
 .js .step {
+    background: none;
+    border: 0;
+    padding: 0;
+    max-width: none;
+    pointer-events: none;
+}
+.js .step.is-active {
+    pointer-events: auto;
+}
+.step-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    padding: 26px 28px;
+    color: var(--ink);
     opacity: 0;
     transform: translateY(26px);
     transition: opacity var(--t-slow) var(--ease-out),
         transform var(--t-slow) var(--ease-out);
-    pointer-events: none;
 }
-.js .step.is-active {
+.js .step.is-active .step-card {
     opacity: 1;
     transform: none;
-    pointer-events: auto;
+}
+/* progress rail injected by js/site.js into each card — a mobile-only
+   affordance (shown in the portrait block); hidden everywhere else */
+.step-progress {
+    display: none;
 }
 .step-k {
     font: 9px "DM Mono";
@@ -919,13 +944,179 @@ footer::after {
     .fig-body { min-height: 300px; }
     .fig-head { flex-wrap: wrap; gap: 10px; }
     .fig-readout { max-width: 100%; margin-left: 0; }
+    .scene-head { flex-wrap: wrap; gap: 6px 14px; padding: 10px 4vw; }
     .scene.split { grid-template-columns: 1fr; }
     .metrics-scene { grid-template-columns: 1fr; gap: 4vh; }
-    .js .sticky-scene__steps > * { padding: 0 5vw; }
-    .step { max-width: none; }
+    /* scrollytelling on small screens: the card is sticky at the
+       viewport bottom while its step is active, and the diagram owns
+       the top of the stage — nothing overlaps at any scroll offset.
+       Page stages shift their content up (justify-content: flex-start,
+       tight top padding) in their own media queries. */
+    .js .sticky-scene__steps > * {
+        align-items: flex-end;
+        justify-content: center;
+        padding: 0 5vw;
+    }
+    .step-card {
+        position: sticky;
+        bottom: max(18px, env(safe-area-inset-bottom, 0px));
+        max-width: 560px;
+    }
     .post-nav { grid-template-columns: 1fr; }
     .post-nav a + a { border-left: 0; border-top: 1px solid var(--line); text-align: left; }
     .post-hero .ghost { font-size: 100px; }
+}
+
+/* ── Small phones: type and cards stay comfortable ──────── */
+@media (max-width: 480px) {
+    .post-hero h1 { font-size: clamp(38px, 10.5vw, 50px); }
+    .post-prose > p { font-size: 17px; }
+    .post-prose .callout { font-size: 20px; padding: 18px 20px; }
+    .metrics-scene .metric { font-size: clamp(72px, 26vw, 96px); }
+    .step-card { padding: 20px 22px; }
+    .step-card p { font-size: 15.5px; }
+    .breather .breather-line { font-size: clamp(26px, 8vw, 34px); }
+}
+
+/* ── Very narrow phones: the card gives a little more back ── */
+@media (max-width: 380px) {
+    .step-card { padding: 16px 18px; }
+    .step-card p { font-size: 14.5px; }
+}
+
+/* ── Short viewports (landscape phones): the card becomes a sticky
+   column pinned to the right edge, and stage content keeps to the
+   left — the overlay survives heights where top/bottom docking
+   would collide. ── */
+@media (max-height: 520px) and (max-width: 960px) {
+    .js .sticky-scene__steps > * {
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 0 3vw;
+    }
+    .step-card {
+        position: sticky;
+        right: max(14px, env(safe-area-inset-right, 0px));
+        bottom: max(12px, env(safe-area-inset-bottom, 0px));
+        max-width: 300px;
+    }
+    /* stages: content keeps left of the card column; children capped
+       so vw-based widths (lanes, plates) cannot reach under the card */
+    .sticky-scene__stage > div { padding-right: 48%; padding-top: 44px; }
+    .sticky-scene__stage > div > * { max-width: 100%; }
+}
+
+/* ── Portrait phones ────────────────────────────────────────
+   The sticky stage becomes a column: the scene-head sits just below the
+   sticky nav, and the diagram child fills the rest and centers in the
+   space above the bottom-docked card. Its bottom padding is
+   --card-reserve, measured from the tallest step card by js/site.js, so
+   the animation never starts too high, never runs under the card, and
+   is properly centered instead of shoved to the top. The card is capped
+   in height (scrolls if its text is long) and cross-fades quickly so it
+   never reads as text "disappearing early". Landscape (short-height)
+   phones keep the right-docked card layout above. ── */
+@media (max-width: 850px) and (min-height: 521px) {
+    .js .sticky-scene__stage {
+        display: flex;
+        flex-direction: column;
+        padding-top: 70px;   /* clear the sticky nav */
+    }
+    .js .sticky-scene__stage .scene-head {
+        flex: 0 0 auto;
+        width: 100%;
+        padding: 8px 4vw;
+    }
+    /* the page-specific diagram child (.*-stage) is promoted to a flex
+       child that fills the stage below the head and centers its content */
+    .js .sticky-scene__stage > :not(.scene-head) {
+        position: static !important;
+        flex: 1 1 auto;
+        width: 100%;
+        min-height: 0;
+        justify-content: center !important;
+        padding: 10px 4vw calc(var(--card-reserve, 36vh) + 4px) !important;
+    }
+    /* pace the steps to a phone-sized scroll range (default was a full
+       100vh per step, which made the card sit static through a whole
+       screen of scroll before advancing). 64vh keeps a comfortable,
+       continuous rhythm: the card advances as you scroll instead of
+       making you scroll a lot to make the text move. */
+    .js .sticky-scene__steps > * {
+        min-height: 64svh;
+    }
+    /* ── the step text: a bottom sheet ──
+       The step text is presented as a docked, rounded sheet at the bottom
+       of the pinned stage — the standard mobile scrollytelling affordance.
+       It slides up and fades in when its step is active and slides back
+       down on dismissal; inside, the label then the paragraph rise in
+       with a slight stagger. A thin progress rail shows how far you are
+       through the scene. Bounded (and scrollable) so it never crowds the
+       diagram above it. Background/border inherit from the base card so
+       each page theme keeps its own surface. */
+    .js .step-card {
+        width: 100%;
+        max-width: 560px;
+        border-radius: 18px 18px 14px 14px;
+        box-shadow: 0 20px 44px -24px rgba(0,0,0,.55);
+        padding: 12px 20px 18px;
+        max-height: 44vh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        opacity: 0;
+        transform: translateY(52px);
+        transform-origin: 50% 100%;
+        /* resting/dismiss state: text clears quickly so the next diagram
+           state gets the stage to itself before its own text arrives */
+        transition: opacity .16s var(--ease-in), transform .2s var(--ease-in);
+    }
+    /* entrance is choreographed: the diagram changes first, then after a
+       beat the sheet rises. Scrolling up replays the same lag, so every
+       step always reads as animation-then-text. */
+    .js .step.is-active .step-card {
+        opacity: 1;
+        transform: none;
+        transition: opacity .36s var(--ease-out) .2s, transform .44s var(--ease-out) .2s;
+    }
+    /* the progress rail — how far you are through this scene (sweeps as
+       the sheet rises, in both directions) */
+    .step-progress {
+        display: block;
+        height: 3px;
+        border-radius: 3px;
+        background: rgba(127,127,127,.28);
+        overflow: hidden;
+        margin: 0 0 12px;
+    }
+    .step-progress i {
+        display: block;
+        height: 100%;
+        width: 0;
+        border-radius: 3px;
+        background: var(--acid);
+        transition: width .5s var(--ease-out) .2s;
+    }
+    /* label then body rise in after the sheet (motion-aware) */
+    @media (prefers-reduced-motion: no-preference) {
+        .js .step-card .step-k,
+        .js .step-card p {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity .14s var(--ease-in), transform .16s var(--ease-in);
+        }
+        .js .step.is-active .step-card .step-k {
+            opacity: 1;
+            transform: none;
+            transition: opacity .3s var(--ease-out) .24s, transform .32s var(--ease-out) .24s;
+        }
+        .js .step.is-active .step-card p {
+            opacity: 1;
+            transform: none;
+            transition: opacity .3s var(--ease-out) .3s, transform .32s var(--ease-out) .3s;
+        }
+    }
 }
 
 /* ── Reduced motion ─────────────────────────────────────── */
@@ -959,4 +1150,16 @@ footer::after {
         padding: 30px 0;
         pointer-events: auto;
     }
+    .js .step-card {
+        opacity: 1 !important;
+        transform: none !important;
+        background: none;
+        border: 0;
+        padding: 0;
+        max-width: none;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+    }
+    .step-progress { display: none !important; }
 }

@@ -4,13 +4,13 @@ description: >
   Creates new scrollytelling articles for the engineering blog in this repo
   (landing page index.html + posts at blog/<slug>.html that teach one idea as a
   scroll-driven narrative). Use whenever writing a new post, adding or editing
-  scenes, touching the shared design system (css/site.css), the shared engine
-  (js/site.js), or updating the landing page's cards and copy. Enforces the
+  scenes, touching the shared design system (css/site.css), the shared system
+  (js/site.js + js/scene.js), or updating the landing page's cards and copy. Enforces the
   site's voice, design tokens, motion standards and scrollytelling conventions
   so every agent produces consistent, polished pages.
 metadata:
   author: Víctor Busqué
-  version: "2.1.0"
+  version: "3.0.0"
   site: living-engineering-notes
 ---
 
@@ -32,7 +32,7 @@ file adds the site's contracts: shared system, voice, and landing page wiring.
 The Atelier skill's output contract says "one self-contained `.html` file, no
 linked local asset". **Posts on this site deliberately override that rule**:
 they live inside the victorbusque.com site, link `css/site.css` and
-`js/site.js` (shared tokens, nav, footer, fonts, reveals, scene engine), and
+`js/site.js` and `js/scene.js` (shared tokens, nav, footer, fonts, reveals, scene engine), and
 are not standalone artifacts. Everything else in that skill — story first,
 scenes, scroll choreography, accessibility, mobile, performance, validation —
 applies in full. State this trade-off in code comments, don't silently break
@@ -55,8 +55,9 @@ it.
    confident, precise prose.
 5. **Use the shared system.** Never redefine tokens, fonts, nav, footer or
    reveal mechanics — they live in `css/site.css`. Never hand-write scene
-   wiring — the engine in `js/site.js` handles step activation. Page-specific
-   styles add to the system, they never restyle it.
+   wiring — the scene module in `js/scene.js` handles step cards, the
+   progress rail, `data-active-step`, and the mobile bottom-sheet layout.
+   Page-specific styles add to the system, they never restyle it.
 6. **Never touch `mock-1.html` / `mock.html`.** They are historical mockups,
    not part of the site.
 
@@ -120,17 +121,25 @@ label. Update the `status` in `<nav>` (e.g. `NOTE 03 / WAITING`).
 Shared pieces that must stay **exactly as in the template**:
 
 - `<link rel="stylesheet" href="../css/site.css">` in `<head>`
-- `<script src="../js/site.js" defer></script>` in `<head>`
+- Both shared scripts in `<head>`, in this order:
+  `<script src="../js/site.js" defer></script>` then
+  `<script src="../js/scene.js" defer></script>`
 - The `<html class="js">` gate script in `<head>` (set before the body parses
   — see the template; without it scenes degrade to a plain document)
-- The four fixed elements: `#progress`, `#cDot`, `#cRing`, `<nav>`
-- `post-hero`, `post-prose`, `post-nav`, `footer` structure and classes
+- The shared-component mounts, rendered by `js/site.js`:
+  `<div data-vb-nav data-status="NOTE NN" data-status-em="TOPIC"></div>`
+  (nav + status) and `<div data-vb-footer data-label="…"></div>` (footer) —
+  each keeping a `<noscript>` link row. Never hand-write `<nav>`, `<footer>`,
+  `#progress`, `#cDot` or `#cRing`; the engine embeds them.
+- `post-hero`, `post-prose`, `post-nav` structure and classes
 - The motion defaults: `--ease-*` and `--t-*` variables, `.reveal` /
   `.stagger` / `.mask` / `.h-line` reveal classes
 
-Script order is a hard rule: the shared engine loads with `defer`; inline
-scripts run during parsing. Page-specific scene logic goes in an inline
-`<script>` before `</body>` — never after the engine tag, never in a module.
+Script order is a hard rule: the shared scripts load with `defer` (in order:
+`js/site.js`, then `js/scene.js`); inline page scripts run during parsing.
+Page-specific scene logic goes in an inline `<script>` before `</body>` —
+never after the shared tags, never in a module. Every article ships the same
+two shared scripts, so scene behavior is identical everywhere.
 
 ### 4. Build the document first, then enhance
 
@@ -141,15 +150,16 @@ adding any motion. Then enhance in this order (from the Atelier skill):
 HTML        semantic story and static fallback
 CSS         layout, visual system, simple motion
 CSS timelines  progressive, continuous scroll-linked enhancement (@supports)
-IntersectionObserver  discrete step activation (done by js/site.js)
+IntersectionObserver  discrete step activation (done by js/scene.js)
 requestAnimationFrame custom continuous state or Canvas drawing
 Canvas/WebGL genuinely spatial or high-density visual explanation
 ```
 
-The shared engine in `js/site.js` already provides the IntersectionObserver
-step activation for sticky scenes. Page scripts only do what the shared engine
-can't: compute honest state and drive per-step stage states via
-`data-active-step` CSS hooks.
+The shared scene module in `js/scene.js` already provides step activation,
+step-card wrapping, the progress rail, and the mobile bottom-sheet layout for
+sticky scenes. Page scripts only do what it can't: compute honest state and
+drive per-step stage states via `data-active-step` CSS hooks (or, if a page
+must react to step changes, register with `window.VBScene.onStep(fn)`).
 
 ### 5. Register the document on the landing shelf
 
@@ -261,7 +271,7 @@ Full reference: [references/MOTION.md](references/MOTION.md).
 - [ ] Storyboarded (acts + per-section question/payoff) before coding
 - [ ] Copied `blog/template.html`; shared files untouched
 - [ ] `<html class="js">` gate present in `<head>`; relative paths correct:
-      `../index.html`, `../css/site.css`, `../js/site.js`
+      `../index.html`, `../css/site.css`, `../js/site.js`, `../js/scene.js`
 - [ ] Document-first: the page reads as a complete article with JS disabled
       and with reduced motion (stage + stacked steps, all text visible)
 - [ ] Every `sticky-scene` uses the shared engine contract: `[data-step]`

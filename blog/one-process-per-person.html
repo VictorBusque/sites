@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 
     <!-- Primary meta -->
     <title>How WhatsApp Handles 100B Messages a Day — Víctor Busqué</title>
@@ -50,6 +50,8 @@
 
     <link rel="stylesheet" href="../css/site.css">
     <script src="../js/site.js" defer></script>
+    <script src="../js/scene.js" defer></script>
+    <script src="../js/vb.js" defer></script>
     <style>
         /* ════════════════════════════════════════════════════════════════
            NOTE 02 — ONE PROCESS PER PERSON (WhatsApp architecture)
@@ -574,46 +576,120 @@
         .src { font: 10.5px "DM Mono"; letter-spacing: .06em; line-height: 2; color: var(--muted); border-top: 1px solid var(--line); margin-top: 5vh; padding-top: 14px; }
         .src b { color: var(--ink); font-weight: 500; }
 
-        /* ── responsive ── */
-        @media (max-width: 850px) {
+        /* ── responsive ──
+           Stages hug the top of the pinned viewport (step cards dock at
+           the bottom — see css/site.css); every diagram is compressed to
+           fit the ~450px above the card zone on a 667px-tall phone. */
+        @media (max-width: 850px), (max-height: 520px) and (max-width: 960px) {
             .cmp-grid { grid-template-columns: 1fr; }
-            .w-plate { min-width: 88vw; }
-            .q-lane { flex-direction: column; gap: 10px; }
+
+            /* ACT 01 · connection layer. Diagram is centered by the shared
+               portrait rule (css/site.css) above the bottom-docked card. */
+            .w-wires { height: clamp(34px, 6vh, 54px); }
+            .w-plate { min-width: 0; width: min(94vw, 560px); padding: 20px 14px 16px; gap: 12px; }
+            .w-pids { gap: 8px; }
+            .w-pid { min-width: 0; flex: 1; padding: 8px 4px 7px; }
+
+            /* ACT 02 · queue lane — stacked and tight */
+            .q-stage { gap: 10px; }
+            .q-lane { flex-direction: column; gap: 8px; }
             .q-end { width: auto; }
-            .i-row { flex-direction: column; gap: 44px; }
-            .i-card { width: min(88vw, 420px); }
-            .i-chip { white-space: normal; max-width: 92%; text-align: center; }
-            .e-lane { flex-direction: column; }
-            .e-dev { width: 100%; }
-            .e-keys { flex-direction: row; flex-wrap: wrap; }
-            .e-key { flex: 1 1 30%; justify-content: center; }
-            .e-srv { flex: none; padding: 16px 8px; }
+            .q-phone { width: 26px; height: 40px; margin-bottom: 6px; }
+            .q-box { padding: 10px 10px 8px; }
+            .q-slots { gap: 6px; }
+            .q-slot { width: clamp(28px, 7vw, 44px); height: 22px; font-size: 8.5px; }
+            .q-arrow { width: clamp(28px, 7vw, 44px); }
+            .q-drop { padding-top: 8px; }
+            .q-chip { font-size: 8.5px; padding: 6px 9px; }
+            .q-dots i { width: 11px; }
+
+            /* ACT 03 · islands — three compact cards in a row, the two
+               nodes stacked inside each; chips flow inline under the
+               one-way arrow instead of floating below the card */
+            .i-stage { gap: 12px; }
+            .i-map { font-size: 8.5px; padding: 5px 9px; }
+            .i-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: min(94vw, 600px); }
+            .i-card { width: auto; padding: 12px 10px 10px; }
+            .i-card .i-lab { margin-bottom: 8px; }
+            .i-nodes { flex-direction: column; gap: 7px; }
+            .i-node { width: auto; min-width: 0; padding: 7px 6px 6px; font-size: 8px; }
+            .i-node .frags { margin-top: 6px; }
+            .i-node .frags i { width: 7px; height: 7px; }
+            .one-way { margin-top: 8px; font-size: 8px; }
+            .one-way .track { width: 30px; }
+            .i-chip { position: static; transform: none; margin: 8px auto 0; width: fit-content; max-width: 100%; text-align: center; white-space: normal; }
+
+            /* ACT 04 · e2e — phones left and right, server between,
+               keys stacked inside each phone; all one screen tall */
+            .e-stage { gap: 12px; }
+            .e-lane { flex-direction: row; align-items: stretch; }
+            .e-dev { width: 31%; min-width: 0; padding: 10px 8px 12px; }
+            .e-dev .e-lab { margin-bottom: 7px; }
+            .e-keys { flex-direction: column; }
+            .e-key { font-size: 8px; padding: 5px 6px; letter-spacing: .06em; }
+            .e-srv { min-width: 0; padding: 10px 6px; gap: 8px; }
+            .e-dh { font-size: 8px; padding: 5px 8px; text-align: center; }
+            .e-cipher { font-size: 8.5px; padding: 6px 8px; }
+            .e-ratchet { flex-wrap: wrap; justify-content: center; }
+            .e-tick { height: 16px; }
+            .e-comp { font-size: 8px; padding: 5px 6px; }
+            .e-fan { flex-wrap: wrap; justify-content: center; }
+
             .f-grid { grid-template-columns: repeat(3, 1fr); }
         }
         @media (max-width: 480px) {
             .hf { font-size: 9px; padding: 8px 10px; }
-            .w-pid { font-size: 9px; min-width: 58px; }
+            .w-pid { font-size: 9px; }
             .w-grid { grid-template-columns: repeat(12, 1fr); gap: 6px; }
-            .i-node { width: 38%; flex: 1; }
-            .e-key { font-size: 8px; }
+            .q-stage, .i-stage, .e-stage { gap: 10px; }
+            .q-phone { width: 22px; height: 34px; margin-bottom: 4px; }
+            .q-slot, .q-arrow { width: clamp(24px, 7.5vw, 40px); height: 20px; }
+            .q-box { padding: 8px 8px 6px; }
+            .q-box .q-lab { margin-bottom: 6px; }
+            .q-drop { padding-top: 6px; }
+            .q-chip { font-size: 8px; padding: 5px 7px; }
+            .i-map { letter-spacing: .08em; }
+            .i-card { padding: 9px 8px 8px; }
+            .i-node { padding: 5px 4px 4px; }
+            .i-node .frags { margin-top: 4px; }
+            .one-way { margin-top: 5px; }
+            .i-chip { margin-top: 5px; padding: 4px 7px; font-size: 8px; }
+            .e-dev { padding: 8px 5px 10px; }
+            .e-key { padding: 4px; }
+            .e-srv { padding: 8px 4px; gap: 6px; }
+            .e-tick { height: 14px; }
+        }
+        /* ≤380px: the last squeeze — lanes go back to a row (they fit),
+           decorative fragment dots fold away, paddings tighten */        /* landscape phones: the compact layouts above apply (the media
+           list), but there is width to spare — the queue lane goes back
+           to a row so the stacked phones cannot eat the short height */
+        @media (max-height: 520px) and (max-width: 960px) {
+            .q-lane { flex-direction: row; align-items: center; }
+            .q-end { width: auto; }
+        }
+        @media (max-width: 380px) {
+            .q-stage, .i-stage, .e-stage { gap: 8px; }
+            .e-stage { gap: 6px; }
+            .e-dev .e-lab { margin-bottom: 4px; }
+            .e-keys { gap: 4px; }
+            .e-tick { height: 12px; }
+            .e-fan i { height: 10px; }
+            .e-note { font-size: 8px; }
+            .q-lane { flex-direction: row; gap: 6px; }
+            .i-node .frags { display: none; }
+            .i-card { padding: 8px 6px; }
+            .i-node { padding: 4px 3px; }
+            .e-dev { width: 29%; padding: 6px 3px 8px; }
+            .e-srv { padding: 6px 3px; }
         }
     </style>
 </head>
 
 <body>
-    <div class="progress" id="progress"></div>
-    <div class="cursor-dot" id="cDot"></div>
-    <div class="cursor-ring" id="cRing"></div>
-
-    <nav>
-        <a class="logo" href="../index.html">VB<i></i></a>
-        <div class="links">
-            <a href="../index.html#notes">Notes</a>
-            <a href="../index.html#recent">Latest</a>
-            <a href="../about.html">About</a>
-        </div>
-        <div class="status">NOTE 02 / <b>SYSTEMS</b></div>
-    </nav>
+    <!-- Shared chrome (nav, footer, progress, cursor) is embedded by js/site.js -->
+    <div data-vb-nav data-depth="1" data-status="NOTE 02" data-status-em="SYSTEMS">
+        <noscript><a href="../index.html">VB</a> · <a href="../index.html#notes">Notes</a> · <a href="../about.html">About</a></noscript>
+    </div>
 
     <header class="post-hero">
         <div class="ghost" aria-hidden="true">02</div>
@@ -1111,19 +1187,14 @@
         <a href="token-by-token.html"><span class="dir">NEXT NOTE →</span><span class="t">Token by token.</span></a>
     </nav>
 
-    <footer>
-        <div class="footer-big mask">
-            <span class="row"><span>BUILD.</span></span>
-            <span class="row"><span>BREAK.</span></span>
-            <span class="row"><span><em>EXPLAIN.</em></span></span>
-        </div>
-        <div class="foot"><span>© 2026 VÍCTOR BUSQUÉ</span><span>NOTE 02 · ONE PROCESS PER PERSON</span></div>
-    </footer>
+    <div data-vb-footer data-label="NOTE 02 · ONE PROCESS PER PERSON">
+        <noscript><div class="foot"><span>© 2026 VÍCTOR BUSQUÉ</span></div></noscript>
+    </div>
 
     <script>
         /* ────────────────────────────────────────────────────────────
            Honest state, computed and written into the DOM. The scene
-           wiring is the shared engine's (js/site.js); this script only
+           wiring is the shared engine's (js/scene.js); this script only
            derives the two computed figures on the page and builds the
            density grid for ACT 01.
            ──────────────────────────────────────────────────────────── */

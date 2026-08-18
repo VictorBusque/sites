@@ -22,3 +22,23 @@ Blog posts are scrollytelling articles (one idea, scroll-driven scenes). Follow
 page, or the shared css/js system. Follow `.agents/skills/seo` for anything
 that affects how a page appears in search or social previews (titles, meta
 descriptions, OG/Twitter cards, slugs, structured data, sitemap).
+
+# Shared system (every article works the same)
+
+The scrollytelling behavior is centralized in the shared modules so no article
+hand-writes scene wiring:
+
+- `css/site.css` — design system, scene styles, the mobile bottom-sheet step
+  card, progress rail, reduced-motion fallback.
+- `js/site.js` — shared chrome (nav, footer, progress, cursor, mobile menu),
+  scroll reveals, marquee, legacy figure engine.
+- `js/scene.js` — the sticky-scene module. Wraps `.step` content in
+  `.step-card`, injects the `.step-progress` rail, toggles `.is-active`,
+  sets `data-active-step`, fills `[data-readout]`, and measures
+  `--card-reserve` so the mobile diagram centers above the bottom-docked
+  card. Exposes `window.VBScene` (`.onStep(fn)`, `.refresh()`).
+
+Every page loads **both** `js/site.js` and `js/scene.js` (defer, in that
+order) — write the scene markup from `blog/template.html` and behavior is
+done. Do not add per-page scene JS; page scripts only compute honest state
+and key stage visuals off `data-active-step`.

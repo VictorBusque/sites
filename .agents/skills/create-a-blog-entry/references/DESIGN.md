@@ -38,6 +38,10 @@ line-height ~ `.86`. One line per span; an `<em>` adds the serif accent.
 
 ## Layout
 
+- **Nav + footer (embedded):** rendered by `js/site.js` into mount points —
+  `<div data-vb-nav data-active="…" data-status="…" data-status-em="…">`
+  and `<div data-vb-footer data-label="…">`, each with a `<noscript>`
+  fallback row. Links are root-relative. Never hand-write them.
 - **Nav:** fixed 70px, sticky, `#f2f0e9e8` + backdrop blur, logo left, links
   right (`.links a::after` underline scales from right), `.status` far right
   (`NOTE NN / TOPIC`).
@@ -50,8 +54,9 @@ line-height ~ `.86`. One line per span; an `<em>` adds the serif accent.
 - **Scenes:** full-width, breaking the prose column. Sticky scenes are the
   workhorse — see below.
 - **Post nav:** two-column `post-nav` at the bottom, previous / next note.
-- **Footer:** ink background, huge `footer-big` masked reveal, small mono
-  `foot` line. Shared — copy it verbatim, change only the footer label.
+- **Footer (embedded):** ink background, huge `footer-big` masked reveal,
+  small mono `foot` line. Rendered by the engine from `[data-vb-footer]` —
+  change the label on the mount, never the markup.
 
 ## Reveal system (shared)
 
@@ -80,17 +85,23 @@ conventions:
 ### Sticky scenes
 
 ```text
-<section class="sticky-scene">          tall track = n × 100svh
+<section class="sticky-scene">          tall track = n × 100svh (desktop)
   .sticky-scene__stage                  pinned (position: sticky, top 0, 100svh)
     .scene-head                         ACT NN / NAME / live STEP k / n readout
     .stage                              the diagram
   .sticky-scene__steps                  overlays the stage (only under .js)
-    article.step[data-step]             paper card: STEP k / n label + 1 short ¶
+    article.step[data-step]             card: STEP k / n label + 1 short ¶
 ```
 
-- Step cards: paper background, ink border, `max-width: 420px`, mono
-  `step-k` label, one short paragraph (1–2 sentences). Inactive cards rest
-  dimmed; the active card fades/rises in (`--ease-out`, 600–900ms).
+- The scene module `js/scene.js` wraps each `.step` in a `.step-card`
+  (injecting a `.step-progress` rail) and toggles `.is-active`; it sets
+  `data-active-step` and fills the `[data-readout]`.
+- Step cards: paper background, ink border, mono `step-k` label, one short
+  paragraph (1–2 sentences). On portrait phones the card becomes a rounded
+  bottom sheet (capped `44vh`, scrollable) and steps pace at `64svh`; the
+  module measures `--card-reserve` so the diagram centers above it. Inactive
+  cards rest dimmed; the active sheet rises in after a beat (animation-
+then-text, reverses on scroll up).
 - Stage states key off `data-active-step` attribute selectors, e.g.
   `.sticky-scene[data-active-step="2"] .marker { … }`.
 - Without JS or under reduced motion the overlay collapses: the stage is a

@@ -33,8 +33,11 @@ All classes below are shared in `css/site.css` unless marked (page).
 
 ### sticky-scene — the workhorse
 
-A tall track (`n` × 100svh) with a pinned dark stage; step cards scroll over
-it. The stage is the visual; the steps carry the narrative in DOM order.
+A tall track (`n` × 64svh on portrait phones, `n` × 100svh on desktop) with a
+pinned dark stage; step cards scroll over it. The stage is the visual; the
+steps carry the narrative in DOM order. On mobile the step text is a rounded
+bottom sheet with a progress rail; the scene module (`js/scene.js`) handles
+all of it.
 
 ```html
 <section class="sticky-scene" data-scene>
@@ -60,11 +63,12 @@ it. The stage is the visual; the steps carry the narrative in DOM order.
 </section>
 ```
 
-Engine contract (already in `js/site.js`, don't rewrite it):
+Engine contract (already in `js/scene.js`, don't rewrite it):
 
-- Each `.step` with `[data-step]` gets `.is-active` while it crosses the
-  middle of the viewport; the section's `data-active-step` is set to the
-  current step number; `[data-readout]` receives `STEP k / n`.
+- Each `.step` with `[data-step]` is wrapped in a `.step-card` (with a
+  `.step-progress` rail injected), gets `.is-active` while it crosses its
+  activation window; the section's `data-active-step` is set to the current
+  step number; `[data-readout]` receives `STEP k / n`.
 - Style the *text cards* with `.step.is-active` (show/hide/position).
 - Style the *stage states* with attribute selectors:
   `.sticky-scene[data-active-step="2"] .marker { … }`. Each step number is
@@ -155,10 +159,22 @@ path, a bar filling). Feature-detect and keep the base state meaningful:
 Never put essential conclusions in a scroll-timeline-only animation — they are
 decoration over the step story.
 
-### Shared engine (IntersectionObserver)
+### Shared scene module (IntersectionObserver) — `js/scene.js`
 
-Already in `js/site.js`. Do not duplicate it per page. It toggles
-`.is-active` on `[data-step]` elements and sets `data-active-step`. Page
+Already in `js/scene.js` (load it after `js/site.js`, both `defer`). Do not
+duplicate it per page. For every `.sticky-scene` it:
+
+- wraps each `[data-step]`'s content in a `.step-card` and injects a
+  `.step-progress` rail (the mobile bottom-sheet affordance);
+- toggles `.is-active` on the crossing `[data-step]` and sets
+  `data-active-step` on the section (pages key stage states off it);
+- fills `[data-readout]` with `STEP k / n`;
+- measures the tallest card into `--card-reserve` on the stage so the
+  portrait layout centers the diagram above the bottom-docked card.
+
+Public API for page scripts: `window.VBScene.onStep(fn)` — called as
+`fn(sceneEl, stepEl, index, total)` when a step becomes active — plus
+`.refresh()` and `.init()`. Page
 scripts only:
 
 - compute honest state (probe sequences, counts, timings) at build time and
@@ -191,10 +207,17 @@ Prefer CSS/IO unless the extra machinery clearly buys comprehension.
 
 ## Responsive
 
-- Sticky stages stay sticky on mobile (they work); shrink heights with
-  `svh` and keep the diagram centered, labels ≥ 8px rendered.
-- Step cards: max-width ~420px, but on narrow screens let them use the full
-  width with more padding; keep paragraphs to one or two sentences.
+- Sticky stages stay sticky on mobile; shrink heights with `svh` and keep the
+  diagram centered, labels ≥ 8px rendered.
+- On portrait phones the step text becomes a **bottom sheet** (shared in
+  `css/site.css`): a rounded, docked card capped at `44vh` (scrolls if its
+  text is long) with a progress rail. The scene module exposes
+  `--card-reserve` on the stage so the diagram centers in the space above the
+  card and never runs underneath. Choreography is animation-then-text: the
+  diagram state changes, the outgoing sheet clears, then after a beat the
+  sheet rises with the label before the paragraph — and it reverses on scroll
+  up.
+- Keep step paragraphs to one or two sentences.
 - Split scenes stack: copy above visual.
 - Full-bleed SVGs reframe via `data-vb-narrow` (see above).
 - Verify at 320–390px: no clipping, no horizontal scroll, sticky elements

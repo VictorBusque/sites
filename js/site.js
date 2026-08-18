@@ -1,14 +1,16 @@
 /* ==========================================================================
-   site.js — shared behaviors + scene engine (+ legacy figure engine)
+   site.js — shared site behaviors (chrome + reveals + legacy figures)
    --------------------------------------------------------------------------
-   Sticky scenes (scrollytelling posts):  .sticky-scene > [data-step]
-       the engine toggles .is-active per step as it crosses mid-viewport,
-       sets data-active-step on the section (pages key stage states off it),
-       and fills [data-readout] with 'STEP k / n'. Overlay layout is CSS
-       under the .js gate; the page needs no scene JS of its own.
-   Legacy figures (about.html only):      .fig > .fig-body
+   Shared components (embedded chrome):  [data-vb-nav] / [data-vb-footer]
+       the nav, footer and fixed chrome (#progress, cursor) are rendered
+       here, once, into every page — pages only keep mount points.
+   Scroll reveals:                       .reveal / .stagger / .mask
+   Legacy figures:                       .fig > .fig-body
        looping figures get PAUSE / REPLAY; scripted figures get
        PREV / PLAY / NEXT / RESET (window.__figScripts).
+   Sticky scenes (scrollytelling posts) are handled by the dedicated scene
+   module, js/scene.js — load it after this file. See that file for the
+   step-card / progress / data-active-step contract.
    ========================================================================== */
 
 (function () {
@@ -16,6 +18,71 @@
 
     var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+    /* ── Shared components (embedded chrome) ─────────────
+       Nav and footer are written once, here, and rendered into every
+       page. Mount points replace the hand-copied markup:
+
+         <div data-vb-nav data-active="about"
+              data-status="NOTE 01" data-status-em="AI-BASICS"></div>
+         <div data-vb-footer data-label="NOTE 01 · TOKEN BY TOKEN"></div>
+
+       data-active   notes | latest | about → aria-current="page"
+       data-status   mono prefix (optional)   data-status-em  bold tail
+       Links are root-relative (the site is served from the domain root,
+       like the /img/ favicons). Keep a <noscript> link row inside a mount
+       as the no-JS fallback — this block only runs with JS. */
+    (function () {
+        /* fixed chrome first, so #progress exists for the scroller below */
+        if (!document.getElementById('progress')) {
+            [['progress', 'progress'], ['cDot', 'cursor-dot'], ['cRing', 'cursor-ring']]
+                .forEach(function (pair) {
+                    var el = document.createElement('div');
+                    el.id = pair[0];
+                    el.className = pair[1];
+                    document.body.appendChild(el);
+                });
+        }
+
+        document.querySelectorAll('[data-vb-nav]').forEach(function (mount) {
+            var active = mount.getAttribute('data-active');
+            var status = mount.getAttribute('data-status') || '';
+            var em = mount.getAttribute('data-status-em') || '';
+            /* Links are relative to the current page so they work over http and
+               file:// (which reports an absolute filesystem path in pathname,
+               unusable for depth). Depth is declared on the mount:
+               data-depth="0" at the site root, "1" one folder down (blog/). */
+            var depth = parseInt(mount.getAttribute('data-depth') || '0', 10) || 0;
+            var pre = depth ? new Array(depth + 1).join('../') : '';
+            var home = pre + 'index.html';
+            function link(href, key, label) {
+                return '<a href="' + href + '"' + (active === key ? ' aria-current="page"' : '') + '>' + label + '</a>';
+            }
+            var html = '<a class="logo" href="' + home + '">VB<i></i></a><div class="links">'
+                + link(home + '#notes', 'notes', 'Notes')
+                + link(home + '#recent', 'latest', 'Latest')
+                + link(pre + 'about.html', 'about', 'About')
+                + '</div>';
+            if (status || em) {
+                html += '<div class="status">' + (status ? status + ' / ' : '') + (em ? '<b>' + em + '</b>' : '') + '</div>';
+            }
+            var nav = document.createElement('nav');
+            nav.innerHTML = html;
+            mount.replaceWith(nav);
+        });
+
+        document.querySelectorAll('[data-vb-footer]').forEach(function (mount) {
+            var label = mount.getAttribute('data-label') || '';
+            var foot = document.createElement('footer');
+            foot.innerHTML = '<div class="footer-big mask">'
+                + '<span class="row"><span>BUILD.</span></span>'
+                + '<span class="row"><span>BREAK.</span></span>'
+                + '<span class="row"><span><em>EXPLAIN.</em></span></span>'
+                + '</div><div class="foot"><span>© ' + new Date().getFullYear()
+                + ' VÍCTOR BUSQUÉ</span><span>' + label + '</span></div>';
+            mount.replaceWith(foot);
+        });
+    })();
 
     /* ── Scroll progress ─────────────────────────────────── */
     var progress = document.getElementById('progress');
@@ -140,33 +207,8 @@
         else if (mq.addListener) mq.addListener(applyVB);
     })();
 
-    /* ── Sticky scene engine ─────────────────────────────────
-       Every .sticky-scene: observe [data-step] articles, toggle
-       .is-active while a step crosses the middle of the viewport, set
-       data-active-step on the section, and fill [data-readout]. */
-    document.querySelectorAll('.sticky-scene').forEach(function (scene) {
-        var steps = scene.querySelectorAll('[data-step]');
-        if (!steps.length) return;
-        var readout = scene.querySelector('[data-readout]');
-        var total = steps.length;
-        var sceneIO = new IntersectionObserver(function (es) {
-            es.forEach(function (e) {
-                var step = e.target;
-                if (e.isIntersecting) {
-                    /* exclusive: only one step card is active at a time */
-                    steps.forEach(function (s) { s.classList.remove('is-active'); });
-                    step.classList.add('is-active');
-                    scene.dataset.activeStep = step.getAttribute('data-step');
-                    if (readout) {
-                        readout.textContent = 'STEP ' + step.getAttribute('data-step') + ' / ' + total;
-                    }
-                }
-            });
-        }, { rootMargin: '-45% 0px -45% 0px' });
-        steps.forEach(function (s) { sceneIO.observe(s); });
-    });
-
-    /* ── Figure engine (legacy — about.html only) ─────────── */
+    /* ── Figure engine (legacy — about.html only) ───────────
+       Sticky scenes are handled by js/scene.js (loaded after this file). */
     var scripts = window.__figScripts = window.__figScripts || {};
 
     function makeBtn(label) {

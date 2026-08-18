@@ -14,9 +14,11 @@ sites/
 │                               #   reveals, scene system, legacy figure system,
 │                               #   responsive, reduced motion
 ├── js/
-│   └── site.js                 # SHARED engine — progress bar, reveals, cursor,
-│                               #   marquee, sticky-scene step activation,
-│                               #   legacy figure engine (about.html only)
+│   ├── site.js                 # SHARED — chrome (nav/footer/progress/cursor),
+│   │                           #   reveals, marquee, legacy figure engine
+│   └── scene.js                # SHARED scene module — sticky-scene step cards,
+│                               #   progress rail, data-active-step, mobile
+│                               #   bottom-sheet layout (--card-reserve)
 ├── blog/
 │   ├── template.html           # Working scrollytelling post + scene catalog
 │   └── <slug>.html             # One article per file (the-queue.html, …)
@@ -36,7 +38,8 @@ sites/
 | File | You may | You may not |
 |---|---|---|
 | `css/site.css` | Extend (new shared components, keyframes, tokens) | Restyle existing shared classes to fit one page |
-| `js/site.js` | Fix bugs, add engine features | Move it, break `defer` ordering, add page-specific logic |
+| `js/site.js` | Fix bugs, add site-chrome features | Move it, break `defer` ordering, add page-specific logic |
+| `js/scene.js` | Fix bugs, extend the scene contract | Split scene logic across pages; change the step-card contract without updating this map and the skill |
 | `index.html` | Add/remove document entries and update copy | Delete the hero or the documents shelf |
 | `blog/<slug>.html` | Everything inside the page (styles, scripts, prose, scenes) | Duplicate shared system or hand-write scene wiring |
 | `blog/template.html` | Keep it current as the catalog + starting point | Remove scene kinds or layout pieces it documents |
@@ -50,27 +53,33 @@ sites/
   the scene system (`.scene`, `.sticky-scene`, `.scene-head`, `.step`,
   `.breather`, …), the legacy figure system (`.fig` frame, `.fig-btn`),
   `footer`, tokens, keyframes, responsive + reduced-motion blocks.
-- **`js/site.js` guarantees:** fills `#progress`; observes `.reveal/.stagger/
-  .mask`; duplicates `.marquee-track`; powers the custom cursor; for every
-  `.sticky-scene` it observes `[data-step]` articles, toggles `.is-active`,
-  sets `data-active-step` on the section, and fills `[data-readout]`; the
-  legacy figure engine for `about.html`; responsive SVG framing
-  (`data-vb-narrow`).
-- **Pages must:** include both shared files, keep the fixed body elements,
+- **`js/site.js` guarantees:** embeds the shared components — the nav
+  (`[data-vb-nav]`, knobs `data-active` / `data-status` / `data-status-em`),
+  the footer (`[data-vb-footer]`, knob `data-label`), and the fixed chrome
+  (`#progress`, `#cDot`, `#cRing`); fills `#progress`; observes `.reveal/.stagger/
+  .mask`; duplicates `.marquee-track`; powers the custom cursor; the legacy
+  figure engine; responsive SVG framing (`data-vb-narrow`).
+- **`js/scene.js` guarantees:** for every `.sticky-scene` it wraps each
+  `[data-step]`'s content in a `.step-card` (injecting a `.step-progress`
+  rail), toggles `.is-active` as a step crosses its activation window, sets
+  `data-active-step` on the section, fills `[data-readout]` with
+  `STEP k / n`, and measures the tallest card into `--card-reserve` so the
+  portrait bottom-sheet layout centers the diagram above the card. Public
+  API: `window.VBScene.onStep(fn)` / `.refresh()` / `.init()`.
+- **Pages must:** include **both** shared files (`js/site.js` then
+  `js/scene.js`, both `defer`, in that order), keep the component mounts
+  (`[data-vb-nav]` / `[data-vb-footer]`, with their `<noscript>` fallbacks),
   set the `<html class="js">` gate in `<head>`, add only page-scoped styles,
   and register page logic in an inline `<script>` before `</body>`.
 
 ## Scrollytelling vs legacy figures
 
-Two visual systems coexist on purpose.
-
-- **Blog posts** (`blog/*.html`) are scrollytelling articles: dark sticky
-  stages, step cards, scroll-driven choreography. The shared scene engine
-  handles step activation; pages key stage states off `data-active-step`.
-- **about.html** keeps the legacy `.fig` system (fig-head, fig-body, engine
-  PAUSE/REPLAY controls) because it is a personal "how I learn" page built
-  around interactive figures. Do not port it, do not delete the figure
-  system while about.html uses it.
+- All narrative pages (`index.html`, `about.html`, `blog/*.html`) are
+  scrollytelling. The shared scene engine handles step activation; pages
+  key stage states off `data-active-step`.
+- The legacy `.fig` system (fig-head, fig-body, PAUSE/REPLAY controls) is
+  kept in `css/site.css` / `js/site.js` for compatibility but is currently
+  unused by any page. Do not start new work on it.
 
 Never mix the two on one page.
 

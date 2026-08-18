@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 
     <!-- Primary meta -->
     <title>Víctor Busqué — A Notebook of Curiosities</title>
@@ -57,6 +57,7 @@
 
     <link rel="stylesheet" href="css/site.css">
     <script src="js/site.js" defer></script>
+    <script src="js/scene.js" defer></script>
 
     <!-- Structured data -->
     <script type="application/ld+json">
@@ -931,18 +932,10 @@
 </head>
 
 <body>
-    <div class="progress" id="progress"></div>
-    <div class="cursor-dot" id="cDot"></div>
-    <div class="cursor-ring" id="cRing"></div>
-
-    <nav>
-        <a class="logo" href="#">VB<i></i></a>
-        <div class="links">
-            <a href="#notes">Documents</a>
-            <a href="about.html">About</a>
-        </div>
-        <div class="status">SANT QUIRZE · <b>2026</b></div>
-    </nav>
+    <!-- Shared chrome (nav, footer, progress, cursor) is embedded by js/site.js -->
+    <div data-vb-nav data-depth="0" data-status-em="2026">
+        <noscript><a href="index.html">VB</a> · <a href="index.html#notes">Notes</a> · <a href="about.html">About</a></noscript>
+    </div>
 
     <section class="hero" id="top">
         <div class="grid-bg" aria-hidden="true"></div>
@@ -997,14 +990,9 @@
         <div class="index" id="indexList"></div>
     </section>
 
-    <footer>
-        <div class="footer-big mask">
-            <span class="row"><span>BUILD.</span></span>
-            <span class="row"><span>BREAK.</span></span>
-            <span class="row"><span><em>EXPLAIN.</em></span></span>
-        </div>
-        <div class="foot"><span>© 2026 VÍCTOR BUSQUÉ</span><span>ONE IDEA PER DOCUMENT</span></div>
-    </footer>
+    <div data-vb-footer data-label="ONE IDEA PER DOCUMENT">
+        <noscript><div class="foot"><span>© 2026 VÍCTOR BUSQUÉ</span></div></noscript>
+    </div>
 
     <script>
         /* ── Real entries only ———————————————————————
