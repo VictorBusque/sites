@@ -1,6 +1,6 @@
 # Site File Map
 
-Repo: `Documents/sites` — living engineering notes as scrollytelling articles.
+Repo: `Documents/sites` — a notebook of curiosities, told as scroll-driven documents.
 This map is the source of truth for what exists and what each file is allowed
 to contain.
 

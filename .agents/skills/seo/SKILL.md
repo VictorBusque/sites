@@ -1,7 +1,7 @@
 ---
 name: seo
 description: >
-  SEO for the victorbusque.com living-notes site: search-friendly <title> tags,
+  SEO for the victorbusque.com notebook-of-curiosities site: search-friendly <title> tags,
   meta descriptions, slugs, canonicals, Open Graph/Twitter cards, structured
   data (JSON-LD), heading structure, internal linking, alt text, and
   sitemap.xml/robots.txt hygiene. Use whenever creating or editing any public
@@ -10,7 +10,7 @@ description: >
 metadata:
   author: Víctor Busqué
   version: "1.0.0"
-  site: living-engineering-notes
+  site: notebook-of-curiosities
 ---
 
 # SEO — how this site meets search
@@ -33,6 +33,15 @@ They are allowed to differ. The shelf title in `ENTRIES` follows the h1;
 the `<title>`/`og:title`/`twitter:title` follow the searcher. Never make
 the `<title>` poetic at the cost of clarity — that's the mistake this
 skill exists to prevent.
+
+## Site naming (guard rail)
+
+The site is **"A Notebook of Curiosities"** — brand string
+`Víctor Busqué — Curiosities` on og:site_name and manifest. Never brand it
+"Living Notes" or "Engineering Essays": engineering is the core, not the
+boundary, and public copy must not lead with "scrollytelling" — the scroll
+is the medium, not the promise. What the reader is promised is a curiosity,
+walked through step by step.
 
 ## Titles
 
@@ -154,4 +163,4 @@ Every public page ships the full card set (see `blog/template.html`):
 - **Editing a shipped page:** if the idea didn't change, keep the title's
   keyword contract; re-check char budgets and sync og/twitter.
 - **Landing page:** its title should say what the site is
-  ("Scrollytelling Engineering Essays"), not just the brand.
+  ("A Notebook of Curiosities"), not just the brand.
