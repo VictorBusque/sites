@@ -8,6 +8,33 @@
    it directly. */
 window.VB_POSTS = [
     {
+        "slug": "blog/gps-is-not-just-gps.html",
+        "no": "05",
+        "title": "How GPS Turns Time Into Location.",
+        "date": "2026-08",
+        "topic": "Space · Infrastructure",
+        "tags": ["GPS", "Galileo", "PNT"],
+        "deck": "GPS and Galileo do more than draw a blue dot. Four clocks in orbit locate devices and synchronise networks, grids, markets—until a signal is blocked or faked."
+    },
+    {
+        "slug": "blog/european-cloud.html",
+        "no": "04",
+        "title": "Can Europe Build a Sovereign Cloud?",
+        "date": "2026-08",
+        "topic": "Europe · Cloud",
+        "tags": ["Europe", "Cloud", "Data Act"],
+        "deck": "A European cloud needs more than servers on European soil: control of keys, operators, software, supply chain and a credible exit. See the layers that matter."
+    },
+    {
+        "slug": "blog/digital-dependence.html",
+        "no": "03",
+        "title": "Europe’s Digital Dependence.",
+        "date": "2026-08",
+        "topic": "Europe · Technology",
+        "tags": ["Europe", "Sovereignty", "Standards"],
+        "deck": "Europe’s software and cloud dependence is a stack: chips, identity, devices, cloud, apps and data. Follow dependencies, the exits and what sovereignty can mean."
+    },
+    {
         "slug": "blog/one-process-per-person.html",
         "no": "02",
         "title": "How WhatsApp handles 100B messages a day.",

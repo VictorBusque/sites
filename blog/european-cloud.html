@@ -4,15 +4,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-
-    <!-- Primary meta -->
-    <title>The template — Víctor Busqué</title>
-    <meta name="description" content="Template article for the scrollytelling engine — the building blocks for teaching an idea by scrolling through it.">
+    <title>Can Europe Build a Sovereign Cloud? — Víctor Busqué</title>
+    <meta name="description" content="A European cloud needs more than servers on European soil: control of keys, operators, software, supply chain and a credible exit. See the layers that matter.">
     <meta name="author" content="Víctor Busqué">
-    <meta name="robots" content="noindex, follow">
-    <link rel="canonical" href="https://victorbusque.com/blog/template.html">
-
-    <!-- Favicons / PWA (absolute paths resolve from /blog/) -->
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://victorbusque.com/blog/european-cloud.html">
     <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
     <link rel="icon" href="/img/favicon.ico" sizes="any">
     <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
@@ -22,472 +18,194 @@
     <meta name="application-name" content="VB Posts">
     <meta name="color-scheme" content="light dark">
 
-    <!-- Open Graph -->
     <meta property="og:type" content="article">
     <meta property="og:site_name" content="Víctor Busqué — Curiosities">
-    <meta property="og:title" content="The template — Víctor Busqué">
-    <meta property="og:description" content="Template article for the scrollytelling engine.">
-    <meta property="og:url" content="https://victorbusque.com/blog/template.html">
+    <meta property="og:title" content="Can Europe Build a Sovereign Cloud? — Víctor Busqué">
+    <meta property="og:description" content="A European cloud needs more than servers on European soil: control of keys, operators, software, supply chain and a credible exit. See the layers that matter.">
+    <meta property="og:url" content="https://victorbusque.com/blog/european-cloud.html">
     <meta property="og:image" content="https://victorbusque.com/img/og.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:locale" content="en_US">
-
-    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="The template — Víctor Busqué">
-    <meta name="twitter:description" content="Template article for the scrollytelling engine.">
+    <meta name="twitter:title" content="Can Europe Build a Sovereign Cloud? — Víctor Busqué">
+    <meta name="twitter:description" content="A European cloud needs more than servers on European soil: control of keys, operators, software, supply chain and a credible exit. See the layers that matter.">
     <meta name="twitter:image" content="https://victorbusque.com/img/og.png">
-
-    <!-- Performance: preconnect to font CDN -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <!-- Structured data — matches posts.json, the site's single post manifest.
-         Fill headline/description/datePublished/url/keywords/articleSection. -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "BlogPosting",
-      "headline": "TITLE HERE",
-      "description": "DESCRIPTION HERE",
-      "datePublished": "YYYY-MM",
+      "headline": "Can Europe Build a Sovereign Cloud?",
+      "description": "A European cloud needs more than servers on European soil: control of keys, operators, software, supply chain and a credible exit. See the layers that matter.",
+      "datePublished": "2026-08",
       "author": { "@id": "https://victorbusque.com/#person" },
       "publisher": { "@id": "https://victorbusque.com/#person" },
-      "url": "https://victorbusque.com/blog/SLUG.html",
-      "mainEntityOfPage": "https://victorbusque.com/blog/SLUG.html",
+      "url": "https://victorbusque.com/blog/european-cloud.html",
+      "mainEntityOfPage": "https://victorbusque.com/blog/european-cloud.html",
       "inLanguage": "en",
-      "keywords": ["TAG", "TAG"],
-      "articleSection": "TOPIC"
+      "keywords": ["Europe", "Sovereign cloud", "Cloud computing", "Data Act"],
+      "articleSection": "Europe · Cloud"
     }
     </script>
 
-    <!-- The .js gate: enables the scene overlay layout. Without it (no JS,
-         reduced motion) scenes render as a plain document — stage first,
-         steps stacked. Must run before the body parses. -->
+    <!-- Site posts deliberately share the house system instead of being standalone files. -->
     <script>document.documentElement.className += ' js';</script>
-
     <link rel="stylesheet" href="../css/site.css">
     <script src="../js/site.js" defer></script>
     <script src="../js/scene.js" defer></script>
     <script src="../js/vb.js"></script>
     <style>
-        /* ════════════════════════════════════════════════════════════════
-           TEMPLATE-ONLY STYLES
-           Each block is a working example. Copy the block you need into a
-           new article; the shared pieces (tokens, nav, footer, reveals,
-           scene frame, step cards) live in css/site.css and js/site.js.
-           ════════════════════════════════════════════════════════════════ */
+        .ec-hero { width: min(610px, 92vw); margin-top: 6vh; display: flex; align-items: end; gap: 7px; }
+        .ec-hero i { flex: 1; height: 16px; background: var(--ink); transform-origin: bottom; animation: ec-skyline 3.4s ease-in-out infinite; }
+        .ec-hero i:nth-child(2) { height: 35px; animation-delay: -.4s; background: var(--blue); } .ec-hero i:nth-child(3) { height: 53px; animation-delay: -.8s; }
+        .ec-hero i:nth-child(4) { height: 26px; animation-delay: -1.2s; background: var(--orange); } .ec-hero i:nth-child(5) { height: 44px; animation-delay: -1.6s; }
+        .ec-hero i:nth-child(6) { height: 21px; animation-delay: -2s; } .ec-hero i:nth-child(7) { height: 62px; animation-delay: -2.4s; background: var(--acid); }
+        @keyframes ec-skyline { 0%, 100% { transform: scaleY(.78); } 50% { transform: scaleY(1); } }
 
-        /* ── SCENE 01 · sticky — "the search race" ──
-           Stage states are keyed off data-active-step on the section,
-           set by the shared engine as step cards cross mid-viewport. */
-        .s-stage { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; }
-        .s-needle { border: 1px solid var(--acid); color: var(--acid); padding: 8px 20px; font: 12px "DM Mono"; letter-spacing: .14em; box-shadow: 0 0 18px #c7ff3d22; }
-        .s-lane { display: flex; align-items: center; gap: 14px; }
-        .s-lab { width: 92px; text-align: right; padding-right: 8px; font: 9px "DM Mono"; letter-spacing: .14em; color: #777; }
-        .s-row { display: flex; gap: 6px; }
-        .s-cell {
-            width: 40px;
-            height: 40px;
-            border: 1px solid #ffffff2a;
-            display: grid;
-            place-items: center;
-            font: 11px "DM Mono";
-            color: #999;
-            transition: border-color .3s var(--ease-swift), color .3s var(--ease-swift),
-                opacity .3s var(--ease-swift), box-shadow .3s var(--ease-swift);
-        }
-        .s-cell.past { opacity: .22; border-color: #ffffff24; }
-        .s-cell.probe { border-color: var(--orange); color: #fff; box-shadow: inset 0 0 0 1px var(--orange); }
-        .s-cell.found { border-color: var(--acid); color: var(--acid); box-shadow: 0 0 14px #c7ff3d33; }
-        .s-chips { display: flex; gap: 10px; }
-        .s-chip { font: 9px "DM Mono"; letter-spacing: .14em; padding: 6px 12px; border: 1px solid #ffffff22; color: #aaa; opacity: 0; transition: opacity .5s var(--ease-out); }
-        .s-chip b { color: var(--acid); font-weight: 500; }
+        .ec-stage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 62px 24px 22px; }
+        .ec-datacentre { width: min(520px, 92vw); min-height: 310px; position: relative; display: grid; place-items: center; }
+        .ec-ground { position: absolute; bottom: 9%; left: 5%; right: 5%; border-top: 1px solid #ffffff32; }
+        .ec-building { width: 168px; height: 168px; border: 1px solid #ffffff42; background: #171717; display: grid; place-items: center; position: relative; transition: opacity .3s var(--ease-swift), border-color .3s var(--ease-swift), box-shadow .3s var(--ease-swift), transform .4s var(--ease-out); }
+        .ec-building::before { content: "EU DATA CENTRE"; color: #aaa; font: 9px "DM Mono"; letter-spacing: .14em; }
+        .ec-rack { position: absolute; width: 10px; height: 38px; border: 1px solid #ffffff28; bottom: 12px; }
+        .ec-rack.r1 { left: 20px; } .ec-rack.r2 { left: 38px; } .ec-rack.r3 { right: 38px; } .ec-rack.r4 { right: 20px; }
+        .ec-plane { position: absolute; left: 50%; top: 3%; width: 188px; min-height: 48px; transform: translateX(-50%); display: grid; place-items: center; border: 1px solid var(--blue); color: var(--blue); background: #121212; font: 9px "DM Mono"; letter-spacing: .12em; transition: border-color .3s var(--ease-swift), color .3s var(--ease-swift), box-shadow .3s var(--ease-swift), transform .4s var(--ease-out); }
+        .ec-wire { position: absolute; width: 1px; height: 54px; top: 18%; left: 50%; background: var(--blue); transition: background .3s var(--ease-swift), height .3s var(--ease-swift); }
+        .ec-tags { position: absolute; bottom: 0; width: 100%; display: flex; justify-content: center; gap: 7px; }
+        .ec-tags span { border: 1px solid #ffffff22; padding: 6px 8px; color: #666; font: 8px "DM Mono"; letter-spacing: .11em; transition: border-color .3s var(--ease-swift), color .3s var(--ease-swift), background .3s var(--ease-swift); }
+        .ec-place-scene[data-active-step="1"] .ec-building { border-color: var(--orange); box-shadow: 0 0 18px #ff6b2c22; transform: translateY(-4px); }
+        .ec-place-scene[data-active-step="2"] .ec-plane { border-color: var(--orange); color: #fff; box-shadow: 0 0 20px #ff6b2c2c; transform: translateX(-50%) scale(1.04); }
+        .ec-place-scene[data-active-step="2"] .ec-wire, .ec-place-scene[data-active-step="3"] .ec-wire, .ec-place-scene[data-active-step="4"] .ec-wire { background: var(--orange); height: 66px; }
+        .ec-place-scene[data-active-step="3"] .ec-tags span:nth-child(2), .ec-place-scene[data-active-step="4"] .ec-tags span { border-color: var(--orange); color: #fff; background: #ff6b2c16; }
+        .ec-place-scene[data-active-step="4"] .ec-building, .ec-place-scene[data-active-step="4"] .ec-plane { border-color: var(--acid); box-shadow: 0 0 18px #c7ff3d22; }
+        .ec-place-scene[data-active-step="4"] .ec-plane { color: var(--acid); } .ec-place-scene[data-active-step="4"] .ec-wire { background: var(--acid); }
 
-        /* per-step states — one named state per step, never pixels */
-        .sticky-scene[data-active-step="2"] .s-row-lin .s-cell:nth-child(-n+3),
-        .sticky-scene[data-active-step="3"] .s-row-lin .s-cell:nth-child(-n+6),
-        .sticky-scene[data-active-step="4"] .s-row-lin .s-cell:nth-child(-n+7),
-        .sticky-scene[data-active-step="5"] .s-row-lin .s-cell:nth-child(-n+7) { opacity: .22; border-color: #ffffff24; }
-        .sticky-scene[data-active-step="2"] .s-row-lin .s-cell:nth-child(4),
-        .sticky-scene[data-active-step="3"] .s-row-lin .s-cell:nth-child(7) { border-color: var(--orange); color: #fff; box-shadow: inset 0 0 0 1px var(--orange); }
-        .sticky-scene[data-active-step="4"] .s-row-lin .s-cell:nth-child(8),
-        .sticky-scene[data-active-step="5"] .s-row-lin .s-cell:nth-child(8) { border-color: var(--acid); color: var(--acid); box-shadow: 0 0 14px #c7ff3d33; }
+        .ec-service-ladder { border: 1px solid var(--line); padding: 18px; background: var(--paper-2); display: grid; gap: 7px; }
+        .ec-service { min-height: 66px; border: 1px solid var(--line); display: grid; grid-template-columns: 75px 1fr; gap: 12px; align-items: center; padding: 10px; }
+        .ec-service b { font: 12px "DM Mono"; color: var(--orange); } .ec-service span { font: 10px/1.35 "DM Mono"; color: var(--muted); }
 
-        .sticky-scene[data-active-step="3"] .s-row-bin .s-cell:nth-child(6),
-        .sticky-scene[data-active-step="4"] .s-row-bin .s-cell:nth-child(6),
-        .sticky-scene[data-active-step="4"] .s-row-bin .s-cell:nth-child(7),
-        .sticky-scene[data-active-step="4"] .s-row-bin .s-cell:nth-child(9),
-        .sticky-scene[data-active-step="5"] .s-row-bin .s-cell:nth-child(6),
-        .sticky-scene[data-active-step="5"] .s-row-bin .s-cell:nth-child(7),
-        .sticky-scene[data-active-step="5"] .s-row-bin .s-cell:nth-child(9) { opacity: .22; border-color: #ffffff24; }
-        .sticky-scene[data-active-step="2"] .s-row-bin .s-cell:nth-child(6),
-        .sticky-scene[data-active-step="3"] .s-row-bin .s-cell:nth-child(9) { border-color: var(--orange); color: #fff; box-shadow: inset 0 0 0 1px var(--orange); }
-        .sticky-scene[data-active-step="4"] .s-row-bin .s-cell:nth-child(8),
-        .sticky-scene[data-active-step="5"] .s-row-bin .s-cell:nth-child(8) { border-color: var(--acid); color: var(--acid); box-shadow: 0 0 14px #c7ff3d33; }
+        .ec-switch { width: min(540px, 93vw); display: grid; grid-template-columns: 1fr 1fr; gap: 34px; position: relative; }
+        .ec-switch::before { content: ""; position: absolute; top: 50%; left: calc(50% - 18px); width: 36px; border-top: 1px dashed #666; }
+        .ec-switch::after { content: "→"; color: #999; position: absolute; top: calc(50% - 11px); left: calc(50% - 4px); font: 17px "DM Mono"; transition: color .3s var(--ease-swift), transform .3s var(--ease-out); }
+        .ec-cloud { min-height: 230px; border: 1px solid #ffffff35; padding: 15px; display: grid; align-content: start; gap: 8px; transition: border-color .3s var(--ease-swift), box-shadow .3s var(--ease-swift), transform .4s var(--ease-out); }
+        .ec-cloud > b { color: #aaa; font: 9px "DM Mono"; letter-spacing: .13em; font-weight: 500; }
+        .ec-cloud i { display: block; min-height: 28px; border: 1px solid #ffffff25; color: #777; padding: 8px; font: 8px "DM Mono"; font-style: normal; letter-spacing: .09em; transition: transform .3s var(--ease-out), opacity .3s var(--ease-swift), color .3s var(--ease-swift), border-color .3s var(--ease-swift); }
+        .ec-switch-scene[data-active-step="2"] .ec-cloud.from i:nth-child(2), .ec-switch-scene[data-active-step="3"] .ec-cloud.from i:nth-child(-n+3), .ec-switch-scene[data-active-step="4"] .ec-cloud.from i { border-color: var(--orange); color: #fff; transform: translateX(5px); }
+        .ec-switch-scene[data-active-step="3"] .ec-switch::after, .ec-switch-scene[data-active-step="4"] .ec-switch::after { color: var(--orange); transform: translateX(5px); }
+        .ec-switch-scene[data-active-step="4"] .ec-cloud.to { border-color: var(--acid); box-shadow: 0 0 18px #c7ff3d1e; transform: translateY(-4px); }
+        .ec-switch-scene[data-active-step="4"] .ec-cloud.to i { border-color: var(--acid); color: var(--acid); }
 
-        /* the honest counts appear only once the race is over */
-        .sticky-scene[data-active-step="4"] .s-chip,
-        .sticky-scene[data-active-step="5"] .s-chip { opacity: 1; }
-
-        /* ── SCENE 02 · split — "the orbit" ── */
-        .orb { width: 210px; height: 210px; position: relative; margin: 0 auto; }
-        .orb .ring { position: absolute; inset: 0; border: 1px solid #1111112a; border-radius: 50%; }
-        .orb .ring.r2 { inset: -16px; border-color: #11111114; animation: orb-ping 3s var(--ease-out) infinite; }
-        .orb .spin { position: absolute; inset: 0; animation: orb-spin 3.4s linear infinite; }
-        .orb .sat {
-            position: absolute;
-            left: 50%;
-            top: -6px;
-            width: 12px;
-            height: 12px;
-            margin-left: -6px;
-            border-radius: 50%;
-            background: var(--blue);
-            box-shadow: 0 0 14px var(--blue);
-        }
-        .orb .core {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            width: 14px;
-            height: 14px;
-            margin: -7px 0 0 -7px;
-            border-radius: 50%;
-            background: var(--ink);
-            z-index: 2;
-        }
-        @keyframes orb-spin { to { transform: rotate(360deg); } }
-        @keyframes orb-ping {
-            0% { transform: scale(.94); opacity: .7; }
-            80%, 100% { transform: scale(1.16); opacity: 0; }
-        }
-
-        /* ── SCENE 04 · metrics — real number, visible evidence ── */
-        .m-evidence { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .ev-chip { border: 1px solid var(--line); padding: 10px 16px; font: 12px "DM Mono"; color: var(--muted); }
-        .ev-chip.ev-hit { border-color: var(--acid); color: var(--ink); background: var(--acid); box-shadow: 0 0 14px #c7ff3d44; }
-        .m-note { font: 10px "DM Mono"; letter-spacing: .14em; color: var(--muted); margin-top: 14px; }
-
-        /* ── SCENE 05 · comparison — the same scene, two modes ── */
-        .cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .cmp-card { border: 1px solid var(--line); background: var(--paper-2); padding: 26px; }
-        .cmp-card h4 { font-size: 15px; margin-bottom: 8px; }
-        .cmp-card p { font-size: 13px; color: var(--muted); line-height: 1.55; }
-        .cmp-card .cmp-k { font: 9px "DM Mono"; letter-spacing: .16em; color: var(--orange); display: block; margin-bottom: 10px; }
-
-        /* ── recipe code block ── */
-        .recipe {
-            display: block;
-            max-width: 100%;
-            overflow-x: auto;
-            background: #141414;
-            color: #d6d6d6;
-            border: 1px solid var(--line);
-            padding: 26px 28px;
-            font: 12px/1.8 "DM Mono";
-            margin: 6vh 0;
-        }
-        .recipe .cm { color: #6b6b6b; }
-
-        /* ── component gallery ── */
-        .ex-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 5vh 0; }
-        .ex-card { border: 1px solid var(--line); padding: 26px; background: var(--paper-2); }
-        .ex-card h4 { font-size: 16px; margin-bottom: 8px; }
-        .ex-card p { font-size: 13px; color: var(--muted); line-height: 1.55; }
-        .ex-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 4vh 0; }
-        .ex-blockquote { font: italic clamp(24px, 3vw, 34px)/1.2 "Instrument Serif"; margin: 5vh 0; max-width: 640px; }
-        .ex-blockquote .hl { background: var(--acid); padding: 0 6px; }
-
+        .ec-dials { width: min(540px, 93vw); display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .ec-dial { min-height: 185px; border: 1px solid #ffffff35; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; }
+        .ec-dial b { color: #bbb; font: 9px "DM Mono"; letter-spacing: .11em; font-weight: 500; }
+        .ec-track { width: 100%; height: 7px; background: #ffffff1c; position: relative; }
+        .ec-track i { position: absolute; inset: 0 auto 0 0; width: var(--w); background: var(--blue); transition: width .5s var(--ease-out), background .3s var(--ease-swift); }
+        .ec-dial small { color: #777; font: 8px/1.4 "DM Mono"; }
+        .ec-measure-scene[data-active-step="2"] .ec-dial:nth-child(2) .ec-track i, .ec-measure-scene[data-active-step="3"] .ec-dial:nth-child(3) .ec-track i, .ec-measure-scene[data-active-step="4"] .ec-dial .ec-track i { width: 100%; background: var(--orange); }
+        .ec-measure-scene[data-active-step="4"] .ec-dial { border-color: var(--acid); } .ec-measure-scene[data-active-step="4"] .ec-track i { background: var(--acid); }
+        .ec-method { border: 1px solid var(--line); padding: clamp(20px, 3vw, 36px); background: var(--paper-2); }
+        .ec-method-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 20px; }
+        .ec-method-grid span { min-height: 104px; border: 1px solid var(--line); padding: 11px; font: 9px/1.45 "DM Mono"; color: var(--muted); }
+        .ec-method-grid b { display: block; color: var(--orange); font: 19px "Instrument Serif"; font-weight: 400; margin-bottom: 12px; }
         @media (max-width: 850px), (max-height: 520px) and (max-width: 960px) {
-            .ex-grid, .cmp-grid { grid-template-columns: 1fr; }
-
-            /* the race reframes: labels move above the rows, cells shrink.
-               The stage hugs the top — step cards dock at the bottom
-               (see the mobile block in css/site.css); new pages should
-               give their stages the same flex-start + tight top padding. */
-            .s-stage { justify-content: flex-start; padding: 60px 4vw 12px; }
-            .s-lane { flex-direction: column; gap: 8px; }
-            .s-lab { width: auto; text-align: center; padding-right: 0; }
-            .s-cell { width: 30px; height: 30px; font-size: 9px; }
+            .ec-stage { align-items: flex-start; padding-top: 56px; } .ec-datacentre { transform: scale(.83); transform-origin: top center; }
+            .ec-switch { transform: scale(.8); transform-origin: top center; } .ec-dials { transform: scale(.83); transform-origin: top center; }
+            .ec-method-grid { grid-template-columns: 1fr; } .ec-service { grid-template-columns: 62px 1fr; }
         }
-        @media (max-width: 480px) {
-            .s-stage { gap: 18px; }
-            .s-row { gap: 4px; }
-            .s-cell { width: 22px; height: 24px; font-size: 8.5px; }
-            .s-needle { font-size: 10px; padding: 6px 14px; }
+        @media (max-width: 390px) { .ec-datacentre { transform: scale(.70); } .ec-switch { transform: scale(.67); } .ec-dials { transform: scale(.70); } }
+        @media (prefers-reduced-motion: reduce) { .ec-hero i { animation: none; } }
+
+        /* Page-scoped: tighten the shared sticky-scene exit so a scene does not
+           stay pinned on its finished diagram for a whole viewport before the
+           next section arrives. Kept small enough that the final step card
+           still reads comfortably while pinned. */
+        @media (prefers-reduced-motion: no-preference) {
+            .js .sticky-scene { padding-bottom: 30vh; padding-bottom: 30svh; }
         }
     </style>
 </head>
 
 <body>
-    <!-- Shared chrome (nav, footer, progress, cursor) is embedded by js/site.js -->
-    <div data-vb-nav data-depth="1" data-status="TEMPLATE" data-status-em="DRAFT">
+    <div data-vb-nav data-depth="1" data-status="POST 04" data-status-em="CLOUD">
         <noscript><a href="../index.html">VB</a> · <a href="../index.html#posts">Posts</a> · <a href="../about.html">About</a></noscript>
     </div>
-
     <header class="post-hero">
-        <div class="ghost" aria-hidden="true">T</div>
-        <div class="crumb"><a href="../index.html">Index</a> / TEMPLATE — SCROLLYTELLING</div>
-        <h1>
-            <span class="h-line"><span>The</span></span>
-            <span class="h-line"><span><em>template.</em></span></span>
-        </h1>
-        <p class="dek">A mock article that doubles as a working catalog. Every scene type, every layout piece — copy
-            what you need and start the next story. Nothing here is fake: scroll through the race and every probe you
-            count is real.</p>
-        <div class="post-meta"><span>DRAFT <b>2026</b></span><span>~<b>8</b> MIN</span><span><b>5</b> SCENES</span><span>MODE: <b>TEMPLATE</b></span></div>
+        <div class="ghost" aria-hidden="true">04</div>
+        <div class="crumb"><a href="../index.html">Index</a> / POST 04 — EUROPE · CLOUD</div>
+        <h1><span class="h-line"><span>A cloud is more</span></span><span class="h-line"><span>than a <em>building.</em></span></span></h1>
+        <p class="dek">A European cloud needs more than servers on European soil: control of keys, operators, software, supply chain and a credible exit. See the layers that matter.</p>
+        <div class="post-meta"><span>AUG <b>2026</b></span><span>~<b>9</b> MIN</span><span><b>5</b> SCENES</span><span>TOPIC: <b>CLOUD</b></span></div>
+        <div class="ec-hero" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     </header>
 
     <main>
         <article class="post-prose">
-            <h2><span class="sec-no">01</span>How this page works</h2>
-            <p>Every article on this site is a <strong>scrollytelling story</strong>: one idea, told as a sequence of
-                scenes, and the scroll is the timeline. A <span class="mono">sticky-scene</span> pins a dark diagram to
-                the viewport while step cards scroll over it — each step is one named state of the diagram, and the
-                reader controls the clock by scrolling.</p>
-            <p>Each section below is a working example of one piece. Copy the markup, keep the shared files, write the
-                content.</p>
+            <h2><span class="sec-no">01</span>The wrong picture is a warehouse</h2>
+            <p>Cloud has a visible half: buildings, racks, fibre and electricity. It also has an invisible half: the software that creates a server, the account that permits an administrator, the keys that protect a database, the support path during an incident and the supplier that ships the next security update. A data centre is the floor of the building, not the building.</p>
+            <p>This matters to Europe because a local address is often used as a shortcut for control. Location matters. It can improve latency, place processing under a particular legal regime and keep operations near the users they serve. But a service can sit on European soil while its essential decisions are made, deployed or supported elsewhere.</p>
+            <div class="callout">A sovereign cloud is not a marketing adjective for a region. It is a set of capabilities that remain governed, operated and recoverable under the conditions its users actually need.</div>
         </article>
 
-        <!-- ════ SCENE 01 · sticky-scene — the workhorse ════ -->
-        <section class="sticky-scene" data-scene>
+        <section class="sticky-scene ec-place-scene" data-scene>
             <div class="sticky-scene__stage" aria-hidden="true">
-                <div class="scene-head">
-                    <span class="scene-no">ACT 02</span>
-                    <span class="scene-name">THE SEARCH RACE</span>
-                    <span class="scene-readout" data-readout></span>
-                </div>
-                <div class="s-stage">
-                    <div class="s-needle">FIND 55</div>
-                    <div class="s-lane">
-                        <span class="s-lab">UNSORTED</span>
-                        <div class="s-row s-row-lin">
-                            <span class="s-cell">3</span><span class="s-cell">7</span><span class="s-cell">12</span><span class="s-cell">19</span><span class="s-cell">24</span><span class="s-cell">31</span><span class="s-cell">42</span><span class="s-cell">55</span><span class="s-cell">63</span><span class="s-cell">70</span><span class="s-cell">81</span><span class="s-cell">90</span>
-                        </div>
-                    </div>
-                    <div class="s-lane">
-                        <span class="s-lab">SORTED</span>
-                        <div class="s-row s-row-bin">
-                            <span class="s-cell">3</span><span class="s-cell">7</span><span class="s-cell">12</span><span class="s-cell">19</span><span class="s-cell">24</span><span class="s-cell">31</span><span class="s-cell">42</span><span class="s-cell">55</span><span class="s-cell">63</span><span class="s-cell">70</span><span class="s-cell">81</span><span class="s-cell">90</span>
-                        </div>
-                    </div>
-                    <div class="s-chips">
-                        <span class="s-chip" id="chipLin">LINEAR · —</span>
-                        <span class="s-chip" id="chipBin">BINARY · —</span>
-                    </div>
-                </div>
+                <div class="scene-head"><span class="scene-no">ACT 01</span><span class="scene-name">THE BUILDING AND THE CONTROL PLANE</span><span class="scene-readout" data-readout></span></div>
+                <div class="ec-stage"><div class="ec-datacentre"><div class="ec-plane">CONTROL PLANE · API · CONSOLE</div><i class="ec-wire"></i><div class="ec-building"><i class="ec-rack r1"></i><i class="ec-rack r2"></i><i class="ec-rack r3"></i><i class="ec-rack r4"></i></div><i class="ec-ground"></i><div class="ec-tags"><span>JURISDICTION</span><span>OPERATORS</span><span>KEYS</span></div></div></div>
             </div>
-
             <div class="sticky-scene__steps">
-                <article class="step" data-step="1">
-                    <p>Twelve numbers, one target: 55. The unsorted row must ask each number in order. The sorted row
-                        can jump — and every jump halves what is left.</p>
-                </article>
-                <article class="step" data-step="2">
-                    <p>Linear probes 3, 7, 12, 19. Binary goes straight to the middle and reads 31 — four cells further
-                        in one move.</p>
-                </article>
-                <article class="step" data-step="3">
-                    <p>Linear reaches 42. Binary read 63 — too high — and throws away the whole upper half without
-                        looking at it.</p>
-                </article>
-                <article class="step" data-step="4">
-                    <p>Linear lands on 55 after 8 probes. Binary needed 4: 31, 63, 42, 55. Same answer, half the
-                        questions.</p>
-                </article>
-                <article class="step" data-step="5">
-                    <p>Order changes the route, not the answer. Both counts are computed by the code on this page —
-                        scroll back and watch every probe land.</p>
-                </article>
+                <article class="step" data-step="1"><p>Begin with the physical site. It holds the machines and keeps data close to users. It is an essential part of a cloud service, but it cannot by itself create, repair or move the service.</p></article>
+                <article class="step" data-step="2"><p>Above it sits the control plane: APIs and consoles that create resources, set network policies, grant access and trigger automation. Whoever can operate this layer can shape what the machines below are allowed to do.</p></article>
+                <article class="step" data-step="3"><p>Now add jurisdiction, operators and cryptographic keys. Each answers a different question: which laws apply, who can act during a failure, and who can read or alter protected data.</p></article>
+                <article class="step" data-step="4"><p>A cloud becomes more sovereign as these links can be governed together and verified independently. The target is not zero foreign dependency; it is fewer unexamined single points of control.</p></article>
             </div>
         </section>
 
-        <article class="post-prose">
-            <h2><span class="sec-no">02</span>The recipe</h2>
-            <p>A sticky scene is a tall track: a pinned stage plus one <span class="mono">article.step</span> per
-                diagram state. The scene module in <span class="mono">js/scene.js</span> watches the steps and toggles
-                <span class="mono">is-active</span>, so the page itself needs no scene JavaScript — only CSS keyed off
-                <span class="mono">data-active-step</span>.</p>
-
-            <pre class="recipe"><span class="cm">&lt;!-- sticky scene: engine activates steps, sets data-active-step --&gt;</span>
-<span class="cm">&lt;section class="sticky-scene"&gt;</span>
-    <span class="cm">&lt;div class="sticky-scene__stage" aria-hidden="true"&gt;</span>
-        <span class="cm">&lt;div class="scene-head"&gt;</span>
-            <span class="cm">&lt;span class="scene-no"&gt;ACT 02&lt;/span&gt;</span>
-            <span class="cm">&lt;span class="scene-name"&gt;THE MECHANISM&lt;/span&gt;</span>
-            <span class="cm">&lt;span class="scene-readout" data-readout&gt;&lt;/span&gt;</span>
-        <span class="cm">&lt;/div&gt;</span>
-        <span class="cm">&lt;div class="stage"&gt;&lt;!-- the diagram --&gt;&lt;/div&gt;</span>
-    <span class="cm">&lt;/div&gt;</span>
-    <span class="cm">&lt;div class="sticky-scene__steps"&gt;</span>
-        <span class="cm">&lt;article class="step" data-step="1"&gt;</span>
-            <span class="cm">&lt;p&gt;One short paragraph. Real text, real conclusion.&lt;/p&gt;</span>
-        <span class="cm">&lt;/article&gt;</span>
-        <span class="cm">&lt;article class="step" data-step="2"&gt;…&lt;/article&gt;</span>
-    <span class="cm">&lt;/div&gt;</span>
-<span class="cm">&lt;/section&gt;</span>
-
-<span class="cm">/* stage states are named, not pixel-driven */</span>
-<span class="cm">.sticky-scene[data-active-step="2"] .marker { transform: translateX(60px); }</span></pre>
-
-            <p>Steps are real DOM text in reading order; the overlay layout exists only under the <span class="mono">.js</span>
-                gate in <span class="mono">&lt;head&gt;</span>. Disable JavaScript and the same page becomes a plain
-                document — stage first, steps stacked — still a complete article. That is the fallback, and it is never
-                optional.</p>
-            <p>For continuous scroll-linked effects (a marker easing along a path, a bar filling), feature-detect and
-                keep a base state:</p>
-
-            <pre class="recipe"><span class="cm">@supports (animation-timeline: view()) {</span>
-    <span class="cm">.stage .path-progress {</span>
-        <span class="cm">animation: fill 1s linear both;</span>
-        <span class="cm">animation-timeline: view();</span>
-        <span class="cm">animation-range: entry 0% cover 40%;</span>
-    <span class="cm">}</span>
-<span class="cm">}</span>
-<span class="cm">/* outside @supports the element simply rests at its base state */</span></pre>
-
-            <div class="callout">The story is the article. Scenes sit at the center — the prose tells you what is
-                happening and <em>why it matters</em>.</div>
-        </article>
-
-        <!-- ════ SCENE 02 · split — copy beside a bounded visual ════ -->
         <section class="scene split">
             <div class="scene__copy">
-                <h2><span class="sec-no">03</span>A split scene — quiet, bounded</h2>
-                <p>Not every idea needs a pinned stage. A <strong>split scene</strong> keeps a small visual beside the
-                    copy — ambient life, a settled diagram, a shape that explains itself. It reads like a figure in a
-                    magazine: no travel, no timeline, just the two parts agreeing.</p>
-                <p>On narrow screens the pair stacks: copy first, visual after.</p>
+                <h2><span class="sec-no">02</span>Portability falls as the service climbs</h2>
+                <p>“Move to another cloud” sounds like one operation, but cloud services live at different heights. Virtual machines and object storage have relatively clear equivalents. The further an application leans into a provider’s managed database, identity, analytics or AI service, the more its behaviour is tied to an implementation that may not have a direct substitute.</p>
+                <p>That is not a reason to avoid managed services. They can remove real operational work. It is a reason to make the trade intentionally: use them where the gain is worth the exit cost, and record where the architecture has crossed a provider-specific boundary.</p>
             </div>
-            <div class="scene__visual">
-                <div class="orb">
-                    <span class="ring"></span>
-                    <span class="ring r2"></span>
-                    <span class="core"></span>
-                    <span class="spin"><span class="sat"></span></span>
-                </div>
-            </div>
+            <div class="scene__visual"><div class="ec-service-ladder"><div class="ec-service"><b>IAAS</b><span>COMPUTE, NETWORK, VIRTUAL MACHINES<br>MORE COMPARABLE BUILDING BLOCKS</span></div><div class="ec-service"><b>PAAS</b><span>MANAGED DATABASES, QUEUES, IDENTITY<br>PORTABILITY NOW NEEDS ADAPTATION</span></div><div class="ec-service"><b>SAAS</b><span>FULL APPLICATIONS AND WORKFLOWS<br>THE DATA MAY LEAVE; THE BEHAVIOUR MAY NOT</span></div></div></div>
         </section>
 
-        <!-- ════ SCENE 03 · breather — the quiet beat ════ -->
-        <section class="breather">
-            <p class="breather-line reveal">The scroll is the timeline. <em>The story is the article.</em></p>
-        </section>
-
-        <!-- ════ SCENE 04 · metrics — a number with evidence ════ -->
-        <section class="metrics-scene">
-            <div class="metric reveal">4</div>
-            <div>
-                <p>Probes to find 55 in a sorted row. Binary search never reads a cell it does not need: each probe
-                    either lands on the target or discards half of what remains.</p>
-                <div class="m-evidence" id="evBin"></div>
-                <p class="m-note">THE PROBE VALUES ABOVE ARE COMPUTED FROM THE SAME ARRAY AS THE RACE — SCROLL BACK TO WATCH EACH ONE LAND.</p>
+        <section class="sticky-scene ec-switch-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head"><span class="scene-no">ACT 02</span><span class="scene-name">SWITCHING IS SEVERAL MOVES</span><span class="scene-readout" data-readout></span></div>
+                <div class="ec-stage"><div class="ec-switch"><div class="ec-cloud from"><b>SOURCE CLOUD</b><i>EXPORTABLE DATA</i><i>WORKLOAD DEFINITION</i><i>IDENTITY INTEGRATION</i><i>RUNBOOKS + PEOPLE</i></div><div class="ec-cloud to"><b>NEXT CLOUD</b><i>MACHINE-READABLE</i><i>REDEPLOYED</i><i>REKEYED</i><i>TESTED UNDER LOAD</i></div></div></div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1"><p>Switching begins before a contract ends. A team needs to know what can be exported, which formats are usable, how long the transfer takes and what must continue while it happens.</p></article>
+                <article class="step" data-step="2"><p>Data is necessary but insufficient. A working next home also needs infrastructure definitions, integrations, secrets, access policies, monitoring and the operating procedures that connect the pieces.</p></article>
+                <article class="step" data-step="3"><p>The EU Data Act addresses part of the power imbalance: providers must remove barriers to switching, support contractually defined transitions and make interfaces available for services beyond infrastructure where appropriate.</p></article>
+                <article class="step" data-step="4"><p>From 12 January 2027, the Act removes switching charges, including the charges for data egress needed for a switch. That changes the economics. It does not make a complicated application automatically equivalent somewhere else.</p></article>
             </div>
         </section>
 
-        <!-- ════ SCENE 05 · comparison — one scene, two modes ════ -->
-        <section class="scene">
-            <div class="cmp-grid">
-                <div class="cmp-card">
-                    <span class="cmp-k">MODE A · ENHANCED</span>
-                    <h4>Overlay.</h4>
-                    <p>With the <span class="mono">.js</span> gate, the stage pins to the viewport and the step cards
-                        float over it. Scrolling drives the diagram through its named states.</p>
-                </div>
-                <div class="cmp-card">
-                    <span class="cmp-k">MODE B · DOCUMENT</span>
-                    <h4>Stacked.</h4>
-                    <p>Without JavaScript — or under reduced motion — the same scene is a plain block followed by its
-                        steps. The story survives, word for word.</p>
-                </div>
+        <section class="sticky-scene ec-measure-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head"><span class="scene-no">ACT 03</span><span class="scene-name">SOVEREIGNTY HAS DIALS</span><span class="scene-readout" data-readout></span></div>
+                <div class="ec-stage"><div class="ec-dials"><div class="ec-dial"><b>DATA + AI</b><small>WHERE IT LIVES<br>WHO HAS ACCESS</small><span class="ec-track"><i style="--w:38%"></i></span></div><div class="ec-dial"><b>OPERATIONS</b><small>WHO CAN RUN IT<br>DURING A CRISIS</small><span class="ec-track"><i style="--w:26%"></i></span></div><div class="ec-dial"><b>SUPPLY CHAIN</b><small>WHO MAKES AND<br>UPDATES THE PARTS</small><span class="ec-track"><i style="--w:19%"></i></span></div><div class="ec-dial"><b>TECHNOLOGY</b><small>HOW WELL IT<br>CONNECTS AND EXITS</small><span class="ec-track"><i style="--w:31%"></i></span></div></div></div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1"><p>The useful question is not “sovereign or not?” It is “sovereign in which dimension?” Start with data and AI: storage, processing, access and the control of cryptographic material.</p></article>
+                <article class="step" data-step="2"><p>Then measure operations. Can EU-based teams operate, support and recover the service without an outside company becoming a mandatory participant? Is the knowledge documented and available?</p></article>
+                <article class="step" data-step="3"><p>Supply chain makes the picture wider: hardware provenance, firmware, software packaging, critical subcontractors and the ability to see beyond the first supplier.</p></article>
+                <article class="step" data-step="4"><p>Technology completes the view. Well-documented, non-proprietary interfaces and a practical migration route make a service less dependent on any one vendor. The Commission’s framework turns this broad idea into 48 criteria across eight categories.</p></article>
             </div>
         </section>
 
+        <section class="breather"><p class="breather-line reveal">A cloud earns trust when <em>its exit is believable.</em></p></section>
         <article class="post-prose">
-            <h2><span class="sec-no">04</span>Layout pieces</h2>
-            <p>Every prose block you need, live. Section headings with numbers, a callout, an aside, tags, buttons, a
-                masked quote, and a staggered card row that reveals on scroll.</p>
-
-            <div class="ex-row">
-                <span class="tag">A tag</span><span class="tag">Another tag</span>
-                <a class="btn" href="../index.html">A button</a>
-            </div>
-
-            <blockquote class="ex-blockquote mask">
-                <span class="row"><span>Ideas you <span class="hl">walk through</span></span></span>
-                <span class="row"><span>are ideas you keep.</span></span>
-            </blockquote>
-
-            <div class="ex-grid stagger">
-                <div class="ex-card"><h4>Primary motion.</h4><p>The thing the reader follows — one clear action per
-                        scene.</p></div>
-                <div class="ex-card"><h4>Secondary motion.</h4><p>Supporting cues — a glow, a shadow, a pulse that
-                        lands with the action.</p></div>
-                <div class="ex-card"><h4>Ambient life.</h4><p>Background motion that keeps the scene alive without
-                        demanding attention.</p></div>
-            </div>
-
-            <div class="aside">Conventions: scenes carry ACT labels and STEP k / n cards; every number shown is the
-                real state — computed by the code that renders it, never decoration. Reduced motion and no-JS collapse
-                the overlay to a stacked document, and that stacked document is always complete.</div>
-
-            <h2><span class="sec-no">05</span>Putting it together</h2>
-            <p>Copy this page as your starting point. Keep <span class="mono">css/site.css</span>, <span class="mono">js/site.js</span> and <span class="mono">js/scene.js</span>
-                untouched; replace the hero, the acts, and the scenes. Every component on this page is a working
-                example — delete what you do not need, keep what you do.</p>
-            <p>Every scene on this page also adapts to narrow screens: shrink the window to 390px and the race's cells
-                shrink and its labels move above the rows. Full-bleed SVG scenes get the same treatment with a tighter
-                <span class="mono">data-vb-narrow</span> frame — see the scrollytelling reference.</p>
+            <h2><span class="sec-no">03</span>Build capability, not a wall</h2>
+            <p>Europe can build more useful cloud capacity by treating it as an ecosystem: energy and data centres, yes, but also operating systems, open interfaces, trusted identity, secure hardware, skilled operators and purchasers who demand recoverability. A provider may be European-owned, foreign-owned, open-source-based or a partnership. The meaningful test is what users can verify and retain.</p>
+            <p>That leaves room for international technology and real competition. It also creates bargaining power: public institutions and businesses can choose a service for its merits without accepting that a single supplier must remain involved forever. A cloud that is more than somebody else’s data centre is one whose users can still make the next decision.</p>
+            <div class="aside"><b>Research notes.</b> Facts and policy dates come from the EU Data Act, which entered into application on 12 September 2025, the Commission’s Data Act guidance, and the 2026 Cloud Sovereignty Framework. The latter evaluates 48 criteria across eight categories; the four dials above are a simplified teaching model, not a score.</div>
         </article>
+        <nav class="post-nav" aria-label="Post navigation"><a href="digital-dependence.html"><span class="dir">PREVIOUS</span><span class="t">Europe’s digital dependence,<br><em>drawn as a stack.</em></span></a><a href="gps-is-not-just-gps.html"><span class="dir">NEXT</span><span class="t">Why GPS is not<br><em>just GPS.</em></span></a></nav>
     </main>
-
-    <nav class="post-nav">
-        <a href="../index.html"><span class="dir">← ALL POSTS</span><span class="t">The index.</span></a>
-        <a href="../index.html"><span class="dir">NEXT POST →</span><span class="t">Your first story.</span></a>
-    </nav>
-
-    <div data-vb-footer data-label="TEMPLATE · SCROLLYTELLING">
-        <noscript><div class="foot"><span>© 2026 VÍCTOR BUSQUÉ</span></div></noscript>
-    </div>
-
-    <script>
-        /* ────────────────────────────────────────────────────────────
-           Template example — honest state, computed and written into
-           the DOM. The sticky scene needs no JS of its own (the shared
-           engine in scene.js drives step activation); this script only
-           derives the probe counts from the real array and renders them
-           in the stage chips and the metrics evidence row.
-           ──────────────────────────────────────────────────────────── */
-        (function () {
-            'use strict';
-            var ARR = [3, 7, 12, 19, 24, 31, 42, 55, 63, 70, 81, 90];
-            var TARGET = 55;
-            var foundIdx = ARR.indexOf(TARGET);            /* 7 → linear needs 8 probes */
-
-            var binProbes = [], lo = 0, hi = ARR.length - 1;
-            while (lo <= hi) {
-                var mid = (lo + hi) >> 1;
-                binProbes.push(mid);
-                if (ARR[mid] === TARGET) break;
-                if (ARR[mid] < TARGET) lo = mid + 1; else hi = mid - 1;
-            }                                              /* probes at 5, 8, 6, 7 → 4 */
-
-            var chipLin = document.getElementById('chipLin');
-            if (chipLin) chipLin.innerHTML = 'LINEAR · <b>' + (foundIdx + 1) + ' PROBES</b>';
-            var chipBin = document.getElementById('chipBin');
-            if (chipBin) chipBin.innerHTML = 'BINARY · <b>' + binProbes.length + ' PROBES</b>';
-
-            var ev = document.getElementById('evBin');
-            if (ev) {
-                ev.innerHTML = binProbes.map(function (i) {
-                    var hit = ARR[i] === TARGET;
-                    return '<span class="ev-chip' + (hit ? ' ev-hit' : '') + '">' + ARR[i] + '</span>';
-                }).join('');
-            }
-        })();
-    </script>
+    <div data-vb-footer data-label="POST 04 · EUROPEAN CLOUD"><noscript><a href="../index.html">Index</a> · <a href="../about.html">About</a></noscript></div>
 </body>
-
 </html>

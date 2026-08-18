@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <title>Europe’s Digital Dependence — Víctor Busqué</title>
+    <meta name="description"
+        content="Europe’s software and cloud dependence is a stack: chips, identity, devices, cloud, apps and data. Follow dependencies, the exits and what sovereignty can mean.">
+    <meta name="author" content="Víctor Busqué">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://victorbusque.com/blog/digital-dependence.html">
+    <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/img/favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#101010">
+    <meta name="apple-mobile-web-app-title" content="VB Posts">
+    <meta name="application-name" content="VB Posts">
+    <meta name="color-scheme" content="light dark">
+
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Víctor Busqué — Curiosities">
+    <meta property="og:title" content="Europe’s Digital Dependence — Víctor Busqué">
+    <meta property="og:description"
+        content="Europe’s software and cloud dependence is a stack: chips, identity, devices, cloud, apps and data. Follow dependencies, the exits and what sovereignty can mean.">
+    <meta property="og:url" content="https://victorbusque.com/blog/digital-dependence.html">
+    <meta property="og:image" content="https://victorbusque.com/img/og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt"
+        content="A six-bar stack diagram in blue, orange and acid green on a dark background, illustrating the layers of Europe’s digital dependence.">
+    <meta property="og:locale" content="en_US">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Europe’s Digital Dependence — Víctor Busqué">
+    <meta name="twitter:description"
+        content="Europe’s software and cloud dependence is a stack: chips, identity, devices, cloud, apps and data. Follow dependencies, the exits and what sovereignty can mean.">
+    <meta name="twitter:image" content="https://victorbusque.com/img/og.png">
+    <meta name="twitter:image:alt"
+        content="A six-bar stack diagram in blue, orange and acid green on a dark background, illustrating the layers of Europe’s digital dependence.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": "Europe’s Digital Dependence",
+      "description": "Europe’s software and cloud dependence is a stack: chips, identity, devices, cloud, apps and data. Follow dependencies, the exits and what sovereignty can mean.",
+      "datePublished": "2026-08",
+      "dateModified": "2026-08-18",
+      "author": { "@id": "https://victorbusque.com/#person" },
+      "publisher": { "@id": "https://victorbusque.com/#person" },
+      "url": "https://victorbusque.com/blog/digital-dependence.html",
+      "mainEntityOfPage": "https://victorbusque.com/blog/digital-dependence.html",
+      "inLanguage": "en",
+      "keywords": ["Europe", "Digital sovereignty", "Cloud", "Open standards", "EU Data Act", "Cloud Sovereignty Framework"],
+      "articleSection": "Europe · Technology"
+    }
+    </script>
+
+    <!-- Site posts deliberately share the house system instead of being standalone files. -->
+    <script>document.documentElement.className += ' js';</script>
+    <link rel="stylesheet" href="../css/site.css">
+    <script src="../js/site.js" defer></script>
+    <script src="../js/scene.js" defer></script>
+    <script src="../js/vb.js"></script>
+    <style>
+        /* Blue denotes structure, orange the dependency being inspected, acid a proven exit. */
+        .dd-hero-stack {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+            width: min(620px, 92vw);
+            margin-top: 6vh;
+        }
+
+        .dd-hero-stack i {
+            height: 12px;
+            background: var(--ink);
+            display: block;
+            animation: dd-rise 3.2s ease-in-out infinite;
+        }
+
+        .dd-hero-stack i:nth-child(2) {
+            animation-delay: -.4s;
+            background: var(--blue);
+        }
+
+        .dd-hero-stack i:nth-child(3) {
+            animation-delay: -.8s;
+        }
+
+        .dd-hero-stack i:nth-child(4) {
+            animation-delay: -1.2s;
+            background: var(--orange);
+        }
+
+        .dd-hero-stack i:nth-child(5) {
+            animation-delay: -1.6s;
+        }
+
+        .dd-hero-stack i:nth-child(6) {
+            animation-delay: -2s;
+            background: var(--acid);
+        }
+
+        @keyframes dd-rise {
+
+            0%,
+            100% {
+                transform: scaleY(.45);
+                transform-origin: bottom;
+            }
+
+            50% {
+                transform: scaleY(1);
+                transform-origin: bottom;
+            }
+        }
+
+        .dd-stage {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 66px 24px 24px;
+        }
+
+        .dd-tap {
+            color: var(--orange);
+            border: 1px solid var(--orange);
+            padding: 7px 12px;
+            font: 9px "DM Mono";
+            letter-spacing: .13em;
+            box-shadow: 0 0 18px #ff6b2c33;
+            transition: opacity .25s var(--ease-swift), transform .25s var(--ease-swift);
+        }
+
+        .dd-arrow {
+            color: #777;
+            height: 13px;
+            font: 15px/1 "DM Mono";
+        }
+
+        .dd-stack {
+            width: min(440px, 90vw);
+            display: grid;
+            gap: 6px;
+        }
+
+        .dd-layer {
+            min-height: 42px;
+            border: 1px solid #ffffff2c;
+            padding: 0 13px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #969696;
+            font: 10px "DM Mono";
+            letter-spacing: .12em;
+            transition: transform .3s var(--ease-out), border-color .25s var(--ease-swift), color .25s var(--ease-swift), background .25s var(--ease-swift), opacity .25s var(--ease-swift);
+        }
+
+        .dd-layer small {
+            font-size: 8px;
+            color: #777;
+            letter-spacing: .1em;
+        }
+
+        .dd-layer::after {
+            content: "↓";
+            color: #444;
+        }
+
+        .dd-layer:last-child::after {
+            content: "";
+        }
+
+        .dd-stack-scene[data-active-step="1"] .dd-layer:nth-child(1),
+        .dd-stack-scene[data-active-step="2"] .dd-layer:nth-child(2),
+        .dd-stack-scene[data-active-step="3"] .dd-layer:nth-child(3),
+        .dd-stack-scene[data-active-step="4"] .dd-layer:nth-child(4),
+        .dd-stack-scene[data-active-step="5"] .dd-layer:nth-child(5) {
+            border-color: var(--orange);
+            color: #fff;
+            transform: translateX(8px);
+            box-shadow: inset 3px 0 var(--orange), 0 0 14px #ff6b2c1c;
+        }
+
+        .dd-stack-scene[data-active-step="2"] .dd-layer:nth-child(1),
+        .dd-stack-scene[data-active-step="3"] .dd-layer:nth-child(-n+2),
+        .dd-stack-scene[data-active-step="4"] .dd-layer:nth-child(-n+3),
+        .dd-stack-scene[data-active-step="5"] .dd-layer:nth-child(-n+4) {
+            opacity: .35;
+        }
+
+        .dd-stack-scene[data-active-step="5"] .dd-tap {
+            color: var(--acid);
+            border-color: var(--acid);
+            box-shadow: 0 0 18px #c7ff3d33;
+        }
+
+        .dd-map {
+            width: min(510px, 92vw);
+            display: grid;
+            gap: 10px;
+        }
+
+        .dd-region {
+            border: 1px solid var(--blue);
+            min-height: 210px;
+            position: relative;
+            padding: 18px;
+            color: #aaa;
+            font: 9px "DM Mono";
+            letter-spacing: .13em;
+            transition: border-color .3s var(--ease-swift), box-shadow .3s var(--ease-swift);
+        }
+
+        .dd-region>b {
+            color: var(--blue);
+            font-weight: 500;
+        }
+
+        .dd-pod {
+            position: absolute;
+            border: 1px solid #ffffff36;
+            padding: 10px;
+            background: #171717;
+            transition: border-color .25s var(--ease-swift), color .25s var(--ease-swift), transform .3s var(--ease-out), box-shadow .25s var(--ease-swift);
+        }
+
+        .dd-pod.one {
+            left: 12%;
+            top: 34%;
+        }
+
+        .dd-pod.two {
+            right: 10%;
+            top: 23%;
+        }
+
+        .dd-pod.three {
+            right: 18%;
+            bottom: 17%;
+        }
+
+        .dd-pod em {
+            display: block;
+            font-style: normal;
+            color: #777;
+            margin-top: 5px;
+            font-size: 8px;
+        }
+
+        .dd-thread {
+            position: absolute;
+            height: 1px;
+            background: #ffffff26;
+            transform-origin: left;
+            transition: background .25s var(--ease-swift);
+        }
+
+        .dd-thread.a {
+            left: 31%;
+            top: 47%;
+            width: 40%;
+            transform: rotate(-12deg);
+        }
+
+        .dd-thread.b {
+            left: 30%;
+            top: 55%;
+            width: 46%;
+            transform: rotate(23deg);
+        }
+
+        .dd-control-scene[data-active-step="2"] .dd-pod.two,
+        .dd-control-scene[data-active-step="3"] .dd-pod.three,
+        .dd-control-scene[data-active-step="4"] .dd-pod {
+            border-color: var(--orange);
+            color: #fff;
+            transform: scale(1.05);
+            box-shadow: 0 0 16px #ff6b2c2b;
+        }
+
+        .dd-control-scene[data-active-step="3"] .dd-thread,
+        .dd-control-scene[data-active-step="4"] .dd-thread {
+            background: var(--orange);
+        }
+
+        .dd-control-scene[data-active-step="4"] .dd-region {
+            border-color: var(--acid);
+            box-shadow: inset 0 0 0 1px #c7ff3d33;
+        }
+
+        .dd-control-scene[data-active-step="4"] .dd-pod {
+            border-color: var(--acid);
+            color: var(--acid);
+            box-shadow: 0 0 16px #c7ff3d22;
+        }
+
+        .dd-exit {
+            width: min(540px, 93vw);
+            display: grid;
+            grid-template-columns: 1fr 62px 1fr;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dd-box {
+            min-height: 190px;
+            border: 1px solid #ffffff30;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .dd-box>b {
+            color: #aaa;
+            font: 9px "DM Mono";
+            letter-spacing: .14em;
+            font-weight: 500;
+        }
+
+        .dd-piece {
+            border: 1px solid #ffffff28;
+            color: #777;
+            padding: 9px;
+            font: 9px "DM Mono";
+            letter-spacing: .08em;
+            transition: opacity .25s var(--ease-swift), border-color .25s var(--ease-swift), color .25s var(--ease-swift), transform .3s var(--ease-out);
+        }
+
+        .dd-route {
+            border-top: 1px dashed #555;
+            position: relative;
+            transition: border-color .25s var(--ease-swift);
+        }
+
+        .dd-route::after {
+            content: "→";
+            position: absolute;
+            right: -1px;
+            top: -10px;
+            color: #777;
+            font: 17px "DM Mono";
+        }
+
+        .dd-exit-scene[data-active-step="2"] .dd-box.source .dd-piece:nth-child(2),
+        .dd-exit-scene[data-active-step="3"] .dd-box.source .dd-piece:nth-child(-n+3),
+        .dd-exit-scene[data-active-step="4"] .dd-box.source .dd-piece {
+            border-color: var(--orange);
+            color: #fff;
+            transform: translateX(4px);
+        }
+
+        .dd-exit-scene[data-active-step="3"] .dd-route,
+        .dd-exit-scene[data-active-step="4"] .dd-route {
+            border-color: var(--orange);
+        }
+
+        .dd-exit-scene[data-active-step="4"] .dd-box.target {
+            border-color: var(--acid);
+            box-shadow: 0 0 18px #c7ff3d1e;
+        }
+
+        .dd-exit-scene[data-active-step="4"] .dd-box.target .dd-piece {
+            border-color: var(--acid);
+            color: var(--acid);
+        }
+
+        .dd-lens {
+            border: 1px solid var(--line);
+            background: var(--paper-2);
+            padding: clamp(18px, 3vw, 34px);
+        }
+
+        .dd-lens-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 22px;
+        }
+
+        .dd-lens-grid span {
+            min-height: 92px;
+            border: 1px solid var(--line);
+            padding: 11px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            font: 9px "DM Mono";
+            letter-spacing: .1em;
+        }
+
+        .dd-lens-grid b {
+            font: 20px/1 "Instrument Serif";
+            font-weight: 400;
+            color: var(--orange);
+        }
+
+        .dd-lens-grid small {
+            color: var(--muted);
+            font-size: 8px;
+            line-height: 1.35;
+        }
+
+        .sources {
+            margin-top: 5vh;
+        }
+
+        @media (max-width: 850px),
+        (max-height: 520px) and (max-width: 960px) {
+            .dd-stage {
+                justify-content: flex-start;
+                padding-top: 58px;
+                gap: 7px;
+            }
+
+            .dd-layer {
+                min-height: 35px;
+                font-size: 8.5px;
+            }
+
+            .dd-layer small {
+                font-size: 7px;
+            }
+
+            .dd-map {
+                transform: scale(.88);
+                transform-origin: top center;
+            }
+
+            .dd-exit {
+                transform: scale(.84);
+                transform-origin: top center;
+            }
+
+            .dd-lens-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 390px) {
+            .dd-stage {
+                padding-inline: 14px;
+            }
+
+            .dd-layer {
+                min-height: 31px;
+                padding-inline: 9px;
+                font-size: 8px;
+            }
+
+            .dd-map {
+                transform: scale(.76);
+            }
+
+            .dd-exit {
+                transform: scale(.71);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .dd-hero-stack i {
+                animation: none;
+            }
+        }
+
+        /* Page-scoped: tighten the shared sticky-scene exit so a scene does not
+           stay pinned on its finished diagram for a whole viewport before the
+           next section arrives. Kept small enough that the final step card
+           still reads comfortably while pinned. */
+        @media (prefers-reduced-motion: no-preference) {
+            .js .sticky-scene { padding-bottom: 30vh; padding-bottom: 30svh; }
+        }
+    </style>
+</head>
+
+<body>
+    <div data-vb-nav data-depth="1" data-status="POST 03" data-status-em="EUROPE">
+        <noscript><a href="../index.html">VB</a> · <a href="../index.html#posts">Posts</a> · <a
+                href="../about.html">About</a></noscript>
+    </div>
+    <header class="post-hero">
+        <div class="ghost" aria-hidden="true">03</div>
+        <div class="crumb"><a href="../index.html">Index</a> / POST 03 — EUROPE · TECHNOLOGY</div>
+        <h1><span class="h-line"><span>A stack of</span></span><span class="h-line"><span>borrowed
+                    <em>defaults.</em></span></span></h1>
+        <p class="dek">Europe’s software and cloud dependence is a stack: chips, identity, devices, cloud, apps and
+            data. Follow dependencies, the exits and what sovereignty can mean.</p>
+        <div class="post-meta"><span>AUG <b>2026</b></span><span>~<b>10</b> MIN</span><span><b>6</b>
+                SCENES</span><span>TOPIC: <b>EUROPE</b></span></div>
+        <div class="dd-hero-stack" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    </header>
+
+    <main>
+        <article class="post-prose">
+            <h2><span class="sec-no">01</span>Dependence has layers</h2>
+            <p>Open a public-service app. It may be written by a local team, run from a data centre in Europe and comply
+                with European law. Yet it can still depend on a foreign mobile operating system, an identity provider, a
+                cloud control plane, a chip architecture, a software update channel and an outside company’s operational
+                knowledge. The app works because all of those promises hold at once.</p>
+            <p>That is why <strong>digital dependence is not one number</strong>. It is not the nationality on an
+                invoice, nor the flag outside a data centre. It is the set of components that must keep answering when a
+                service has to continue, change provider, investigate an incident or resist political pressure. The
+                scale is structural: by the European Commission’s own estimate, the EU relies on non-EU countries for
+                over 80% of key digital products, services, infrastructure and intellectual property.</p>
+            <div class="callout">Sovereignty is not a claim that every component must be made locally. It is the ability
+                to understand the dependencies, set the rules and retain a credible choice when one of them fails.</div>
+        </article>
+
+        <section class="sticky-scene dd-stack-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head"><span class="scene-no">ACT 01</span><span class="scene-name">DESCEND THE
+                        STACK</span><span class="scene-readout" data-readout></span></div>
+                <div class="dd-stage"><span class="dd-tap">ONE USEFUL SERVICE</span><span class="dd-arrow">↓</span>
+                    <div class="dd-stack">
+                        <div class="dd-layer">APPLICATION <small>WHAT PEOPLE SEE</small></div>
+                        <div class="dd-layer">IDENTITY <small>WHO MAY ACT</small></div>
+                        <div class="dd-layer">CLOUD <small>WHERE CODE RUNS</small></div>
+                        <div class="dd-layer">NETWORK <small>HOW IT REACHES US</small></div>
+                        <div class="dd-layer">HARDWARE <small>WHAT EXECUTES IT</small></div>
+                    </div>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>The service at the top is the visible promise: a form, a payment, a medical record, a company’s
+                        daily work. It is also the least useful layer for locating dependence; its dependencies are
+                        below.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>Identity decides who can sign in, reset a password, approve an administrator or issue a token. If
+                        this layer is unavailable, a perfectly healthy application may be unreachable to everyone who
+                        matters.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p>Cloud is not just rented machines. Its managed databases, queues, observability tools and
+                        deployment controls become part of the application’s design. The more of them it uses, the more
+                        specific its exit becomes.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <p>Networks, DNS, certificates and update channels are dependencies too. They decide which name
+                        resolves, which code is trusted and which route is available before an application ever gets a
+                        request.</p>
+                </article>
+                <article class="step" data-step="5">
+                    <p>At the bottom are hardware, firmware and factories. Europe does not need to own every transistor
+                        to make useful choices, but a stack that cannot be inspected or substituted is a stack whose
+                        risks are difficult to govern.</p>
+                </article>
+            </div>
+        </section>
+
+        <article class="post-prose">
+            <h2><span class="sec-no">02</span>Location is one layer of control</h2>
+            <p>“Our data stays in Europe” answers an important question, particularly for personal and public-sector
+                data. It does not answer every question. A service also has people who operate it, software that updates
+                it, keys that unlock it, a legal entity that receives orders, and suppliers that can interrupt a repair
+                or a release.</p>
+            <p>None of this makes a foreign provider automatically unsuitable, or a European provider automatically
+                sovereign. It means the label <em>European cloud</em> needs an anatomy. The European Commission’s Cloud
+                Sovereignty Framework, published in October 2025, makes the same move: it scores providers across eight
+                objectives — strategic anchoring, legal and jurisdictional exposure, data and AI, operations, supply
+                chain, technology, security and environmental impact — using 48 criteria and assurance levels that run
+                from SEAL-0 to SEAL-4.</p>
+            <p>In April 2026 the framework stopped being a paper exercise. The Commission used it to award its own
+                sovereign-cloud tender — up to €180 million over six years, split across four European provider groups,
+                each required to reach at least SEAL-2, the level it calls data sovereignty. When a procurement
+                framework starts grading jurisdiction, the market starts building for the grade.</p>
+        </article>
+
+        <section class="sticky-scene dd-control-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head"><span class="scene-no">ACT 02</span><span class="scene-name">PLACE IS NOT
+                        CONTROL</span><span class="scene-readout" data-readout></span></div>
+                <div class="dd-stage">
+                    <div class="dd-map">
+                        <div class="dd-region"><b>EU REGION · PHYSICAL PLACE</b><span class="dd-pod one">DATA<em>storage
+                                    + processing</em></span><span class="dd-pod two">OPERATIONS<em>console +
+                                    support</em></span><span class="dd-pod three">KEYS<em>who can decrypt</em></span><i
+                                class="dd-thread a"></i><i class="dd-thread b"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>Start with location. Data stored and processed in an EU region is subject to a particular
+                        physical and regulatory environment. That is real, valuable and still incomplete.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>Next ask who operates the service. An incident response, privileged support session or
+                        infrastructure update can depend on a control plane and staff outside the data room — and on
+                        orders from another jurisdiction. When US sanctions targeted the International Criminal Court in
+                        2025, its chief prosecutor <a
+                            href="https://sciencebusiness.net/sovereignty/meps-and-commission-split-over-eus-reliance-foreign-tech">reportedly
+                            lost access</a> to his Microsoft-hosted email account in The Hague.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p>Then ask who controls cryptographic access and who can change that arrangement. Customer-held
+                        keys reduce one kind of exposure, but they do not make every surrounding dependency disappear.
+                    </p>
+                </article>
+                <article class="step" data-step="4">
+                    <p>Control is a chain: place, jurisdiction, operators, keys, code and suppliers. A serious
+                        procurement describes the chain and assigns responsibility for each link instead of stopping at
+                        the address of a server.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="scene split">
+            <div class="scene__copy">
+                <h2><span class="sec-no">03</span>Openness is an exit, not a logo</h2>
+                <p>Open source is useful because it can make a system inspectable and maintainable by more than one
+                    company. Open standards are useful because they make data and protocols legible at a boundary.
+                    Neither is a magic spell: an open project can still have scarce expertise, and an open API can still
+                    expose only the easy parts. The Commission’s June 2026 Open Source Strategy now treats open source
+                    as sovereignty infrastructure — but a strategy is not a maintainer.</p>
+                <p>The practical question is harder and better: could a capable second team restore the service
+                    elsewhere from the documented data, software and procedures? If not, the organisation has a
+                    dependency whether or not its software is open.</p>
+            </div>
+            <div class="scene__visual">
+                <div class="dd-lens"><span class="mono">AN EXIT TEST · FOUR THINGS TO TAKE</span>
+                    <div class="dd-lens-grid"><span><b>01</b><small>EXPORTABLE DATA IN DOCUMENTED
+                                FORMATS</small></span><span><b>02</b><small>DEPLOYMENT DEFINITIONS, NOT
+                                SCREENSHOTS</small></span><span><b>03</b><small>IDENTITY, KEYS AND ACCESS ROTATION
+                                PLAN</small></span><span><b>04</b><small>OPERATORS WHO HAVE PRACTISED THE
+                                MOVE</small></span></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="sticky-scene dd-exit-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head"><span class="scene-no">ACT 03</span><span class="scene-name">THE EXIT MUST BE
+                        BUILT</span><span class="scene-readout" data-readout></span></div>
+                <div class="dd-stage">
+                    <div class="dd-exit">
+                        <div class="dd-box source"><b>CURRENT SERVICE</b><span class="dd-piece">DATA</span><span
+                                class="dd-piece">WORKLOAD</span><span class="dd-piece">IDENTITY</span><span
+                                class="dd-piece">RUNBOOKS</span></div>
+                        <div class="dd-route"></div>
+                        <div class="dd-box target"><b>VIABLE NEXT HOME</b><span class="dd-piece">READABLE</span><span
+                                class="dd-piece">REDEPLOYABLE</span><span class="dd-piece">REKEYABLE</span><span
+                                class="dd-piece">OPERABLE</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>A contract can promise portability, but a real exit has several different cargos. Data is only
+                        one of them. Workloads, identity integrations, operational procedures and the knowledge to run
+                        them must travel too.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>First make the data legible. The EU Data Act’s cloud-switching rules have applied since September
+                        2025: providers must remove obstacles to switching and support export in machine-readable forms,
+                        with charges capped at cost in the meantime. That reduces a barrier; it does not recreate an
+                        application.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p>Then separate what is portable from what is provider-specific. A database schema may move cleanly
+                        while a managed queue, identity policy or proprietary observability query needs deliberate
+                        replacement work.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <p>The exit becomes credible only when another environment has been tested and people can operate
+                        it. From 12 January 2027, the Data Act bans switching charges outright — the Commission has
+                        confirmed this includes egress charges for switching. Architecture and practice remain the
+                        customer’s work.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="breather">
+            <p class="breather-line reveal">A dependency is healthiest when <em>its boundary is visible.</em></p>
+        </section>
+        <article class="post-prose">
+            <h2><span class="sec-no">04</span>Build a wider field of choices</h2>
+            <p>The aim is not an isolated European stack. That would be brittle, expensive and at odds with the
+                internet’s useful interdependence. The aim is a market in which European organisations can choose
+                compatible providers, use open interfaces, retain operational knowledge and move a critical service
+                without beginning again from zero.</p>
+            <p>That asks for more than a new data centre. It asks for procurement that rewards verifiable exits, public
+                investment in interoperable infrastructure, maintainers who can sustain the software underneath it, and
+                institutions that practice recovery. The policy layer is moving: the Commission’s June 2026 Tech
+                Sovereignty Package pairs a second Chips Act with a proposed Cloud and AI Development Act meant to
+                harmonise sovereignty requirements across the single market. The market gap is the harder part — three
+                US providers hold about 70% of the European cloud market, European providers roughly 15% — so law and
+                procurement will be asked to do heavy lifting that only capacity can finish. A cloud, an identity
+                service or a satellite system becomes strategically useful when it gives its users another route.</p>
+            <div class="aside sources"><b>Research notes.</b> This article draws on the European Commission’s <a
+                    href="https://commission.europa.eu/document/download/09579818-64a6-4dd5-9577-446ab6219113_en">Cloud
+                    Sovereignty Framework</a> and its 48-criterion sovereignty score (v1.2.1, October 2025), the
+                Commission’s <a
+                    href="https://commission.europa.eu/news-and-media/news/commission-advances-cloud-sovereignty-through-strategic-procurement-2026-04-17_en">sovereign-cloud
+                    tender award</a> (April 2026) and its <a
+                    href="https://commission.europa.eu/news-and-media/news/sovereign-cloud-framework-explained-2026-06-01_en">framework
+                    explainer</a> (June 2026), the <a href="https://eur-lex.europa.eu/eli/reg/2023/2854/oj">EU Data
+                    Act</a>’s cloud-switching rules (Regulation 2023/2854; switching charges banned from 12 January
+                2027), the Commission’s <a
+                    href="https://commission.europa.eu/strategy-and-policy/priorities-2019-2024/europe-fit-digital-age/second-depth-review-strategic-areas-europes-interests_en">second
+                    strategic-dependencies review</a> (2022), the EDPB’s <a
+                    href="https://www.edpb.europa.eu/documents/coordinated-enforcement-framework/coordinated-enforcement-action-use-of-cloud-based_en">coordinated
+                    enforcement report on cloud in the public sector</a> (January 2023), the <a
+                    href="https://digital-strategy.ec.europa.eu/en/policies/eu-tech-sovereignty">Tech Sovereignty
+                    Package</a> (June 2026), <a
+                    href="https://www.srgresearch.com/articles/european-cloud-providers-local-market-share-now-holds-steady-at-15">Synergy
+                    Research’s European cloud market data</a> (July 2025) and the European Parliament’s <a
+                    href="https://www.europarl.europa.eu/RegData/etudes/ATAG/2025/780413/ECTI_ATA(2025)780413_EN.pdf">briefing
+                    on software and cyber dependencies</a> (2025). The words “dependence” and “sovereignty” are used
+                here as engineering questions about control and recovery, not as a nationality test.</div>
+        </article>
+        <nav class="post-nav" aria-label="Post navigation"><a href="one-process-per-person.html"><span
+                    class="dir">PREVIOUS</span><span class="t">How WhatsApp handles<br><em>100B messages a day.</em></span></a><a
+                href="european-cloud.html"><span class="dir">NEXT</span><span class="t">Can Europe build<br><em>a
+                        cloud?</em></span></a></nav>
+    </main>
+    <div data-vb-footer data-label="POST 03 · EUROPE’S DIGITAL DEPENDENCE"><noscript><a href="../index.html">Index</a> ·
+            <a href="../about.html">About</a></noscript></div>
+</body>
+
+</html>

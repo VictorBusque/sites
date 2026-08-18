@@ -4,15 +4,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-
-    <!-- Primary meta -->
-    <title>The template — Víctor Busqué</title>
-    <meta name="description" content="Template article for the scrollytelling engine — the building blocks for teaching an idea by scrolling through it.">
+    <title>How GPS Turns Time Into Location — Víctor Busqué</title>
+    <meta name="description" content="GPS and Galileo do more than draw a blue dot. Four clocks in orbit locate devices and synchronise networks, grids, markets—until a signal is blocked or faked.">
     <meta name="author" content="Víctor Busqué">
-    <meta name="robots" content="noindex, follow">
-    <link rel="canonical" href="https://victorbusque.com/blog/template.html">
-
-    <!-- Favicons / PWA (absolute paths resolve from /blog/) -->
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://victorbusque.com/blog/gps-is-not-just-gps.html">
     <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
     <link rel="icon" href="/img/favicon.ico" sizes="any">
     <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
@@ -22,472 +18,208 @@
     <meta name="application-name" content="VB Posts">
     <meta name="color-scheme" content="light dark">
 
-    <!-- Open Graph -->
     <meta property="og:type" content="article">
     <meta property="og:site_name" content="Víctor Busqué — Curiosities">
-    <meta property="og:title" content="The template — Víctor Busqué">
-    <meta property="og:description" content="Template article for the scrollytelling engine.">
-    <meta property="og:url" content="https://victorbusque.com/blog/template.html">
+    <meta property="og:title" content="How GPS Turns Time Into Location — Víctor Busqué">
+    <meta property="og:description" content="GPS and Galileo do more than draw a blue dot. Four clocks in orbit locate devices and synchronise networks, grids, markets—until a signal is blocked or faked.">
+    <meta property="og:url" content="https://victorbusque.com/blog/gps-is-not-just-gps.html">
     <meta property="og:image" content="https://victorbusque.com/img/og.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:locale" content="en_US">
-
-    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="The template — Víctor Busqué">
-    <meta name="twitter:description" content="Template article for the scrollytelling engine.">
+    <meta name="twitter:title" content="How GPS Turns Time Into Location — Víctor Busqué">
+    <meta name="twitter:description" content="GPS and Galileo do more than draw a blue dot. Four clocks in orbit locate devices and synchronise networks, grids, markets—until a signal is blocked or faked.">
     <meta name="twitter:image" content="https://victorbusque.com/img/og.png">
-
-    <!-- Performance: preconnect to font CDN -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <!-- Structured data — matches posts.json, the site's single post manifest.
-         Fill headline/description/datePublished/url/keywords/articleSection. -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "BlogPosting",
-      "headline": "TITLE HERE",
-      "description": "DESCRIPTION HERE",
-      "datePublished": "YYYY-MM",
+      "headline": "How GPS Turns Time Into Location",
+      "description": "GPS and Galileo do more than draw a blue dot. Four clocks in orbit locate devices and synchronise networks, grids, markets—until a signal is blocked or faked.",
+      "datePublished": "2026-08",
       "author": { "@id": "https://victorbusque.com/#person" },
       "publisher": { "@id": "https://victorbusque.com/#person" },
-      "url": "https://victorbusque.com/blog/SLUG.html",
-      "mainEntityOfPage": "https://victorbusque.com/blog/SLUG.html",
+      "url": "https://victorbusque.com/blog/gps-is-not-just-gps.html",
+      "mainEntityOfPage": "https://victorbusque.com/blog/gps-is-not-just-gps.html",
       "inLanguage": "en",
-      "keywords": ["TAG", "TAG"],
-      "articleSection": "TOPIC"
+      "keywords": ["GPS", "Galileo", "PNT", "Satellite navigation"],
+      "articleSection": "Space · Infrastructure"
     }
     </script>
 
-    <!-- The .js gate: enables the scene overlay layout. Without it (no JS,
-         reduced motion) scenes render as a plain document — stage first,
-         steps stacked. Must run before the body parses. -->
+    <!-- Site posts deliberately share the house system instead of being standalone files. -->
     <script>document.documentElement.className += ' js';</script>
-
     <link rel="stylesheet" href="../css/site.css">
     <script src="../js/site.js" defer></script>
     <script src="../js/scene.js" defer></script>
     <script src="../js/vb.js"></script>
     <style>
-        /* ════════════════════════════════════════════════════════════════
-           TEMPLATE-ONLY STYLES
-           Each block is a working example. Copy the block you need into a
-           new article; the shared pieces (tokens, nav, footer, reveals,
-           scene frame, step cards) live in css/site.css and js/site.js.
-           ════════════════════════════════════════════════════════════════ */
+        .gp-hero { width: min(430px, 84vw); height: 100px; margin-top: 5vh; position: relative; border: 1px solid #11111130; border-radius: 50%; }
+        .gp-hero::before { content: ""; position: absolute; inset: 28px; border-radius: 50%; border: 1px solid #11111120; }
+        .gp-hero i { position: absolute; width: 9px; height: 9px; background: var(--blue); border-radius: 50%; box-shadow: 0 0 12px #546cff66; animation: gp-orbit 5s ease-in-out infinite; }
+        .gp-hero i:nth-child(1) { top: -5px; left: 30%; } .gp-hero i:nth-child(2) { right: 18%; bottom: 1px; animation-delay: -1.25s; background: var(--orange); } .gp-hero i:nth-child(3) { left: 12%; top: 41%; animation-delay: -2.5s; } .gp-hero i:nth-child(4) { right: 42%; bottom: -5px; animation-delay: -3.75s; background: var(--acid); }
+        @keyframes gp-orbit { 0%, 100% { transform: translate(0, 0) scale(.85); } 50% { transform: translate(7px, -5px) scale(1); } }
 
-        /* ── SCENE 01 · sticky — "the search race" ──
-           Stage states are keyed off data-active-step on the section,
-           set by the shared engine as step cards cross mid-viewport. */
-        .s-stage { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; }
-        .s-needle { border: 1px solid var(--acid); color: var(--acid); padding: 8px 20px; font: 12px "DM Mono"; letter-spacing: .14em; box-shadow: 0 0 18px #c7ff3d22; }
-        .s-lane { display: flex; align-items: center; gap: 14px; }
-        .s-lab { width: 92px; text-align: right; padding-right: 8px; font: 9px "DM Mono"; letter-spacing: .14em; color: #777; }
-        .s-row { display: flex; gap: 6px; }
-        .s-cell {
-            width: 40px;
-            height: 40px;
-            border: 1px solid #ffffff2a;
-            display: grid;
-            place-items: center;
-            font: 11px "DM Mono";
-            color: #999;
-            transition: border-color .3s var(--ease-swift), color .3s var(--ease-swift),
-                opacity .3s var(--ease-swift), box-shadow .3s var(--ease-swift);
-        }
-        .s-cell.past { opacity: .22; border-color: #ffffff24; }
-        .s-cell.probe { border-color: var(--orange); color: #fff; box-shadow: inset 0 0 0 1px var(--orange); }
-        .s-cell.found { border-color: var(--acid); color: var(--acid); box-shadow: 0 0 14px #c7ff3d33; }
-        .s-chips { display: flex; gap: 10px; }
-        .s-chip { font: 9px "DM Mono"; letter-spacing: .14em; padding: 6px 12px; border: 1px solid #ffffff22; color: #aaa; opacity: 0; transition: opacity .5s var(--ease-out); }
-        .s-chip b { color: var(--acid); font-weight: 500; }
+        .gp-stage { position: absolute; inset: 0; display: grid; place-items: center; padding: 60px 24px 22px; }
+        .gp-fix { width: min(480px, 92vw); min-height: 300px; position: relative; }
+        .gp-earth { position: absolute; left: 50%; top: 52%; width: 50px; height: 50px; transform: translate(-50%, -50%); border-radius: 50%; border: 1px solid #ffffff55; background: #1d1d1d; box-shadow: inset 12px -8px 0 #ffffff08; }
+        .gp-earth::after { content: "YOU"; position: absolute; top: 58px; left: 50%; transform: translateX(-50%); color: #999; font: 8px "DM Mono"; letter-spacing: .14em; }
+        .gp-sat { position: absolute; width: 64px; height: 32px; border: 1px solid #ffffff36; display: grid; place-items: center; color: #888; background: #151515; font: 8px "DM Mono"; letter-spacing: .09em; transition: border-color .25s var(--ease-swift), color .25s var(--ease-swift), transform .35s var(--ease-out), box-shadow .25s var(--ease-swift), opacity .25s var(--ease-swift); }
+        .gp-sat::before, .gp-sat::after { content: ""; position: absolute; width: 17px; height: 13px; border: 1px solid #ffffff22; top: 8px; } .gp-sat::before { left: -19px; } .gp-sat::after { right: -19px; }
+        .gp-sat.s1 { left: 8%; top: 12%; } .gp-sat.s2 { right: 7%; top: 18%; } .gp-sat.s3 { left: 12%; bottom: 13%; } .gp-sat.s4 { right: 10%; bottom: 10%; }
+        .gp-range { position: absolute; left: 50%; top: 50%; width: 1px; height: 1px; transform-origin: 0 0; background: #546cff66; transition: background .25s var(--ease-swift), opacity .25s var(--ease-swift); }
+        .gp-range.r1 { transform: rotate(-142deg); width: 190px; } .gp-range.r2 { transform: rotate(-34deg); width: 183px; } .gp-range.r3 { transform: rotate(145deg); width: 170px; } .gp-range.r4 { transform: rotate(37deg); width: 160px; }
+        .gp-fix-scene[data-active-step="1"] .gp-sat.s1, .gp-fix-scene[data-active-step="2"] .gp-sat.s2, .gp-fix-scene[data-active-step="3"] .gp-sat.s3, .gp-fix-scene[data-active-step="4"] .gp-sat.s4 { border-color: var(--orange); color: #fff; transform: scale(1.08); box-shadow: 0 0 16px #ff6b2c2b; }
+        .gp-fix-scene[data-active-step="2"] .gp-sat.s1, .gp-fix-scene[data-active-step="3"] .gp-sat:nth-of-type(-n+2), .gp-fix-scene[data-active-step="4"] .gp-sat { border-color: var(--blue); color: var(--blue); }
+        .gp-fix-scene[data-active-step="4"] .gp-earth { border-color: var(--acid); box-shadow: 0 0 20px #c7ff3d33; }
+        .gp-fix-scene[data-active-step="4"] .gp-range { background: var(--acid); }
 
-        /* per-step states — one named state per step, never pixels */
-        .sticky-scene[data-active-step="2"] .s-row-lin .s-cell:nth-child(-n+3),
-        .sticky-scene[data-active-step="3"] .s-row-lin .s-cell:nth-child(-n+6),
-        .sticky-scene[data-active-step="4"] .s-row-lin .s-cell:nth-child(-n+7),
-        .sticky-scene[data-active-step="5"] .s-row-lin .s-cell:nth-child(-n+7) { opacity: .22; border-color: #ffffff24; }
-        .sticky-scene[data-active-step="2"] .s-row-lin .s-cell:nth-child(4),
-        .sticky-scene[data-active-step="3"] .s-row-lin .s-cell:nth-child(7) { border-color: var(--orange); color: #fff; box-shadow: inset 0 0 0 1px var(--orange); }
-        .sticky-scene[data-active-step="4"] .s-row-lin .s-cell:nth-child(8),
-        .sticky-scene[data-active-step="5"] .s-row-lin .s-cell:nth-child(8) { border-color: var(--acid); color: var(--acid); box-shadow: 0 0 14px #c7ff3d33; }
+        .gp-time { width: min(520px, 92vw); display: grid; grid-template-columns: 1fr 74px 1fr; gap: 12px; align-items: center; }
+        .gp-clock { min-height: 178px; border: 1px solid #ffffff3b; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; transition: border-color .3s var(--ease-swift), box-shadow .3s var(--ease-swift), transform .35s var(--ease-out); }
+        .gp-clock b { color: #aaa; font: 9px "DM Mono"; letter-spacing: .12em; font-weight: 500; } .gp-clock span { color: #777; font: 8px/1.45 "DM Mono"; }
+        .gp-ticks { height: 35px; display: flex; gap: 4px; align-items: end; } .gp-ticks i { flex: 1; height: var(--h); background: #ffffff36; transition: background .25s var(--ease-swift), transform .35s var(--ease-out); }
+        .gp-delay { text-align: center; color: #777; font: 9px/1.6 "DM Mono"; letter-spacing: .1em; position: relative; }
+        .gp-delay::before { content: "→"; display: block; color: var(--blue); font: 22px "DM Mono"; transition: color .25s var(--ease-swift), transform .35s var(--ease-out); }
+        .gp-time-scene[data-active-step="2"] .gp-clock.sat { border-color: var(--orange); box-shadow: 0 0 18px #ff6b2c24; transform: translateY(-4px); } .gp-time-scene[data-active-step="2"] .gp-clock.sat .gp-ticks i { background: var(--orange); }
+        .gp-time-scene[data-active-step="3"] .gp-delay::before { color: var(--orange); transform: translateX(5px); } .gp-time-scene[data-active-step="3"] .gp-clock.receiver { border-color: var(--blue); box-shadow: 0 0 18px #546cff24; }
+        .gp-time-scene[data-active-step="4"] .gp-clock { border-color: var(--acid); box-shadow: 0 0 18px #c7ff3d20; } .gp-time-scene[data-active-step="4"] .gp-ticks i, .gp-time-scene[data-active-step="4"] .gp-delay::before { background: var(--acid); color: var(--acid); }
 
-        .sticky-scene[data-active-step="3"] .s-row-bin .s-cell:nth-child(6),
-        .sticky-scene[data-active-step="4"] .s-row-bin .s-cell:nth-child(6),
-        .sticky-scene[data-active-step="4"] .s-row-bin .s-cell:nth-child(7),
-        .sticky-scene[data-active-step="4"] .s-row-bin .s-cell:nth-child(9),
-        .sticky-scene[data-active-step="5"] .s-row-bin .s-cell:nth-child(6),
-        .sticky-scene[data-active-step="5"] .s-row-bin .s-cell:nth-child(7),
-        .sticky-scene[data-active-step="5"] .s-row-bin .s-cell:nth-child(9) { opacity: .22; border-color: #ffffff24; }
-        .sticky-scene[data-active-step="2"] .s-row-bin .s-cell:nth-child(6),
-        .sticky-scene[data-active-step="3"] .s-row-bin .s-cell:nth-child(9) { border-color: var(--orange); color: #fff; box-shadow: inset 0 0 0 1px var(--orange); }
-        .sticky-scene[data-active-step="4"] .s-row-bin .s-cell:nth-child(8),
-        .sticky-scene[data-active-step="5"] .s-row-bin .s-cell:nth-child(8) { border-color: var(--acid); color: var(--acid); box-shadow: 0 0 14px #c7ff3d33; }
+        .gp-triad { border: 1px solid var(--line); background: var(--paper-2); padding: clamp(20px, 3vw, 36px); }
+        .gp-triad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 20px; }
+        .gp-triad-grid span { border: 1px solid var(--line); min-height: 144px; display: flex; flex-direction: column; justify-content: space-between; padding: 14px; font: 9px/1.45 "DM Mono"; color: var(--muted); }
+        .gp-triad-grid b { color: var(--orange); font: 24px "Instrument Serif"; font-weight: 400; }
 
-        /* the honest counts appear only once the race is over */
-        .sticky-scene[data-active-step="4"] .s-chip,
-        .sticky-scene[data-active-step="5"] .s-chip { opacity: 1; }
+        .gp-air { width: min(540px, 93vw); min-height: 270px; position: relative; border: 1px solid #ffffff31; }
+        .gp-receiver { position: absolute; left: 50%; top: 48%; width: 74px; height: 48px; transform: translate(-50%, -50%); border: 1px solid #ffffff45; display: grid; place-items: center; color: #aaa; background: #171717; font: 8px "DM Mono"; letter-spacing: .1em; transition: border-color .3s var(--ease-swift), color .3s var(--ease-swift), box-shadow .3s var(--ease-swift), transform .35s var(--ease-out); }
+        .gp-source { position: absolute; width: 76px; border: 1px solid #ffffff35; padding: 10px; color: #777; font: 8px/1.4 "DM Mono"; letter-spacing: .08em; transition: border-color .3s var(--ease-swift), color .3s var(--ease-swift), transform .35s var(--ease-out), box-shadow .3s var(--ease-swift), opacity .3s var(--ease-swift); }
+        .gp-source.satellite { left: 11%; top: 14%; } .gp-source.noise { right: 10%; top: 14%; } .gp-source.fake { right: 14%; bottom: 15%; } .gp-source.auth { left: 11%; bottom: 15%; }
+        .gp-wave { position: absolute; left: 50%; top: 50%; height: 1px; background: #546cff88; transform-origin: left; transition: background .3s var(--ease-swift), opacity .3s var(--ease-swift); }
+        .gp-wave.w1 { width: 196px; transform: rotate(-146deg); } .gp-wave.w2 { width: 180px; transform: rotate(-30deg); } .gp-wave.w3 { width: 164px; transform: rotate(35deg); } .gp-wave.w4 { width: 190px; transform: rotate(146deg); }
+        .gp-threat-scene[data-active-step="2"] .gp-source.noise, .gp-threat-scene[data-active-step="2"] .gp-wave.w2 { border-color: var(--orange); color: #fff; background: var(--orange); box-shadow: 0 0 16px #ff6b2c33; }
+        .gp-threat-scene[data-active-step="2"] .gp-receiver { border-color: var(--orange); color: var(--orange); }
+        .gp-threat-scene[data-active-step="3"] .gp-source.fake, .gp-threat-scene[data-active-step="3"] .gp-wave.w3 { border-color: var(--blue); color: #fff; background: var(--blue); box-shadow: 0 0 16px #546cff33; }
+        .gp-threat-scene[data-active-step="3"] .gp-receiver { border-color: var(--blue); color: var(--blue); transform: translate(-44%, -50%); }
+        .gp-threat-scene[data-active-step="4"] .gp-source.auth, .gp-threat-scene[data-active-step="4"] .gp-wave.w4, .gp-threat-scene[data-active-step="4"] .gp-receiver { border-color: var(--acid); color: var(--acid); background: var(--acid); box-shadow: 0 0 16px #c7ff3d33; }
+        .gp-threat-scene[data-active-step="4"] .gp-receiver { background: #171717; transform: translate(-50%, -50%); }
 
-        /* ── SCENE 02 · split — "the orbit" ── */
-        .orb { width: 210px; height: 210px; position: relative; margin: 0 auto; }
-        .orb .ring { position: absolute; inset: 0; border: 1px solid #1111112a; border-radius: 50%; }
-        .orb .ring.r2 { inset: -16px; border-color: #11111114; animation: orb-ping 3s var(--ease-out) infinite; }
-        .orb .spin { position: absolute; inset: 0; animation: orb-spin 3.4s linear infinite; }
-        .orb .sat {
-            position: absolute;
-            left: 50%;
-            top: -6px;
-            width: 12px;
-            height: 12px;
-            margin-left: -6px;
-            border-radius: 50%;
-            background: var(--blue);
-            box-shadow: 0 0 14px var(--blue);
-        }
-        .orb .core {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            width: 14px;
-            height: 14px;
-            margin: -7px 0 0 -7px;
-            border-radius: 50%;
-            background: var(--ink);
-            z-index: 2;
-        }
-        @keyframes orb-spin { to { transform: rotate(360deg); } }
-        @keyframes orb-ping {
-            0% { transform: scale(.94); opacity: .7; }
-            80%, 100% { transform: scale(1.16); opacity: 0; }
-        }
-
-        /* ── SCENE 04 · metrics — real number, visible evidence ── */
-        .m-evidence { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .ev-chip { border: 1px solid var(--line); padding: 10px 16px; font: 12px "DM Mono"; color: var(--muted); }
-        .ev-chip.ev-hit { border-color: var(--acid); color: var(--ink); background: var(--acid); box-shadow: 0 0 14px #c7ff3d44; }
-        .m-note { font: 10px "DM Mono"; letter-spacing: .14em; color: var(--muted); margin-top: 14px; }
-
-        /* ── SCENE 05 · comparison — the same scene, two modes ── */
-        .cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .cmp-card { border: 1px solid var(--line); background: var(--paper-2); padding: 26px; }
-        .cmp-card h4 { font-size: 15px; margin-bottom: 8px; }
-        .cmp-card p { font-size: 13px; color: var(--muted); line-height: 1.55; }
-        .cmp-card .cmp-k { font: 9px "DM Mono"; letter-spacing: .16em; color: var(--orange); display: block; margin-bottom: 10px; }
-
-        /* ── recipe code block ── */
-        .recipe {
-            display: block;
-            max-width: 100%;
-            overflow-x: auto;
-            background: #141414;
-            color: #d6d6d6;
-            border: 1px solid var(--line);
-            padding: 26px 28px;
-            font: 12px/1.8 "DM Mono";
-            margin: 6vh 0;
-        }
-        .recipe .cm { color: #6b6b6b; }
-
-        /* ── component gallery ── */
-        .ex-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 5vh 0; }
-        .ex-card { border: 1px solid var(--line); padding: 26px; background: var(--paper-2); }
-        .ex-card h4 { font-size: 16px; margin-bottom: 8px; }
-        .ex-card p { font-size: 13px; color: var(--muted); line-height: 1.55; }
-        .ex-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 4vh 0; }
-        .ex-blockquote { font: italic clamp(24px, 3vw, 34px)/1.2 "Instrument Serif"; margin: 5vh 0; max-width: 640px; }
-        .ex-blockquote .hl { background: var(--acid); padding: 0 6px; }
-
+        .gp-resilience { width: min(540px, 93vw); display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .gp-path { min-height: 185px; border: 1px solid #ffffff32; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; transition: border-color .3s var(--ease-swift), color .3s var(--ease-swift), box-shadow .3s var(--ease-swift), transform .35s var(--ease-out); }
+        .gp-path b { color: #aaa; font: 9px "DM Mono"; letter-spacing: .11em; font-weight: 500; } .gp-path small { color: #777; font: 8px/1.4 "DM Mono"; }
+        .gp-dotline { display: flex; gap: 4px; } .gp-dotline i { width: 5px; height: 5px; border-radius: 50%; background: #ffffff35; transition: background .25s var(--ease-swift), transform .35s var(--ease-out); }
+        .gp-resilience-scene[data-active-step="2"] .gp-path:nth-child(2), .gp-resilience-scene[data-active-step="3"] .gp-path:nth-child(3), .gp-resilience-scene[data-active-step="4"] .gp-path { border-color: var(--acid); color: var(--acid); box-shadow: 0 0 16px #c7ff3d1c; transform: translateY(-4px); }
+        .gp-resilience-scene[data-active-step="4"] .gp-dotline i { background: var(--acid); }
         @media (max-width: 850px), (max-height: 520px) and (max-width: 960px) {
-            .ex-grid, .cmp-grid { grid-template-columns: 1fr; }
-
-            /* the race reframes: labels move above the rows, cells shrink.
-               The stage hugs the top — step cards dock at the bottom
-               (see the mobile block in css/site.css); new pages should
-               give their stages the same flex-start + tight top padding. */
-            .s-stage { justify-content: flex-start; padding: 60px 4vw 12px; }
-            .s-lane { flex-direction: column; gap: 8px; }
-            .s-lab { width: auto; text-align: center; padding-right: 0; }
-            .s-cell { width: 30px; height: 30px; font-size: 9px; }
+            .gp-stage { align-items: flex-start; padding-top: 55px; } .gp-fix { transform: scale(.82); transform-origin: top center; } .gp-time { transform: scale(.8); transform-origin: top center; }
+            .gp-air { transform: scale(.82); transform-origin: top center; } .gp-resilience { transform: scale(.82); transform-origin: top center; } .gp-triad-grid { grid-template-columns: 1fr; }
         }
-        @media (max-width: 480px) {
-            .s-stage { gap: 18px; }
-            .s-row { gap: 4px; }
-            .s-cell { width: 22px; height: 24px; font-size: 8.5px; }
-            .s-needle { font-size: 10px; padding: 6px 14px; }
+        @media (max-width: 390px) { .gp-fix { transform: scale(.68); } .gp-time { transform: scale(.67); } .gp-air { transform: scale(.68); } .gp-resilience { transform: scale(.65); } }
+        @media (prefers-reduced-motion: reduce) { .gp-hero i { animation: none; } }
+
+        /* Page-scoped: tighten the shared sticky-scene exit so a scene does not
+           stay pinned on its finished diagram for a whole viewport before the
+           next section arrives. Kept small enough that the final step card
+           still reads comfortably while pinned. */
+        @media (prefers-reduced-motion: no-preference) {
+            .js .sticky-scene { padding-bottom: 30vh; padding-bottom: 30svh; }
         }
     </style>
 </head>
 
 <body>
-    <!-- Shared chrome (nav, footer, progress, cursor) is embedded by js/site.js -->
-    <div data-vb-nav data-depth="1" data-status="TEMPLATE" data-status-em="DRAFT">
+    <div data-vb-nav data-depth="1" data-status="POST 05" data-status-em="SPACE">
         <noscript><a href="../index.html">VB</a> · <a href="../index.html#posts">Posts</a> · <a href="../about.html">About</a></noscript>
     </div>
-
     <header class="post-hero">
-        <div class="ghost" aria-hidden="true">T</div>
-        <div class="crumb"><a href="../index.html">Index</a> / TEMPLATE — SCROLLYTELLING</div>
-        <h1>
-            <span class="h-line"><span>The</span></span>
-            <span class="h-line"><span><em>template.</em></span></span>
-        </h1>
-        <p class="dek">A mock article that doubles as a working catalog. Every scene type, every layout piece — copy
-            what you need and start the next story. Nothing here is fake: scroll through the race and every probe you
-            count is real.</p>
-        <div class="post-meta"><span>DRAFT <b>2026</b></span><span>~<b>8</b> MIN</span><span><b>5</b> SCENES</span><span>MODE: <b>TEMPLATE</b></span></div>
+        <div class="ghost" aria-hidden="true">05</div>
+        <div class="crumb"><a href="../index.html">Index</a> / POST 05 — SPACE · INFRASTRUCTURE</div>
+        <h1><span class="h-line"><span>The world runs</span></span><span class="h-line"><span>on a <em>timestamp.</em></span></span></h1>
+        <p class="dek">GPS and Galileo do more than draw a blue dot. Four clocks in orbit locate devices and synchronise networks, grids, markets—until a signal is blocked or faked.</p>
+        <div class="post-meta"><span>AUG <b>2026</b></span><span>~<b>9</b> MIN</span><span><b>6</b> SCENES</span><span>TOPIC: <b>SPACE</b></span></div>
+        <div class="gp-hero" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
     </header>
 
     <main>
         <article class="post-prose">
-            <h2><span class="sec-no">01</span>How this page works</h2>
-            <p>Every article on this site is a <strong>scrollytelling story</strong>: one idea, told as a sequence of
-                scenes, and the scroll is the timeline. A <span class="mono">sticky-scene</span> pins a dark diagram to
-                the viewport while step cards scroll over it — each step is one named state of the diagram, and the
-                reader controls the clock by scrolling.</p>
-            <p>Each section below is a working example of one piece. Copy the markup, keep the shared files, write the
-                content.</p>
+            <h2><span class="sec-no">01</span>GPS is a clock service with a map attached</h2>
+            <p>We call it GPS when a blue dot moves across a map. The larger idea is <strong>positioning, navigation and timing</strong>, or PNT. A satellite navigation receiver uses radio signals from orbit to answer three questions: where am I, how am I moving, and what time is it?</p>
+            <p>GPS is the United States’ system. Galileo is Europe’s civilian-controlled global system. Phones and many professional receivers commonly use several constellations together because more visible satellites make a solution more available and more robust. The trick is wonderfully spare: each satellite broadcasts where it is and what time it sent the signal.</p>
+            <div class="callout">Satellite navigation does not tell a receiver where it is. It gives the receiver several timed radio signals; the receiver calculates its own answer.</div>
         </article>
 
-        <!-- ════ SCENE 01 · sticky-scene — the workhorse ════ -->
-        <section class="sticky-scene" data-scene>
+        <section class="sticky-scene gp-fix-scene" data-scene>
             <div class="sticky-scene__stage" aria-hidden="true">
-                <div class="scene-head">
-                    <span class="scene-no">ACT 02</span>
-                    <span class="scene-name">THE SEARCH RACE</span>
-                    <span class="scene-readout" data-readout></span>
-                </div>
-                <div class="s-stage">
-                    <div class="s-needle">FIND 55</div>
-                    <div class="s-lane">
-                        <span class="s-lab">UNSORTED</span>
-                        <div class="s-row s-row-lin">
-                            <span class="s-cell">3</span><span class="s-cell">7</span><span class="s-cell">12</span><span class="s-cell">19</span><span class="s-cell">24</span><span class="s-cell">31</span><span class="s-cell">42</span><span class="s-cell">55</span><span class="s-cell">63</span><span class="s-cell">70</span><span class="s-cell">81</span><span class="s-cell">90</span>
-                        </div>
-                    </div>
-                    <div class="s-lane">
-                        <span class="s-lab">SORTED</span>
-                        <div class="s-row s-row-bin">
-                            <span class="s-cell">3</span><span class="s-cell">7</span><span class="s-cell">12</span><span class="s-cell">19</span><span class="s-cell">24</span><span class="s-cell">31</span><span class="s-cell">42</span><span class="s-cell">55</span><span class="s-cell">63</span><span class="s-cell">70</span><span class="s-cell">81</span><span class="s-cell">90</span>
-                        </div>
-                    </div>
-                    <div class="s-chips">
-                        <span class="s-chip" id="chipLin">LINEAR · —</span>
-                        <span class="s-chip" id="chipBin">BINARY · —</span>
-                    </div>
-                </div>
+                <div class="scene-head"><span class="scene-no">ACT 01</span><span class="scene-name">FOUR DISTANCES, FOUR UNKNOWNS</span><span class="scene-readout" data-readout></span></div>
+                <div class="gp-stage"><div class="gp-fix"><i class="gp-earth"></i><span class="gp-sat s1">SAT 01</span><span class="gp-sat s2">SAT 02</span><span class="gp-sat s3">SAT 03</span><span class="gp-sat s4">SAT 04</span><i class="gp-range r1"></i><i class="gp-range r2"></i><i class="gp-range r3"></i><i class="gp-range r4"></i></div></div>
             </div>
-
             <div class="sticky-scene__steps">
-                <article class="step" data-step="1">
-                    <p>Twelve numbers, one target: 55. The unsorted row must ask each number in order. The sorted row
-                        can jump — and every jump halves what is left.</p>
-                </article>
-                <article class="step" data-step="2">
-                    <p>Linear probes 3, 7, 12, 19. Binary goes straight to the middle and reads 31 — four cells further
-                        in one move.</p>
-                </article>
-                <article class="step" data-step="3">
-                    <p>Linear reaches 42. Binary read 63 — too high — and throws away the whole upper half without
-                        looking at it.</p>
-                </article>
-                <article class="step" data-step="4">
-                    <p>Linear lands on 55 after 8 probes. Binary needed 4: 31, 63, 42, 55. Same answer, half the
-                        questions.</p>
-                </article>
-                <article class="step" data-step="5">
-                    <p>Order changes the route, not the answer. Both counts are computed by the code on this page —
-                        scroll back and watch every probe land.</p>
-                </article>
+                <article class="step" data-step="1"><p>One satellite sends a timestamp and its orbital position. By comparing transmitted time with received time, the receiver estimates its distance from that satellite. Its possible position is a huge sphere around it.</p></article>
+                <article class="step" data-step="2"><p>A second distance cuts the possible space down to the intersection of two spheres. A third narrows it further. In the real world, each measurement also carries errors from clocks, atmosphere and reflections.</p></article>
+                <article class="step" data-step="3"><p>The receiver needs a fourth satellite because its own inexpensive clock is not perfectly synchronised with the atomic clocks in orbit. It has four unknowns: x, y, z and its clock offset.</p></article>
+                <article class="step" data-step="4"><p>Four timed ranges let the receiver solve all four together. Location is the by-product of correcting its clock. That is why satellite navigation is a time-distribution system as much as a map service.</p></article>
             </div>
         </section>
 
-        <article class="post-prose">
-            <h2><span class="sec-no">02</span>The recipe</h2>
-            <p>A sticky scene is a tall track: a pinned stage plus one <span class="mono">article.step</span> per
-                diagram state. The scene module in <span class="mono">js/scene.js</span> watches the steps and toggles
-                <span class="mono">is-active</span>, so the page itself needs no scene JavaScript — only CSS keyed off
-                <span class="mono">data-active-step</span>.</p>
+        <section class="sticky-scene gp-time-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head"><span class="scene-no">ACT 02</span><span class="scene-name">TIME BECOMES DISTANCE</span><span class="scene-readout" data-readout></span></div>
+                <div class="gp-stage"><div class="gp-time"><div class="gp-clock sat"><b>SATELLITE CLOCK</b><div class="gp-ticks"><i style="--h:24%"></i><i style="--h:58%"></i><i style="--h:86%"></i><i style="--h:43%"></i><i style="--h:72%"></i><i style="--h:100%"></i><i style="--h:35%"></i></div><span>SENDS TIME + ORBIT</span></div><div class="gp-delay">TRAVEL<br>TIME</div><div class="gp-clock receiver"><b>RECEIVER CLOCK</b><div class="gp-ticks"><i style="--h:24%"></i><i style="--h:58%"></i><i style="--h:86%"></i><i style="--h:43%"></i><i style="--h:72%"></i><i style="--h:100%"></i><i style="--h:35%"></i></div><span>RECEIVES + SOLVES</span></div></div></div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1"><p>Radio waves travel at the speed of light. The receiver measures a delay, multiplies it by that speed, and gets a distance estimate—often called a pseudorange because the receiver clock still needs correction.</p></article>
+                <article class="step" data-step="2"><p>That makes timing unforgiving. In one nanosecond, light travels about 30 centimetres. A tiny clock error becomes a visible position error, so satellite systems carry atomic clocks and continuously correct them from the ground.</p></article>
+                <article class="step" data-step="3"><p>The message also contains orbital information and clock corrections. A receiver must know where each satellite was when it transmitted, not merely where it appears in the sky when the signal arrives.</p></article>
+                <article class="step" data-step="4"><p>Galileo’s ground segment maintains Galileo System Time; GPS maintains its own time scale. Receivers account for the offsets and use the signals together. Interoperability turns several public clocks into a stronger measurement.</p></article>
+            </div>
+        </section>
 
-            <pre class="recipe"><span class="cm">&lt;!-- sticky scene: engine activates steps, sets data-active-step --&gt;</span>
-<span class="cm">&lt;section class="sticky-scene"&gt;</span>
-    <span class="cm">&lt;div class="sticky-scene__stage" aria-hidden="true"&gt;</span>
-        <span class="cm">&lt;div class="scene-head"&gt;</span>
-            <span class="cm">&lt;span class="scene-no"&gt;ACT 02&lt;/span&gt;</span>
-            <span class="cm">&lt;span class="scene-name"&gt;THE MECHANISM&lt;/span&gt;</span>
-            <span class="cm">&lt;span class="scene-readout" data-readout&gt;&lt;/span&gt;</span>
-        <span class="cm">&lt;/div&gt;</span>
-        <span class="cm">&lt;div class="stage"&gt;&lt;!-- the diagram --&gt;&lt;/div&gt;</span>
-    <span class="cm">&lt;/div&gt;</span>
-    <span class="cm">&lt;div class="sticky-scene__steps"&gt;</span>
-        <span class="cm">&lt;article class="step" data-step="1"&gt;</span>
-            <span class="cm">&lt;p&gt;One short paragraph. Real text, real conclusion.&lt;/p&gt;</span>
-        <span class="cm">&lt;/article&gt;</span>
-        <span class="cm">&lt;article class="step" data-step="2"&gt;…&lt;/article&gt;</span>
-    <span class="cm">&lt;/div&gt;</span>
-<span class="cm">&lt;/section&gt;</span>
-
-<span class="cm">/* stage states are named, not pixel-driven */</span>
-<span class="cm">.sticky-scene[data-active-step="2"] .marker { transform: translateX(60px); }</span></pre>
-
-            <p>Steps are real DOM text in reading order; the overlay layout exists only under the <span class="mono">.js</span>
-                gate in <span class="mono">&lt;head&gt;</span>. Disable JavaScript and the same page becomes a plain
-                document — stage first, steps stacked — still a complete article. That is the fallback, and it is never
-                optional.</p>
-            <p>For continuous scroll-linked effects (a marker easing along a path, a bar filling), feature-detect and
-                keep a base state:</p>
-
-            <pre class="recipe"><span class="cm">@supports (animation-timeline: view()) {</span>
-    <span class="cm">.stage .path-progress {</span>
-        <span class="cm">animation: fill 1s linear both;</span>
-        <span class="cm">animation-timeline: view();</span>
-        <span class="cm">animation-range: entry 0% cover 40%;</span>
-    <span class="cm">}</span>
-<span class="cm">}</span>
-<span class="cm">/* outside @supports the element simply rests at its base state */</span></pre>
-
-            <div class="callout">The story is the article. Scenes sit at the center — the prose tells you what is
-                happening and <em>why it matters</em>.</div>
-        </article>
-
-        <!-- ════ SCENE 02 · split — copy beside a bounded visual ════ -->
         <section class="scene split">
             <div class="scene__copy">
-                <h2><span class="sec-no">03</span>A split scene — quiet, bounded</h2>
-                <p>Not every idea needs a pinned stage. A <strong>split scene</strong> keeps a small visual beside the
-                    copy — ambient life, a settled diagram, a shape that explains itself. It reads like a figure in a
-                    magazine: no travel, no timeline, just the two parts agreeing.</p>
-                <p>On narrow screens the pair stacks: copy first, visual after.</p>
+                <h2><span class="sec-no">02</span>The quiet service is timing</h2>
+                <p>A receiver does not have to be navigating for PNT to matter. Networks coordinate transmission, power systems compare measurements from far-apart equipment, financial systems order events and data centres distribute a common time. The visible blue dot is the friendly interface to a deeper utility.</p>
+                <p>This is also why a PNT failure can be strange. The failure may not look like a map that points to the wrong street. It can look like equipment disagreeing about sequence, a radio network losing synchronisation, or an alarm whose timestamps can no longer be compared.</p>
             </div>
-            <div class="scene__visual">
-                <div class="orb">
-                    <span class="ring"></span>
-                    <span class="ring r2"></span>
-                    <span class="core"></span>
-                    <span class="spin"><span class="sat"></span></span>
-                </div>
-            </div>
+            <div class="scene__visual"><div class="gp-triad"><span class="mono">PNT · THREE OUTPUTS FROM ONE MEASUREMENT</span><div class="gp-triad-grid"><span><b>P</b>POSITION<br>WHERE AM I?</span><span><b>N</b>NAVIGATION<br>HOW DO I MOVE?</span><span><b>T</b>TIMING<br>WHEN DID IT HAPPEN?</span></div></div></div>
         </section>
 
-        <!-- ════ SCENE 03 · breather — the quiet beat ════ -->
-        <section class="breather">
-            <p class="breather-line reveal">The scroll is the timeline. <em>The story is the article.</em></p>
-        </section>
-
-        <!-- ════ SCENE 04 · metrics — a number with evidence ════ -->
-        <section class="metrics-scene">
-            <div class="metric reveal">4</div>
-            <div>
-                <p>Probes to find 55 in a sorted row. Binary search never reads a cell it does not need: each probe
-                    either lands on the target or discards half of what remains.</p>
-                <div class="m-evidence" id="evBin"></div>
-                <p class="m-note">THE PROBE VALUES ABOVE ARE COMPUTED FROM THE SAME ARRAY AS THE RACE — SCROLL BACK TO WATCH EACH ONE LAND.</p>
+        <section class="sticky-scene gp-threat-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head"><span class="scene-no">ACT 03</span><span class="scene-name">BLOCKED OR BELIEVED</span><span class="scene-readout" data-readout></span></div>
+                <div class="gp-stage"><div class="gp-air"><span class="gp-receiver">RECEIVER</span><span class="gp-source satellite">GENUINE<br>SATELLITE</span><span class="gp-source noise">JAMMER<br>NOISE</span><span class="gp-source fake">SPOOFER<br>FAKE DATA</span><span class="gp-source auth">OSNMA<br>CHECK</span><i class="gp-wave w1"></i><i class="gp-wave w2"></i><i class="gp-wave w3"></i><i class="gp-wave w4"></i></div></div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1"><p>The signals arriving from satellites are weak after travelling from orbit. A receiver must separate them from noise, reflections and other radio transmissions before it can calculate anything.</p></article>
+                <article class="step" data-step="2"><p>Jamming overwhelms or disrupts the frequencies a receiver needs. It denies the measurement. A receiver may know it has lost service, but timing and position are no longer available from that path.</p></article>
+                <article class="step" data-step="3"><p>Spoofing is more deceptive: a transmitter presents a receiver with plausible but false navigation information. The receiver can produce a confident answer that is wrong, unless it has another way to question the signal.</p></article>
+                <article class="step" data-step="4"><p>Galileo’s Open Service Navigation Message Authentication, operational since July 2025, lets compatible receivers verify that Galileo navigation data came from the system and was not altered. It helps detect spoofed data; it does not make a weak radio signal immune to jamming.</p></article>
             </div>
         </section>
 
-        <!-- ════ SCENE 05 · comparison — one scene, two modes ════ -->
-        <section class="scene">
-            <div class="cmp-grid">
-                <div class="cmp-card">
-                    <span class="cmp-k">MODE A · ENHANCED</span>
-                    <h4>Overlay.</h4>
-                    <p>With the <span class="mono">.js</span> gate, the stage pins to the viewport and the step cards
-                        float over it. Scrolling drives the diagram through its named states.</p>
-                </div>
-                <div class="cmp-card">
-                    <span class="cmp-k">MODE B · DOCUMENT</span>
-                    <h4>Stacked.</h4>
-                    <p>Without JavaScript — or under reduced motion — the same scene is a plain block followed by its
-                        steps. The story survives, word for word.</p>
-                </div>
+        <section class="sticky-scene gp-resilience-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head"><span class="scene-no">ACT 04</span><span class="scene-name">RESILIENCE IS DISAGREEMENT</span><span class="scene-readout" data-readout></span></div>
+                <div class="gp-stage"><div class="gp-resilience"><div class="gp-path"><b>GNSS</b><small>GPS + GALILEO<br>MORE THAN ONE CONSTELLATION</small><span class="gp-dotline"><i></i><i></i><i></i><i></i></span></div><div class="gp-path"><b>INERTIAL</b><small>MOTION SENSORS<br>SHORT-TERM CONTINUITY</small><span class="gp-dotline"><i></i><i></i><i></i><i></i></span></div><div class="gp-path"><b>TERRESTRIAL</b><small>NETWORK OR RADIO<br>INDEPENDENT PATH</small><span class="gp-dotline"><i></i><i></i><i></i><i></i></span></div><div class="gp-path"><b>HOLDOVER</b><small>LOCAL CLOCK<br>TIME WHILE ISOLATED</small><span class="gp-dotline"><i></i><i></i><i></i><i></i></span></div></div></div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1"><p>A resilient receiver does not ask one source to be perfect. It combines compatible GNSS constellations, checks measurements against other sensors and records when the sources disagree.</p></article>
+                <article class="step" data-step="2"><p>Inertial sensors can bridge a short loss of satellite navigation by measuring motion from inside the vehicle or device. They drift over time, which makes them a complement rather than a replacement.</p></article>
+                <article class="step" data-step="3"><p>Critical timing can also use terrestrial paths and local clocks that hold time when an outside reference disappears. The right mix depends on how accurate the application must be and how long it must continue alone.</p></article>
+                <article class="step" data-step="4"><p>Redundancy is not merely two copies of the same signal. It is evidence from different physical paths that can expose an implausible result. The useful question is not “does it have GPS?” but “what happens when GPS disagrees?”</p></article>
             </div>
         </section>
 
+        <section class="breather"><p class="breather-line reveal">A map pin is only the surface of <em>a planetary clock.</em></p></section>
         <article class="post-prose">
-            <h2><span class="sec-no">04</span>Layout pieces</h2>
-            <p>Every prose block you need, live. Section headings with numbers, a callout, an aside, tags, buttons, a
-                masked quote, and a staggered card row that reveals on scroll.</p>
-
-            <div class="ex-row">
-                <span class="tag">A tag</span><span class="tag">Another tag</span>
-                <a class="btn" href="../index.html">A button</a>
-            </div>
-
-            <blockquote class="ex-blockquote mask">
-                <span class="row"><span>Ideas you <span class="hl">walk through</span></span></span>
-                <span class="row"><span>are ideas you keep.</span></span>
-            </blockquote>
-
-            <div class="ex-grid stagger">
-                <div class="ex-card"><h4>Primary motion.</h4><p>The thing the reader follows — one clear action per
-                        scene.</p></div>
-                <div class="ex-card"><h4>Secondary motion.</h4><p>Supporting cues — a glow, a shadow, a pulse that
-                        lands with the action.</p></div>
-                <div class="ex-card"><h4>Ambient life.</h4><p>Background motion that keeps the scene alive without
-                        demanding attention.</p></div>
-            </div>
-
-            <div class="aside">Conventions: scenes carry ACT labels and STEP k / n cards; every number shown is the
-                real state — computed by the code that renders it, never decoration. Reduced motion and no-JS collapse
-                the overlay to a stacked document, and that stacked document is always complete.</div>
-
-            <h2><span class="sec-no">05</span>Putting it together</h2>
-            <p>Copy this page as your starting point. Keep <span class="mono">css/site.css</span>, <span class="mono">js/site.js</span> and <span class="mono">js/scene.js</span>
-                untouched; replace the hero, the acts, and the scenes. Every component on this page is a working
-                example — delete what you do not need, keep what you do.</p>
-            <p>Every scene on this page also adapts to narrow screens: shrink the window to 390px and the race's cells
-                shrink and its labels move above the rows. Full-bleed SVG scenes get the same treatment with a tighter
-                <span class="mono">data-vb-narrow</span> frame — see the scrollytelling reference.</p>
+            <h2><span class="sec-no">03</span>Why Europe built Galileo</h2>
+            <p>Galileo gives Europe a civilian-controlled global PNT system that is interoperable with GPS and other constellations. That creates better coverage for ordinary receivers, a public capability Europe can govern, and services such as OSNMA that improve the trustworthiness of navigation data. It is not a replacement for every other system; it is a valuable independent contribution to a system of systems.</p>
+            <p>The same lesson reaches beyond satellites. Infrastructure becomes strategic when daily services quietly depend on it, when its failure has unfamiliar forms, and when alternatives are not ready. GPS is not just GPS because time, location and trust arrive together on the same faint signal from space.</p>
+            <div class="aside"><b>Research notes.</b> The geometry and timing descriptions follow ESA’s satellite-navigation and Galileo-clock material. Galileo Open Service and OSNMA details follow the European Commission and EUSPA service documentation; OSNMA entered operational service in July 2025. The PNT framing and resilience examples use U.S. Department of Transportation and CISA guidance. “30 centimetres per nanosecond” follows the defined speed of light.</div>
         </article>
+        <nav class="post-nav" aria-label="Post navigation"><a href="european-cloud.html"><span class="dir">PREVIOUS</span><span class="t">Can Europe build<br><em>a cloud?</em></span></a><a href="token-by-token.html"><span class="dir">NEXT</span><span class="t">How LLMs write text,<br><em>token by token.</em></span></a></nav>
     </main>
-
-    <nav class="post-nav">
-        <a href="../index.html"><span class="dir">← ALL POSTS</span><span class="t">The index.</span></a>
-        <a href="../index.html"><span class="dir">NEXT POST →</span><span class="t">Your first story.</span></a>
-    </nav>
-
-    <div data-vb-footer data-label="TEMPLATE · SCROLLYTELLING">
-        <noscript><div class="foot"><span>© 2026 VÍCTOR BUSQUÉ</span></div></noscript>
-    </div>
-
-    <script>
-        /* ────────────────────────────────────────────────────────────
-           Template example — honest state, computed and written into
-           the DOM. The sticky scene needs no JS of its own (the shared
-           engine in scene.js drives step activation); this script only
-           derives the probe counts from the real array and renders them
-           in the stage chips and the metrics evidence row.
-           ──────────────────────────────────────────────────────────── */
-        (function () {
-            'use strict';
-            var ARR = [3, 7, 12, 19, 24, 31, 42, 55, 63, 70, 81, 90];
-            var TARGET = 55;
-            var foundIdx = ARR.indexOf(TARGET);            /* 7 → linear needs 8 probes */
-
-            var binProbes = [], lo = 0, hi = ARR.length - 1;
-            while (lo <= hi) {
-                var mid = (lo + hi) >> 1;
-                binProbes.push(mid);
-                if (ARR[mid] === TARGET) break;
-                if (ARR[mid] < TARGET) lo = mid + 1; else hi = mid - 1;
-            }                                              /* probes at 5, 8, 6, 7 → 4 */
-
-            var chipLin = document.getElementById('chipLin');
-            if (chipLin) chipLin.innerHTML = 'LINEAR · <b>' + (foundIdx + 1) + ' PROBES</b>';
-            var chipBin = document.getElementById('chipBin');
-            if (chipBin) chipBin.innerHTML = 'BINARY · <b>' + binProbes.length + ' PROBES</b>';
-
-            var ev = document.getElementById('evBin');
-            if (ev) {
-                ev.innerHTML = binProbes.map(function (i) {
-                    var hit = ARR[i] === TARGET;
-                    return '<span class="ev-chip' + (hit ? ' ev-hit' : '') + '">' + ARR[i] + '</span>';
-                }).join('');
-            }
-        })();
-    </script>
+    <div data-vb-footer data-label="POST 05 · GPS IS NOT JUST GPS"><noscript><a href="../index.html">Index</a> · <a href="../about.html">About</a></noscript></div>
 </body>
-
 </html>
