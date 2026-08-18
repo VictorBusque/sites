@@ -119,7 +119,7 @@ canonical starting point and is kept current — always copy from it.
 
 Replace in order: `<title>` and meta → hero (`crumb`, `h1`, `dek`,
 `post-meta`) → acts (prose sections + scenes) → `post-nav` links → footer
-label. Update the `status` in `<nav>` (e.g. `NOTE 03 / WAITING`).
+label. Update the `status` in `<nav>` (e.g. `POST 03 / WAITING`).
 
 Shared pieces that must stay **exactly as in the template**:
 
@@ -131,7 +131,7 @@ Shared pieces that must stay **exactly as in the template**:
 - The `<html class="js">` gate script in `<head>` (set before the body parses
   — see the template; without it scenes degrade to a plain document)
 - The shared-component mounts, rendered by `js/site.js`:
-  `<div data-vb-nav data-status="NOTE NN" data-status-em="TOPIC"></div>`
+  `<div data-vb-nav data-status="POST NN" data-status-em="TOPIC"></div>`
   (nav + status) and `<div data-vb-footer data-label="…"></div>` (footer) —
   each keeping a `<noscript>` link row. Never hand-write `<nav>`, `<footer>`,
   `#progress`, `#cDot` or `#cRing`; the engine embeds them.
@@ -173,28 +173,46 @@ retrigger/count-up motion, use the shared helpers on `window.VB`
 
 ### 5. Register the document on the landing shelf
 
-Add one entry to the `ENTRIES` array in `index.html` (find it under "Real
-entries only"):
+Add one object to the `posts` array in `js/posts.js` at the site root (the
+site's single post manifest, `window.VB_POSTS` — `index.html` reads it and
+renders the shelf, so there is no inline entry data to edit; it works both
+locally and on the server):
 
-```js
+```json
 {
-    slug: 'blog/<slug>.html', title: 'Short, concrete title.',
-    deck: 'One or two sentences that promise the experience: what the reader will scroll through and understand.',
-    date: 'YYYY-MM', topic: 'Free-form topic label (e.g. "AI · LLMs")', tags: ['Tag', 'Tag']
+    "slug": "blog/<slug>.html",
+    "no": "02",
+    "title": "Short, concrete title.",
+    "date": "YYYY-MM",
+    "topic": "Free-form topic label (e.g. \"AI · LLMs\")",
+    "tags": ["Tag", "Tag"],
+    "deck": "One or two sentences that promise the experience: what the reader will scroll through and understand."
 }
 ```
 
-The entry renders on the documents shelf, newest first — the row and the
-file are the same object. `slug` must match the file; `topic` is free-form
+The row and the file are the same object. `slug` must match the file and
+is the internal link; `no` is the stable post number; `topic` is free-form
 metadata shown on the row (there is no fixed taxonomy and no folder tree —
 the site is a curiosity notebook where engineering is the core, not the
-boundary). No entry may point at a file that doesn't exist, and no file
-may be missing its entry. The idea queue lives in `docs/ideas.md` — move
-an idea from there to `ENTRIES` when its document ships. Update the site's
-framing copy (hero demo labels, marquee items) only if the site's promise
-changes.
+boundary). The `deck` must equal the post's `<meta name="description">` and
+the `title` must equal the post's `<title>` (only case and a trailing
+"."/" — Víctor Busqué" suffix may differ). The idea queue lives in
+`docs/ideas.md` — move an idea from there into `js/posts.js` when its
+document ships. Update the site's framing copy (hero demo labels, marquee
+items) only if the site's promise changes.
 
 ### 6. Verify (run the checklist)
+
+After adding or editing a post, run the consistency guard:
+
+```sh
+python3 scripts/check_posts.py
+```
+
+It fails unless every file in `blog/` has a matching `js/posts.js` entry
+whose `title`/`deck` match the post's own `<title>` and meta description,
+and every manifest entry points at a real file carrying a `BlogPosting`
+JSON-LD block in its `<head>`. Fix any drift it reports before shipping.
 
 See [Checklist](#checklist) and the validation section in
 [references/SCROLLYTELLING.md](references/SCROLLYTELLING.md#validation) before
@@ -297,8 +315,10 @@ Full reference: [references/MOTION.md](references/MOTION.md).
       view())` and have a working discrete fallback
 - [ ] No network requests beyond the site's own fonts and `og:image`;
       no CDN, no remote script, no `fetch()`
-- [ ] Landing `ENTRIES` entry added with a slug that matches the file; no
-      stale rows; the documents shelf shows the new note
+- [ ] `js/posts.js` entry added with a slug that matches the file, title/deck
+      matching the post's `<title>` and meta description; no stale rows;
+      `python3 scripts/check_posts.py` passes; the shelf shows the new post
+- [ ] Post carries the matching `BlogPosting` JSON-LD in its `<head>`
 - [ ] Mobile check at 390px: sticky stage fits (labels ≥ 8px rendered), step
       cards legible, lanes/rails stack, nothing clips or overflows
 - [ ] Copy follows the tone rules; no fake stats, no slang, no emoji

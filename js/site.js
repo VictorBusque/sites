@@ -24,10 +24,10 @@
        page. Mount points replace the hand-copied markup:
 
          <div data-vb-nav data-active="about"
-              data-status="NOTE 01" data-status-em="AI-BASICS"></div>
-         <div data-vb-footer data-label="NOTE 01 · TOKEN BY TOKEN"></div>
+              data-status="POST 01" data-status-em="AI-BASICS"></div>
+         <div data-vb-footer data-label="POST 01 · TOKEN BY TOKEN"></div>
 
-       data-active   notes | latest | about → aria-current="page"
+       data-active   posts | latest | about → aria-current="page"
        data-status   mono prefix (optional)   data-status-em  bold tail
        Links are root-relative (the site is served from the domain root,
        like the /img/ favicons). Keep a <noscript> link row inside a mount
@@ -59,8 +59,7 @@
                 return '<a href="' + href + '"' + (active === key ? ' aria-current="page"' : '') + '>' + label + '</a>';
             }
             var html = '<a class="logo" href="' + home + '">VB<i></i></a><div class="links">'
-                + link(home + '#notes', 'notes', 'Notes')
-                + link(home + '#recent', 'latest', 'Latest')
+                + link(home + '#posts', 'posts', 'Posts')
                 + link(pre + 'about.html', 'about', 'About')
                 + '</div>';
             if (status || em) {

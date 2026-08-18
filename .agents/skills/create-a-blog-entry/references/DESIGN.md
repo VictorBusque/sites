@@ -44,7 +44,7 @@ line-height ~ `.86`. One line per span; an `<em>` adds the serif accent.
   fallback row. Links are root-relative. Never hand-write them.
 - **Nav:** fixed 70px, sticky, `#f2f0e9e8` + backdrop blur, logo left, links
   right (`.links a::after` underline scales from right), `.status` far right
-  (`NOTE NN / TOPIC`).
+  (`POST NN / TOPIC`).
 - **Post hero:** `post-hero` — crumb (link back to `../index.html`), `h1` with
   `.h-line` spans, `.dek` (max 620px, fades up on load), `.post-meta`
   (`MON YEAR · ~N MIN · N SCENES`), plus a `.ghost` numeral (`01`, `02`, …).
@@ -53,7 +53,7 @@ line-height ~ `.86`. One line per span; an `<em>` adds the serif accent.
   border) holds the takeaway; `.aside` (DM Mono, muted) holds provenance.
 - **Scenes:** full-width, breaking the prose column. Sticky scenes are the
   workhorse — see below.
-- **Post nav:** two-column `post-nav` at the bottom, previous / next note.
+- **Post nav:** two-column `post-nav` at the bottom, previous / next post.
 - **Footer (embedded):** ink background, huge `footer-big` masked reveal,
   small mono `foot` line. Rendered by the engine from `[data-vb-footer]` —
   change the label on the mount, never the markup.

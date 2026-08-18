@@ -23,8 +23,8 @@
     <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
     <link rel="manifest" href="/site.webmanifest">
     <meta name="theme-color" content="#101010">
-    <meta name="apple-mobile-web-app-title" content="VB Notes">
-    <meta name="application-name" content="VB Notes">
+    <meta name="apple-mobile-web-app-title" content="VB Posts">
+    <meta name="application-name" content="VB Posts">
     <meta name="color-scheme" content="light dark">
 
     <!-- Open Graph -->
@@ -58,6 +58,7 @@
     <link rel="stylesheet" href="css/site.css">
     <script src="js/site.js" defer></script>
     <script src="js/scene.js" defer></script>
+    <script src="js/posts.js"></script>
 
     <!-- Structured data -->
     <script type="application/ld+json">
@@ -90,7 +91,7 @@
           "inLanguage": "en",
           "potentialAction": {
             "@type": "SearchAction",
-            "target": "https://victorbusque.com/#notes?q={search_term_string}",
+            "target": "https://victorbusque.com/#posts?q={search_term_string}",
             "query-input": "required name=search_term_string"
           }
         },
@@ -251,7 +252,7 @@
         }
 
         .hero:before {
-            content: "ENGINEERING / NOTES";
+            content: "ENGINEERING / POSTS";
             position: absolute;
             right: -92px;
             top: 52%;
@@ -338,7 +339,7 @@
             animation: cue 1.8s ease-in-out infinite;
         }
 
-        /* Hero demo — every note, in miniature. The same vocabulary as the
+        /* Hero demo — every post, in miniature. The same vocabulary as the
            articles' stages: a sentence builds token by token, the loop strip
            cycles, the step meter fills. Pure CSS; the loop period is real. */
         .hero-demo {
@@ -638,7 +639,7 @@
             line-height: 1.5;
         }
 
-        /* ── The documents — one shelf, newest first ─────── */
+        /* ── The posts — one shelf, newest first ─────── */
         .index {
             margin-top: 46px;
             border-top: 1px solid var(--line);
@@ -701,8 +702,7 @@
         }
 
         .doc-title,
-        .doc-deck,
-        .doc-path {
+        .doc-deck {
             display: block;
         }
 
@@ -724,13 +724,6 @@
             font-size: 14.5px;
             line-height: 1.55;
             max-width: 640px;
-        }
-
-        .doc-path {
-            margin-top: 10px;
-            font: 9px "DM Mono";
-            letter-spacing: .1em;
-            color: #6b6557;
         }
 
         .doc-meta {
@@ -934,7 +927,7 @@
 <body>
     <!-- Shared chrome (nav, footer, progress, cursor) is embedded by js/site.js -->
     <div data-vb-nav data-depth="0" data-status-em="2026">
-        <noscript><a href="index.html">VB</a> · <a href="index.html#notes">Notes</a> · <a href="about.html">About</a></noscript>
+        <noscript><a href="index.html">VB</a> · <a href="index.html#posts">Posts</a> · <a href="about.html">About</a></noscript>
     </div>
 
     <section class="hero" id="top">
@@ -950,7 +943,7 @@
             </h1>
             <p>Here are some things I find curious. As a visual learner, regular articles are sometimes harder for me
                 than animated, visual ones — and that's what you can expect here.</p>
-            <div class="scroll-cue"><span class="wheel"></span>SCROLL TO THE DOCUMENTS</div>
+            <div class="scroll-cue"><span class="wheel"></span>SCROLL TO THE POSTS</div>
         </div>
 
         <div class="hero-demo" aria-label="A scroll journey: one idea, scene by scene">
@@ -980,39 +973,22 @@
 
     </section>
 
-    <!-- ══════ DOCUMENTS — the shelf ══════ -->
-    <section class="section" id="notes">
+    <!-- ══════ POSTS — the shelf ══════ -->
+    <section class="section" id="posts">
         <div class="section-top reveal">
-            <h2>The documents.</h2>
-            <p>Things I find curious, one per document, shown with animated visuals instead of walls of text.
+            <h2>The posts.</h2>
+            <p>Things I find curious, one per post, shown with animated visuals instead of walls of text.
                 Newest first.</p>
         </div>
         <div class="index" id="indexList"></div>
     </section>
 
-    <div data-vb-footer data-label="ONE IDEA PER DOCUMENT">
+    <div data-vb-footer data-label="ONE IDEA PER POST">
         <noscript><div class="foot"><span>© 2026 VÍCTOR BUSQUÉ</span></div></noscript>
     </div>
 
     <script>
-        /* ── Real entries only ———————————————————————
-           One object per published document in blog/. Nothing here is
-           invented: no entry, no row. When a document ships, add it below
-           (slug is the href, date 'YYYY-MM', topic free-form). It renders
-           on the shelf, newest first. The queue lives in docs/ideas.md. */
-        var ENTRIES = [
-            {
-                slug: 'blog/one-process-per-person.html', title: 'How WhatsApp handles 100B messages a day.',
-                deck: 'How WhatsApp carries a hundred billion messages a day: an Erlang process for every connection, queues that live in memory, islands that replicate one way, and keys the servers never hold.',
-                date: '2026-08', topic: 'Systems · Distributed', tags: ['Erlang', 'Architecture', 'E2EE']
-            },
-            {
-                slug: 'blog/token-by-token.html', title: 'How LLMs write text, token by token.',
-                deck: 'An LLM is a next-token predictor. Walk the loop with a toy model trained on twelve sentences — read, score, pick, append — and watch the whole vocabulary compete for every token.',
-                date: '2026-02', topic: 'AI · LLMs', tags: ['LLM', 'Sampling']
-            }
-        ];
-
+        /* ── Shelf — the published posts, newest first ───── */
         (function () {
             'use strict';
             var list = document.getElementById('indexList');
@@ -1025,27 +1001,30 @@
                 var p = d.split('-');
                 return p.length === 2 ? MONTHS[(+p[1]) - 1] + ' ' + p[0] : d;
             }
-
-            var sorted = ENTRIES.slice().sort(function (a, b) { return b.date < a.date ? -1 : 1; });
-            if (sorted.length) {
-                list.innerHTML = sorted.map(function (n, i) {
-                    return '<a class="doc-row reveal" style="--d:' + (i * 90) + 'ms" href="' + esc(n.slug) + '">' +
-                        '<span class="doc-no"><b>DOC</b><i>' + String(i + 1).padStart(2, '0') + '</i></span>' +
-                        '<span>' +
-                        '<span class="doc-title">' + esc(n.title) + '</span>' +
-                        '<span class="doc-deck">' + esc(n.deck) + '</span>' +
-                        '<span class="doc-path">' + esc(n.slug) + '</span>' +
-                        '</span>' +
-                        '<span class="doc-meta">' +
-                        '<span class="m-date">' + esc(fmtDate(n.date)) + '</span>' +
-                        '<span class="m-topic">' + esc((n.topic || '').toUpperCase()) + '</span>' +
-                        '<span class="doc-read">READ</span>' +
-                        '</span></a>';
-                }).join('');
-            } else {
-                list.innerHTML = '<div class="index-empty"><i></i>NO DOCUMENTS PUBLISHED YET' +
-                    '<span class="sub">The queue lives in docs/ideas.md — documents land here as they’re written</span></div>';
+            function render(sorted) {
+                if (sorted.length) {
+                    list.innerHTML = sorted.map(function (n, i) {
+                        return '<a class="doc-row reveal" style="--d:' + (i * 90) + 'ms" href="' + esc(n.slug) + '">' +
+                            '<span class="doc-no"><b>POST</b><i>' + esc(n.no) + '</i></span>' +
+                            '<span>' +
+                            '<span class="doc-title">' + esc(n.title) + '</span>' +
+                            '<span class="doc-deck">' + esc(n.deck) + '</span>' +
+                            '</span>' +
+                            '<span class="doc-meta">' +
+                            '<span class="m-date">' + esc(fmtDate(n.date)) + '</span>' +
+                            '<span class="m-topic">' + esc((n.topic || '').toUpperCase()) + '</span>' +
+                            '<span class="doc-read">READ</span>' +
+                            '</span></a>';
+                    }).join('');
+                } else {
+                    list.innerHTML = '<div class="index-empty"><i></i>NO POSTS PUBLISHED YET' +
+                        '<span class="sub">Posts will land here as they’re written</span></div>';
+                }
             }
+
+            var entries = (window.VB_POSTS || [])
+                .slice().sort(function (a, b) { return b.date < a.date ? -1 : 1; });
+            render(entries);
         })();
 
         /* hero ghost numeral parallax */

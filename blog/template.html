@@ -18,8 +18,8 @@
     <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
     <link rel="manifest" href="/site.webmanifest">
     <meta name="theme-color" content="#101010">
-    <meta name="apple-mobile-web-app-title" content="VB Notes">
-    <meta name="application-name" content="VB Notes">
+    <meta name="apple-mobile-web-app-title" content="VB Posts">
+    <meta name="application-name" content="VB Posts">
     <meta name="color-scheme" content="light dark">
 
     <!-- Open Graph -->
@@ -42,6 +42,25 @@
     <!-- Performance: preconnect to font CDN -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Structured data — matches posts.json, the site's single post manifest.
+         Fill headline/description/datePublished/url/keywords/articleSection. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": "TITLE HERE",
+      "description": "DESCRIPTION HERE",
+      "datePublished": "YYYY-MM",
+      "author": { "@id": "https://victorbusque.com/#person" },
+      "publisher": { "@id": "https://victorbusque.com/#person" },
+      "url": "https://victorbusque.com/blog/SLUG.html",
+      "mainEntityOfPage": "https://victorbusque.com/blog/SLUG.html",
+      "inLanguage": "en",
+      "keywords": ["TAG", "TAG"],
+      "articleSection": "TOPIC"
+    }
+    </script>
 
     <!-- The .js gate: enables the scene overlay layout. Without it (no JS,
          reduced motion) scenes render as a plain document — stage first,
@@ -205,7 +224,7 @@
 <body>
     <!-- Shared chrome (nav, footer, progress, cursor) is embedded by js/site.js -->
     <div data-vb-nav data-depth="1" data-status="TEMPLATE" data-status-em="DRAFT">
-        <noscript><a href="../index.html">VB</a> · <a href="../index.html#notes">Notes</a> · <a href="../about.html">About</a></noscript>
+        <noscript><a href="../index.html">VB</a> · <a href="../index.html#posts">Posts</a> · <a href="../about.html">About</a></noscript>
     </div>
 
     <header class="post-hero">
@@ -431,8 +450,8 @@
     </main>
 
     <nav class="post-nav">
-        <a href="../index.html"><span class="dir">← ALL NOTES</span><span class="t">The index.</span></a>
-        <a href="../index.html"><span class="dir">NEXT NOTE →</span><span class="t">Your first story.</span></a>
+        <a href="../index.html"><span class="dir">← ALL POSTS</span><span class="t">The index.</span></a>
+        <a href="../index.html"><span class="dir">NEXT POST →</span><span class="t">Your first story.</span></a>
     </nav>
 
     <div data-vb-footer data-label="TEMPLATE · SCROLLYTELLING">
