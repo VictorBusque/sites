@@ -119,6 +119,15 @@
         @media (max-width: 390px) { .gp-fix { transform: scale(.68); } .gp-time { transform: scale(.67); } .gp-air { transform: scale(.68); } .gp-resilience { transform: scale(.65); } }
         @media (prefers-reduced-motion: reduce) { .gp-hero i { animation: none; } }
 
+        /* Canvas diagrams: the DOM .gp-fig stays the no-JS fallback; whenever
+           JS is active an animated canvas replaces it so each sticky scene
+           gets the spatial, orbital choreography. Reduced motion freezes the
+           ambient time but still renders the scroll-driven states — the
+           canvas is never the reason a diagram is missing. */
+        .gp-anim { position: absolute; inset: 0; width: 100%; height: 100%; display: none; pointer-events: none; z-index: 0; }
+        .js .gp-anim { display: block; }
+        .js .gp-fig { display: none; }
+
         /* Page-scoped: tighten the shared sticky-scene exit so a scene does not
            stay pinned on its finished diagram for a whole viewport before the
            next section arrives. Kept small enough that the final step card
@@ -153,7 +162,7 @@
         <section class="sticky-scene gp-fix-scene" data-scene>
             <div class="sticky-scene__stage" aria-hidden="true">
                 <div class="scene-head"><span class="scene-no">ACT 01</span><span class="scene-name">FOUR DISTANCES, FOUR UNKNOWNS</span><span class="scene-readout" data-readout></span></div>
-                <div class="gp-stage"><div class="gp-fix"><i class="gp-earth"></i><span class="gp-sat s1">SAT 01</span><span class="gp-sat s2">SAT 02</span><span class="gp-sat s3">SAT 03</span><span class="gp-sat s4">SAT 04</span><i class="gp-range r1"></i><i class="gp-range r2"></i><i class="gp-range r3"></i><i class="gp-range r4"></i></div></div>
+                <div class="gp-stage"><div class="gp-fix gp-fig"><i class="gp-earth"></i><span class="gp-sat s1">SAT 01</span><span class="gp-sat s2">SAT 02</span><span class="gp-sat s3">SAT 03</span><span class="gp-sat s4">SAT 04</span><i class="gp-range r1"></i><i class="gp-range r2"></i><i class="gp-range r3"></i><i class="gp-range r4"></i></div><canvas class="gp-anim" data-anim="fix" aria-hidden="true"></canvas></div>
             </div>
             <div class="sticky-scene__steps">
                 <article class="step" data-step="1"><p>One satellite sends a timestamp and its orbital position. By comparing transmitted time with received time, the receiver estimates its distance from that satellite. Its possible position is a huge sphere around it.</p></article>
@@ -166,7 +175,7 @@
         <section class="sticky-scene gp-time-scene" data-scene>
             <div class="sticky-scene__stage" aria-hidden="true">
                 <div class="scene-head"><span class="scene-no">ACT 02</span><span class="scene-name">TIME BECOMES DISTANCE</span><span class="scene-readout" data-readout></span></div>
-                <div class="gp-stage"><div class="gp-time"><div class="gp-clock sat"><b>SATELLITE CLOCK</b><div class="gp-ticks"><i style="--h:24%"></i><i style="--h:58%"></i><i style="--h:86%"></i><i style="--h:43%"></i><i style="--h:72%"></i><i style="--h:100%"></i><i style="--h:35%"></i></div><span>SENDS TIME + ORBIT</span></div><div class="gp-delay">TRAVEL<br>TIME</div><div class="gp-clock receiver"><b>RECEIVER CLOCK</b><div class="gp-ticks"><i style="--h:24%"></i><i style="--h:58%"></i><i style="--h:86%"></i><i style="--h:43%"></i><i style="--h:72%"></i><i style="--h:100%"></i><i style="--h:35%"></i></div><span>RECEIVES + SOLVES</span></div></div></div>
+                <div class="gp-stage"><div class="gp-time gp-fig"><div class="gp-clock sat"><b>SATELLITE CLOCK</b><div class="gp-ticks"><i style="--h:24%"></i><i style="--h:58%"></i><i style="--h:86%"></i><i style="--h:43%"></i><i style="--h:72%"></i><i style="--h:100%"></i><i style="--h:35%"></i></div><span>SENDS TIME + ORBIT</span></div><div class="gp-delay">TRAVEL<br>TIME</div><div class="gp-clock receiver"><b>RECEIVER CLOCK</b><div class="gp-ticks"><i style="--h:24%"></i><i style="--h:58%"></i><i style="--h:86%"></i><i style="--h:43%"></i><i style="--h:72%"></i><i style="--h:100%"></i><i style="--h:35%"></i></div><span>RECEIVES + SOLVES</span></div></div><canvas class="gp-anim" data-anim="time" aria-hidden="true"></canvas></div>
             </div>
             <div class="sticky-scene__steps">
                 <article class="step" data-step="1"><p>Radio waves travel at the speed of light. The receiver measures a delay, multiplies it by that speed, and gets a distance estimate—often called a pseudorange because the receiver clock still needs correction.</p></article>
@@ -188,7 +197,7 @@
         <section class="sticky-scene gp-threat-scene" data-scene>
             <div class="sticky-scene__stage" aria-hidden="true">
                 <div class="scene-head"><span class="scene-no">ACT 03</span><span class="scene-name">BLOCKED OR BELIEVED</span><span class="scene-readout" data-readout></span></div>
-                <div class="gp-stage"><div class="gp-air"><span class="gp-receiver">RECEIVER</span><span class="gp-source satellite">GENUINE<br>SATELLITE</span><span class="gp-source noise">JAMMER<br>NOISE</span><span class="gp-source fake">SPOOFER<br>FAKE DATA</span><span class="gp-source auth">OSNMA<br>CHECK</span><i class="gp-wave w1"></i><i class="gp-wave w2"></i><i class="gp-wave w3"></i><i class="gp-wave w4"></i></div></div>
+                <div class="gp-stage"><div class="gp-air gp-fig"><span class="gp-receiver">RECEIVER</span><span class="gp-source satellite">GENUINE<br>SATELLITE</span><span class="gp-source noise">JAMMER<br>NOISE</span><span class="gp-source fake">SPOOFER<br>FAKE DATA</span><span class="gp-source auth">OSNMA<br>CHECK</span><i class="gp-wave w1"></i><i class="gp-wave w2"></i><i class="gp-wave w3"></i><i class="gp-wave w4"></i></div><canvas class="gp-anim" data-anim="threat" aria-hidden="true"></canvas></div>
             </div>
             <div class="sticky-scene__steps">
                 <article class="step" data-step="1"><p>The signals arriving from satellites are weak after travelling from orbit. A receiver must separate them from noise, reflections and other radio transmissions before it can calculate anything.</p></article>
@@ -201,7 +210,7 @@
         <section class="sticky-scene gp-resilience-scene" data-scene>
             <div class="sticky-scene__stage" aria-hidden="true">
                 <div class="scene-head"><span class="scene-no">ACT 04</span><span class="scene-name">RESILIENCE IS DISAGREEMENT</span><span class="scene-readout" data-readout></span></div>
-                <div class="gp-stage"><div class="gp-resilience"><div class="gp-path"><b>GNSS</b><small>GPS + GALILEO<br>MORE THAN ONE CONSTELLATION</small><span class="gp-dotline"><i></i><i></i><i></i><i></i></span></div><div class="gp-path"><b>INERTIAL</b><small>MOTION SENSORS<br>SHORT-TERM CONTINUITY</small><span class="gp-dotline"><i></i><i></i><i></i><i></i></span></div><div class="gp-path"><b>TERRESTRIAL</b><small>NETWORK OR RADIO<br>INDEPENDENT PATH</small><span class="gp-dotline"><i></i><i></i><i></i><i></i></span></div><div class="gp-path"><b>HOLDOVER</b><small>LOCAL CLOCK<br>TIME WHILE ISOLATED</small><span class="gp-dotline"><i></i><i></i><i></i><i></i></span></div></div></div>
+                <div class="gp-stage"><div class="gp-resilience gp-fig"><div class="gp-path"><b>GNSS</b><small>GPS + GALILEO<br>MORE THAN ONE CONSTELLATION</small><span class="gp-dotline"><i></i><i></i><i></i><i></i></span></div><div class="gp-path"><b>INERTIAL</b><small>MOTION SENSORS<br>SHORT-TERM CONTINUITY</small><span class="gp-dotline"><i></i><i></i><i></i><i></i></span></div><div class="gp-path"><b>TERRESTRIAL</b><small>NETWORK OR RADIO<br>INDEPENDENT PATH</small><span class="gp-dotline"><i></i><i></i><i></i><i></i></span></div><div class="gp-path"><b>HOLDOVER</b><small>LOCAL CLOCK<br>TIME WHILE ISOLATED</small><span class="gp-dotline"><i></i><i></i><i></i><i></i></span></div></div><canvas class="gp-anim" data-anim="resil" aria-hidden="true"></canvas></div>
             </div>
             <div class="sticky-scene__steps">
                 <article class="step" data-step="1"><p>A resilient receiver does not ask one source to be perfect. It combines compatible GNSS constellations, checks measurements against other sensors and records when the sources disagree.</p></article>
@@ -221,5 +230,291 @@
         <nav class="post-nav" aria-label="Post navigation"><a href="european-cloud.html"><span class="dir">PREVIOUS</span><span class="t">Can Europe build<br><em>a cloud?</em></span></a><a href="token-by-token.html"><span class="dir">NEXT</span><span class="t">How LLMs write text,<br><em>token by token.</em></span></a></nav>
     </main>
     <div data-vb-footer data-label="POST 05 · GPS IS NOT JUST GPS"><noscript><a href="../index.html">Index</a> · <a href="../about.html">About</a></noscript></div>
+
+    <!-- Canvas choreography for the four sticky scenes. Purely decorative
+         (aria-hidden); the conclusion lives in the step text. One rAF loop
+         reads each scene's scroll progress and drives continuous state, so
+         every intermediate and reverse scroll position is a real state —
+         no competing scroll handler or observer (js/scene.js still owns
+         step activation). When reduced motion is on, ambient time freezes
+         and the DOM .gp-fig fallback renders instead. -->
+    <script>
+        (function () {
+            'use strict';
+            var TAU = Math.PI * 2;
+            var BLUE = '#546cff', ORANGE = '#ff6b2c', ACID = '#c7ff3d', GOLD = '#ffca70';
+            var reduced = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false;
+
+            function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+            function lerp(a, b, t) { return a + (b - a) * t; }
+            function smooth(t) { return t * t * (3 - 2 * t); }
+            function remap(v, a, b) { return smooth(clamp((v - a) / (b - a), 0, 1)); }
+            function rgba(hex, a) {
+                var n = parseInt(hex.slice(1), 16);
+                return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+            }
+
+            function satIcon(ctx, x, y, color, scale) {
+                scale = scale || 1;
+                ctx.save(); ctx.translate(x, y);
+                ctx.fillStyle = color;
+                ctx.fillRect(-4 * scale, -4 * scale, 8 * scale, 8 * scale);
+                ctx.fillRect(-15 * scale, -2 * scale, 8 * scale, 4 * scale);
+                ctx.fillRect(7 * scale, -2 * scale, 8 * scale, 4 * scale);
+                ctx.globalAlpha = .32;
+                ctx.fillRect(-11 * scale, 5 * scale, 22 * scale, 7 * scale);
+                ctx.restore();
+            }
+            function earth(ctx, cx, cy, r) {
+                var g = ctx.createRadialGradient(cx - r * .3, cy - r * .5, 0, cx, cy, r * 1.1);
+                g.addColorStop(0, 'rgba(116,239,220,.16)');
+                g.addColorStop(.5, 'rgba(39,92,111,.07)');
+                g.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
+                ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU);
+                ctx.strokeStyle = 'rgba(84,108,255,.3)'; ctx.lineWidth = 1; ctx.stroke();
+            }
+            function receiver(ctx, x, y, border, alpha) {
+                ctx.save(); ctx.translate(x, y);
+                ctx.fillStyle = 'rgba(255,255,255,.05)';
+                ctx.strokeStyle = rgba(border, alpha || .35);
+                ctx.lineWidth = 1.4;
+                ctx.fillRect(-16, -10, 32, 20); ctx.strokeRect(-16, -10, 32, 20);
+                ctx.restore();
+            }
+            function solution(ctx, cx, cy, amt, size) {
+                size = size || 16;
+                var g = ctx.createRadialGradient(cx, cy, 0, cx, cy, size);
+                g.addColorStop(0, rgba(ACID, .2 * amt));
+                g.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, size, 0, TAU); ctx.fill();
+                ctx.beginPath(); ctx.fillStyle = rgba(ACID, .9 * amt);
+                ctx.shadowBlur = 16; ctx.shadowColor = ACID; ctx.arc(cx, cy, 4, 0, TAU); ctx.fill(); ctx.shadowBlur = 0;
+                ctx.beginPath(); ctx.arc(cx, cy, size * .25, 0, TAU);
+                ctx.strokeStyle = rgba(ACID, .5 * amt); ctx.lineWidth = 1; ctx.stroke();
+            }
+
+            /* ACT 01 · four ranges, four unknowns — orbiting satellites each
+               cast an expanding range sphere; the spheres converge to the fix. */
+            function drawFix(ctx, w, h, local, time) {
+                var cx = w * .5, cy = h * .64;
+                var R = Math.min(w, h) * .32, earthR = Math.min(w, h) * .10;
+                earth(ctx, cx, cy, earthR);
+                ctx.save(); ctx.translate(cx, cy); ctx.rotate(-.22); ctx.scale(1, .4);
+                ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU);
+                ctx.strokeStyle = 'rgba(84,108,255,' + (.08 + .16 * clamp(local * 2, 0, 1)).toFixed(2) + ')';
+                ctx.lineWidth = 1; ctx.stroke();
+                ctx.restore();
+
+                var sats = [
+                    { ph: .4, color: BLUE },
+                    { ph: 2.2, color: ORANGE },
+                    { ph: 4.1, color: GOLD },
+                    { ph: 5.4, color: ACID }
+                ];
+                var active = clamp(1 + local * 3, 1, 4);
+                for (var i = 0; i < 4; i++) {
+                    var s = sats[i], on = i < active;
+                    var a = s.ph + time * .00003;
+                    var px = cx + Math.cos(a) * R, py = cy + Math.sin(a) * R * .4;
+                    var dist = Math.hypot(px - cx, py - cy);
+                    satIcon(ctx, px, py, s.color, on ? 1 : .7);
+
+                    var grow = smooth(clamp((local - i * .2) / .14));
+                    if (grow > .01) {
+                        var rr = lerp(earthR * 1.5, dist, grow);
+                        ctx.beginPath(); ctx.arc(px, py, rr, 0, TAU);
+                        ctx.strokeStyle = rgba(s.color, on ? .26 : .1); ctx.lineWidth = 1.2; ctx.stroke();
+                        ctx.beginPath(); ctx.arc(px, py, rr, 0, TAU);
+                        ctx.fillStyle = rgba(s.color, .03); ctx.fill();
+                        for (var k = 0; k < 14; k++) {
+                            var ang = (k / 14) * TAU;
+                            ctx.beginPath(); ctx.moveTo(px, py);
+                            ctx.lineTo(px + Math.cos(ang) * rr, py + Math.sin(ang) * rr);
+                            ctx.strokeStyle = rgba(s.color, .02); ctx.stroke();
+                        }
+                    }
+                    if (on) {
+                        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(cx, cy);
+                        ctx.strokeStyle = rgba(s.color, .1); ctx.lineWidth = .8; ctx.stroke();
+                        var pulse = (time * .00022 + i * .17) % 1;
+                        ctx.beginPath(); ctx.fillStyle = s.color;
+                        ctx.shadowBlur = 10; ctx.shadowColor = s.color;
+                        ctx.arc(lerp(px, cx, pulse), lerp(py, cy, pulse), 2.2, 0, TAU); ctx.fill(); ctx.shadowBlur = 0;
+                    }
+                }
+                solution(ctx, cx, cy, smooth(clamp((local - .8) / .2)), Math.min(w, h) * .16);
+            }
+
+            /* ACT 02 · time becomes distance — wavefronts leave the satellite,
+               a range sphere grows until it reaches the receiver. */
+            function drawTime(ctx, w, h, local, time) {
+                var sx = w * .3, sy = h * .26;
+                var rx = w * .5, ry = h * .74;
+                var dist = Math.hypot(rx - sx, ry - sy);
+                satIcon(ctx, sx, sy, BLUE, 1);
+
+                var pulse = (time * .00028) % 1;
+                for (var i = 1; i <= 4; i++) {
+                    var r = (pulse * 90 + i * 28) % 180;
+                    ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU);
+                    ctx.strokeStyle = rgba(BLUE, .05 * (1 - r / 190)); ctx.lineWidth = .8; ctx.stroke();
+                }
+                ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(rx, ry);
+                ctx.strokeStyle = rgba(BLUE, .18); ctx.lineWidth = 1; ctx.stroke();
+                var tp = (time * .00025) % 1;
+                ctx.beginPath(); ctx.fillStyle = BLUE; ctx.shadowBlur = 10; ctx.shadowColor = BLUE;
+                ctx.arc(lerp(sx, rx, tp), lerp(sy, ry, tp), 2.4, 0, TAU); ctx.fill(); ctx.shadowBlur = 0;
+
+                var grow = smooth(clamp(local / .72));
+                if (grow > .01) {
+                    var rr = dist * grow;
+                    ctx.beginPath(); ctx.arc(sx, sy, rr, 0, TAU);
+                    ctx.strokeStyle = rgba(BLUE, .3); ctx.lineWidth = 1.4; ctx.stroke();
+                    ctx.beginPath(); ctx.arc(sx, sy, rr, 0, TAU);
+                    ctx.fillStyle = rgba(BLUE, .03); ctx.fill();
+                }
+                receiver(ctx, rx, ry, ACID, .35);
+                if (grow > .99) {
+                    var sol = smooth(clamp((local - .8) / .2));
+                    var g = ctx.createRadialGradient(rx, ry, 0, rx, ry, 42);
+                    g.addColorStop(0, rgba(ACID, .22 * sol));
+                    g.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(rx, ry, 42, 0, TAU); ctx.fill();
+                    ctx.beginPath(); ctx.arc(rx, ry, 22, 0, TAU);
+                    ctx.strokeStyle = rgba(ACID, .6 * sol); ctx.lineWidth = 1.2; ctx.stroke();
+                }
+            }
+
+            /* ACT 03 · blocked or believed — a genuine ray, then jamming,
+               then a plausible-but-false signal, then an authentication check. */
+            function drawThreat(ctx, w, h, local, time) {
+                var cx = w * .5, cy = h * .6;
+                var sat = { x: w * .26, y: h * .22 }, jam = { x: w * .78, y: h * .24 };
+                var spoof = { x: w * .78, y: h * .6 }, auth = { x: w * .26, y: h * .8 };
+                var a1 = remap(local, 0, .2), a2 = remap(local, .18, .4);
+                var a3 = remap(local, .4, .62), a4 = remap(local, .62, .9);
+                var border = a4 > 0 ? ACID : (a2 > 0 || a3 > 0) ? ORANGE : BLUE;
+                receiver(ctx, cx, cy, border, .45);
+                ctx.beginPath(); ctx.fillStyle = border; ctx.arc(cx, cy, 2, 0, TAU); ctx.fill();
+
+                if (a1 > 0) {
+                    satIcon(ctx, sat.x, sat.y, BLUE, .9);
+                    for (var i = 0; i < 3; i++) {
+                        ctx.beginPath(); ctx.moveTo(sat.x, sat.y); ctx.lineTo(cx, cy);
+                        ctx.strokeStyle = rgba(BLUE, .06 + .18 * a1); ctx.lineWidth = 1; ctx.stroke();
+                        var p = (time * .0003 + i * .13) % 1;
+                        ctx.beginPath(); ctx.fillStyle = BLUE;
+                        ctx.arc(lerp(sat.x, cx, p), lerp(sat.y, cy, p), 2, 0, TAU); ctx.fill();
+                    }
+                }
+                if (a2 > 0) {
+                    satIcon(ctx, jam.x, jam.y, ORANGE, .9);
+                    for (var k = 1; k <= 4; k++) {
+                        var r = (time * .001 + k * 24 + a2 * 90) % 130;
+                        ctx.beginPath(); ctx.arc(jam.x, jam.y, r, 0, TAU);
+                        ctx.strokeStyle = rgba(ORANGE, .1 * a2 * (1 - r / 140)); ctx.lineWidth = 1.3; ctx.stroke();
+                    }
+                    ctx.beginPath(); ctx.moveTo(jam.x, jam.y); ctx.lineTo(cx, cy);
+                    ctx.strokeStyle = rgba(ORANGE, .12 * a2); ctx.lineWidth = 12; ctx.stroke();
+                }
+                if (a3 > 0) {
+                    satIcon(ctx, spoof.x, spoof.y, BLUE, .9);
+                    ctx.beginPath(); ctx.moveTo(spoof.x, spoof.y); ctx.lineTo(cx, cy);
+                    ctx.strokeStyle = rgba(BLUE, .18 * a3); ctx.lineWidth = 1.2; ctx.stroke();
+                    var p2 = (time * .0003) % 1;
+                    ctx.beginPath(); ctx.fillStyle = BLUE;
+                    ctx.arc(lerp(spoof.x, cx, p2), lerp(spoof.y, cy, p2), 2, 0, TAU); ctx.fill();
+                    var wx = cx + 34, wy = cy - 26;
+                    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(wx, wy);
+                    ctx.strokeStyle = rgba(ORANGE, .5 * a3); ctx.setLineDash([4, 4]); ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]);
+                    ctx.beginPath(); ctx.fillStyle = ORANGE; ctx.shadowBlur = 10; ctx.shadowColor = ORANGE;
+                    ctx.arc(wx, wy, 4, 0, TAU); ctx.fill(); ctx.shadowBlur = 0;
+                }
+                if (a4 > 0) {
+                    satIcon(ctx, auth.x, auth.y, ACID, .9);
+                    ctx.beginPath(); ctx.moveTo(auth.x, auth.y); ctx.lineTo(cx, cy);
+                    ctx.strokeStyle = rgba(ACID, .15 * a4); ctx.lineWidth = 1; ctx.stroke();
+                    ctx.beginPath(); ctx.arc(cx, cy, 22, 0, TAU);
+                    ctx.strokeStyle = rgba(ACID, .7 * a4); ctx.lineWidth = 1.5; ctx.stroke();
+                    ctx.beginPath(); ctx.arc(cx, cy, 32, 0, TAU);
+                    ctx.strokeStyle = rgba(ACID, .3 * a4); ctx.lineWidth = 1; ctx.stroke();
+                }
+            }
+
+            /* ACT 04 · resilience is disagreement — independent sources each
+               cast a range; their intersection becomes a consensus. */
+            function drawResil(ctx, w, h, local, time) {
+                var cx = w * .5, cy = h * .55;
+                var srcs = [
+                    { x: w * .2, y: h * .3, color: BLUE },
+                    { x: w * .8, y: h * .24, color: ORANGE },
+                    { x: w * .74, y: h * .74, color: GOLD },
+                    { x: w * .26, y: h * .78, color: ACID }
+                ];
+                var active = clamp(local * 4, 0, 4);
+                for (var i = 0; i < 4; i++) {
+                    var s = srcs[i], on = i < active;
+                    satIcon(ctx, s.x, s.y, s.color, on ? .9 : .6);
+                    if (on) {
+                        var dist = Math.hypot(s.x - cx, s.y - cy);
+                        ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(cx, cy);
+                        ctx.strokeStyle = rgba(s.color, .1); ctx.lineWidth = .8; ctx.stroke();
+                        var p = (time * .00024 + i * .16) % 1;
+                        ctx.beginPath(); ctx.fillStyle = s.color;
+                        ctx.shadowBlur = 8; ctx.shadowColor = s.color;
+                        ctx.arc(lerp(s.x, cx, p), lerp(s.y, cy, p), 2, 0, TAU); ctx.fill(); ctx.shadowBlur = 0;
+                        var grow = smooth(clamp((local - i * .2) / .12));
+                        if (grow > .01) {
+                            var rr = lerp(6, dist, grow);
+                            ctx.beginPath(); ctx.arc(s.x, s.y, rr, 0, TAU);
+                            ctx.strokeStyle = rgba(s.color, .22); ctx.lineWidth = 1.2; ctx.stroke();
+                        }
+                    }
+                }
+                solution(ctx, cx, cy, smooth(clamp((local - .78) / .22)), Math.min(w, h) * .18);
+            }
+
+            var list = [];
+            function register(el, draw) {
+                if (!el || !el.getContext) return;
+                list.push({ el: el, ctx: el.getContext('2d'), draw: draw, scene: el.closest('.sticky-scene') });
+            }
+            register(document.querySelector('[data-anim="fix"]'), drawFix);
+            register(document.querySelector('[data-anim="time"]'), drawTime);
+            register(document.querySelector('[data-anim="threat"]'), drawThreat);
+            register(document.querySelector('[data-anim="resil"]'), drawResil);
+
+            function resize() {
+                list.forEach(function (o) {
+                    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+                    o.w = o.el.parentElement.clientWidth || o.el.clientWidth;
+                    o.h = o.el.parentElement.clientHeight || o.el.clientHeight;
+                    o.el.width = Math.round(o.w * dpr);
+                    o.el.height = Math.round(o.h * dpr);
+                    o.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                });
+            }
+            window.addEventListener('resize', resize);
+            window.addEventListener('load', resize);
+            resize();
+
+            function frame(t) {
+                var time = reduced ? 0 : t;
+                list.forEach(function (o) {
+                    try {
+                        if (!o.w || !o.h) return;
+                        var rect = o.scene.getBoundingClientRect();
+                        var local = (window.innerHeight * .5 - rect.top) / Math.max(1, rect.height);
+                        local = clamp(local, 0, 1);
+                        o.ctx.clearRect(0, 0, o.w, o.h);
+                        o.draw(o.ctx, o.w, o.h, local, time);
+                    } catch (e) { /* one scene must never freeze the loop */ }
+                });
+                requestAnimationFrame(frame);
+            }
+            requestAnimationFrame(frame);
+        })();
+    </script>
 </body>
 </html>
