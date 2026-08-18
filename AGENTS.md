@@ -19,4 +19,6 @@ Python, cloud, craft, curiosity).
 
 Blog posts are scrollytelling articles (one idea, scroll-driven scenes). Follow
 `.agents/skills/create-a-blog-entry` when writing or editing posts, the landing
-page, or the shared css/js system.
+page, or the shared css/js system. Follow `.agents/skills/seo` for anything
+that affects how a page appears in search or social previews (titles, meta
+descriptions, OG/Twitter cards, slugs, structured data, sitemap).
