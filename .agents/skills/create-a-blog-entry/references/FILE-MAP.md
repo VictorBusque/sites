@@ -16,9 +16,12 @@ sites/
 ├── js/
 │   ├── site.js                 # SHARED — chrome (nav/footer/progress/cursor),
 │   │                           #   reveals, marquee, legacy figure engine
-│   └── scene.js                # SHARED scene module — sticky-scene step cards,
-│                               #   progress rail, data-active-step, mobile
-│                               #   bottom-sheet layout (--card-reserve)
+│   ├── scene.js                # SHARED scene module — sticky-scene step cards,
+│   │                           #   progress rail, data-active-step, mobile
+│   │                           #   bottom-sheet layout (--card-reserve)
+│   └── vb.js                   # SHARED micro-helpers for page scripts:
+│                               #   window.VB — esc, mulberry32, fmt.*,
+│                               #   motion.retrig/countUp, reduceMotion
 ├── blog/
 │   ├── template.html           # Working scrollytelling post + scene catalog
 │   └── <slug>.html             # One article per file (the-queue.html, …)
@@ -40,6 +43,7 @@ sites/
 | `css/site.css` | Extend (new shared components, keyframes, tokens) | Restyle existing shared classes to fit one page |
 | `js/site.js` | Fix bugs, add site-chrome features | Move it, break `defer` ordering, add page-specific logic |
 | `js/scene.js` | Fix bugs, extend the scene contract | Split scene logic across pages; change the step-card contract without updating this map and the skill |
+| `js/vb.js` | Fix bugs, add general-purpose helpers (esc, rng, fmt, motion) | Duplicate a helper into a page instead of using `window.VB`; add page-specific logic |
 | `index.html` | Add/remove document entries and update copy | Delete the hero or the documents shelf |
 | `blog/<slug>.html` | Everything inside the page (styles, scripts, prose, scenes) | Duplicate shared system or hand-write scene wiring |
 | `blog/template.html` | Keep it current as the catalog + starting point | Remove scene kinds or layout pieces it documents |
@@ -66,11 +70,22 @@ sites/
   `STEP k / n`, and measures the tallest card into `--card-reserve` so the
   portrait bottom-sheet layout centers the diagram above the card. Public
   API: `window.VBScene.onStep(fn)` / `.refresh()` / `.init()`.
-- **Pages must:** include **both** shared files (`js/site.js` then
-  `js/scene.js`, both `defer`, in that order), keep the component mounts
-  (`[data-vb-nav]` / `[data-vb-footer]`, with their `<noscript>` fallbacks),
-  set the `<html class="js">` gate in `<head>`, add only page-scoped styles,
-  and register page logic in an inline `<script>` before `</body>`.
+- **`js/vb.js` guarantees:** one namespace, `window.VB`, with the
+  general-purpose helpers page scripts reach for — `VB.reduceMotion`,
+  `VB.esc(str)` (HTML-escape computed text before `innerHTML`),
+  `VB.mulberry32(seed)` (deterministic seeded PRNG), `VB.fmt.pct/ordinal/sup`
+  (number formatters), `VB.motion.retrig(el, cls)` and
+  `VB.motion.countUp(el, txt[, opts])` (animation choreography). Never
+  re-implement these in a page.
+- **Pages must:** include **all three** shared files (`js/site.js` then
+  `js/scene.js`, both `defer`, in that order, then `js/vb.js` **without**
+  defer so `window.VB` exists while page scripts parse), keep the
+  component mounts (`[data-vb-nav]` / `[data-vb-footer]`, with their
+  `<noscript>` fallbacks), set the `<html class="js">` gate in `<head>`,
+  add only page-scoped styles, and register page logic in an inline
+  `<script>` before `</body>`. To react to scene step changes, register with
+  `window.VBScene.onStep(fn)` inside `VB.onReady(fn)` — never hand-roll a
+  `MutationObserver` on `data-active-step`.
 
 ## Scrollytelling vs legacy figures
 

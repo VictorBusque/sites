@@ -10,7 +10,7 @@ description: >
   so every agent produces consistent, polished pages.
 metadata:
   author: Víctor Busqué
-  version: "3.0.0"
+  version: "4.0.0"
   site: living-engineering-notes
 ---
 
@@ -57,7 +57,10 @@ it.
    reveal mechanics — they live in `css/site.css`. Never hand-write scene
    wiring — the scene module in `js/scene.js` handles step cards, the
    progress rail, `data-active-step`, and the mobile bottom-sheet layout.
-   Page-specific styles add to the system, they never restyle it.
+   Never re-implement the micro-helpers in `js/vb.js` (`window.VB`: `esc`,
+   `mulberry32`, `fmt.pct/ordinal/sup`, `motion.retrig/countUp`,
+   `reduceMotion`) — import them from the module instead. Page-specific
+   styles add to the system, they never restyle it.
 6. **Never touch `mock-1.html` / `mock.html`.** They are historical mockups,
    not part of the site.
 
@@ -121,9 +124,10 @@ label. Update the `status` in `<nav>` (e.g. `NOTE 03 / WAITING`).
 Shared pieces that must stay **exactly as in the template**:
 
 - `<link rel="stylesheet" href="../css/site.css">` in `<head>`
-- Both shared scripts in `<head>`, in this order:
-  `<script src="../js/site.js" defer></script>` then
-  `<script src="../js/scene.js" defer></script>`
+- All three shared scripts in `<head>`: `<script src="../js/site.js"
+  defer></script>` then `<script src="../js/scene.js" defer></script>`,
+  then `<script src="../js/vb.js"></script>` (no `defer` — page scripts
+  need `window.VB` during parsing)
 - The `<html class="js">` gate script in `<head>` (set before the body parses
   — see the template; without it scenes degrade to a plain document)
 - The shared-component mounts, rendered by `js/site.js`:
@@ -135,11 +139,13 @@ Shared pieces that must stay **exactly as in the template**:
 - The motion defaults: `--ease-*` and `--t-*` variables, `.reveal` /
   `.stagger` / `.mask` / `.h-line` reveal classes
 
-Script order is a hard rule: the shared scripts load with `defer` (in order:
-`js/site.js`, then `js/scene.js`); inline page scripts run during parsing.
+Script order is a hard rule: `js/site.js` and `js/scene.js` load with
+`defer` (in that order) and `js/vb.js` loads without `defer` (it must exist
+before page scripts parse); inline page scripts run during parsing.
 Page-specific scene logic goes in an inline `<script>` before `</body>` —
-never after the shared tags, never in a module. Every article ships the same
-two shared scripts, so scene behavior is identical everywhere.
+never after the shared tags, never in a module. Every article ships the
+same three shared scripts, so scene behavior and helpers are identical
+everywhere.
 
 ### 4. Build the document first, then enhance
 
@@ -158,8 +164,12 @@ Canvas/WebGL genuinely spatial or high-density visual explanation
 The shared scene module in `js/scene.js` already provides step activation,
 step-card wrapping, the progress rail, and the mobile bottom-sheet layout for
 sticky scenes. Page scripts only do what it can't: compute honest state and
-drive per-step stage states via `data-active-step` CSS hooks (or, if a page
-must react to step changes, register with `window.VBScene.onStep(fn)`).
+drive per-step stage states via `data-active-step` CSS hooks. If a page must
+react to step changes, register with `window.VBScene.onStep(fn)` inside
+`VB.onReady(fn)` — never hand-roll a `MutationObserver` on
+`data-active-step`. For escaping, seeded PRNG, number formatting, and
+retrigger/count-up motion, use the shared helpers on `window.VB`
+(`js/vb.js`) instead of copying them in.
 
 ### 5. Register the document on the landing shelf
 
@@ -271,7 +281,8 @@ Full reference: [references/MOTION.md](references/MOTION.md).
 - [ ] Storyboarded (acts + per-section question/payoff) before coding
 - [ ] Copied `blog/template.html`; shared files untouched
 - [ ] `<html class="js">` gate present in `<head>`; relative paths correct:
-      `../index.html`, `../css/site.css`, `../js/site.js`, `../js/scene.js`
+      `../index.html`, `../css/site.css`, `../js/site.js`, `../js/scene.js`,
+      `../js/vb.js`
 - [ ] Document-first: the page reads as a complete article with JS disabled
       and with reduced motion (stage + stacked steps, all text visible)
 - [ ] Every `sticky-scene` uses the shared engine contract: `[data-step]`

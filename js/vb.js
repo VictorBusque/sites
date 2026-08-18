@@ -21,11 +21,14 @@
          animate a numeric textContent from 0 to parseFloat(txt)
          opts: { ms: 480, digits: 1 } — reduced-motion → set instantly
 
-   Load order (defer, in this order, in <head> of every page):
-     js/site.js  →  js/scene.js  →  js/vb.js
-   vb.js is last so it may reference window.VBScene. Scene-sync for page
-   scripts is window.VBScene.onStep(fn) (see js/scene.js) — prefer it over
-   hand-rolled MutationObservers on data-active-step.
+   Load: js/site.js and js/scene.js use defer (in that order), but this file
+   loads WITHOUT defer, right after them in <head>. Page scripts run during
+   parsing (before deferred scripts execute), so the helpers must already be
+   on window.VB. This file never touches window.VBScene, so synchronous
+   loading is safe. To register scene reactions from a page script, use
+   VB.onReady(fn) — it runs fn once the deferred js/scene.js has mounted
+   window.VBScene (usually at DOMContentLoaded), so no hand-rolled
+   MutationObserver on data-active-step.
    ========================================================================== */
 (function () {
     'use strict';
@@ -93,11 +96,27 @@
         })(t0);
     }
 
+    /* onReady(fn) — run fn once the scene module (window.VBScene) exists.
+       js/scene.js is deferred, so it mounts after page scripts run; this
+       queues fn until DOMContentLoaded, which the spec guarantees fires
+       only after the deferred scripts execute. */
+    function onReady(fn) {
+        if (window.VBScene) { fn(); return; }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () { fn(); });
+        } else if (window.VBScene) {
+            fn();
+        } else {
+            document.addEventListener('DOMContentLoaded', function () { fn(); });
+        }
+    }
+
     window.VB = {
         reduceMotion: reduceMotion,
         esc: esc,
         mulberry32: mulberry32,
         fmt: { pct: pct, ordinal: ordinal, sup: sup },
-        motion: { retrig: retrig, countUp: countUp }
+        motion: { retrig: retrig, countUp: countUp },
+        onReady: onReady
     };
 })();

@@ -51,7 +51,7 @@
     <link rel="stylesheet" href="../css/site.css">
     <script src="../js/site.js" defer></script>
     <script src="../js/scene.js" defer></script>
-    <script src="../js/vb.js" defer></script>
+    <script src="../js/vb.js"></script>
     <style>
         /* ════════════════════════════════════════════════════════════════
            NOTE 01 — TOKEN BY TOKEN
@@ -962,7 +962,7 @@
             ];
             var BOS = '<S>';
             var TOPN = 5;
-            var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            var reduceMotion = VB.reduceMotion;
 
             function tokenize(s) { return s.match(/\w+|[^\w\s]/g) || []; }
 
@@ -996,15 +996,6 @@
                 return 0;
             }
 
-            /* deterministic PRNG — mulberry32 */
-            function mulberry32(a) {
-                return function () {
-                    a |= 0; a = a + 0x6D2B79F5 | 0;
-                    var t = Math.imul(a ^ a >>> 15, 1 | a);
-                    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-                    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-                };
-            }
             function pick(d, rng) {
                 var r = rng(), acc = 0;
                 for (var i = 0; i < d.length; i++) { acc += d[i].p; if (r < acc) return d[i].t; }
@@ -1031,27 +1022,18 @@
             }
 
             var greedyRun = run('The cat', null, 5);
-            var sampledRun = run('The cat', mulberry32(42), 6);
+            var sampledRun = run('The cat', VB.mulberry32(42), 6);
             var N_DECISIONS = greedyRun.steps.length;
 
-            function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-            function pct(p) { return (p * 100).toFixed(1) + '%'; }
-            function ordinal(n) {
-                var s = ['TH', 'ST', 'ND', 'RD'], v = n % 100;
-                return s[(v - 20) % 10] || s[v] || s[0];
-            }
-            function sup(n) {
-                var D = '⁰¹²³⁴⁵⁶⁷⁸⁹';
-                return (n < 0 ? '⁻' : '') + String(Math.abs(n)).split('').map(function (c) { return D[+c]; }).join('');
-            }
+            /* esc / pct / ordinal / sup live in js/vb.js (window.VB.fmt, VB.esc) */
 
             /* ── ACT 0 · hero — the greedy run, typing itself, each token
                flashing the honest bet that placed it ── */
             var htRow = document.getElementById('htRow');
             if (htRow) {
                 htRow.innerHTML = greedyRun.seq.map(function (t, i) {
-                    var p = i >= 2 ? pct(pOf(greedyRun.steps[i - 2].d, t)) : '';
-                    return '<span class="ht-cell" style="--i:' + i + '">' + esc(t) + '<i>' + p + '</i></span>';
+                    var p = i >= 2 ? VB.fmt.pct(pOf(greedyRun.steps[i - 2].d, t)) : '';
+                    return '<span class="ht-cell" style="--i:' + i + '">' + VB.esc(t) + '<i>' + p + '</i></span>';
                 }).join('') + '<span class="ht-caret"></span>';
             }
 
@@ -1061,7 +1043,7 @@
             var ex = tokenize('The cat saw the dog .');
             if (tkRow) {
                 tkRow.innerHTML = ex.map(function (t, i) {
-                    return '<div class="tk-cell">' + esc(t) + '<span class="tk-idx">TOK ' +
+                    return '<div class="tk-cell">' + VB.esc(t) + '<span class="tk-idx">TOK ' +
                         String(i + 1).padStart(2, '0') + '</span></div>';
                 }).join('');
             }
@@ -1088,30 +1070,29 @@
                     return { bg: (0.04 + 0.26 * t).toFixed(3), bd: (0.10 + 0.30 * t).toFixed(3) };
                 });
                 var leads = [], pcts = {};
-                top.forEach(function (x) { leads.push(x.t); pcts[x.t] = pct(x.p); });
+                top.forEach(function (x) { leads.push(x.t); pcts[x.t] = VB.fmt.pct(x.p); });
                 stageStates.push({
-                    ctxHTML: 'P( NEXT | <b class="blue">' + esc(st.c0) + '</b> <b class="blue">' + esc(st.c1) + '</b> )',
-                    pickHTML: 'PICK · <b>' + esc(st.chosen) + '</b> · ' + pcts[st.chosen],
+                    ctxHTML: 'P( NEXT | <b class="blue">' + VB.esc(st.c0) + '</b> <b class="blue">' + VB.esc(st.c1) + '</b> )',
+                    pickHTML: 'PICK · <b>' + VB.esc(st.chosen) + '</b> · ' + pcts[st.chosen],
                     heat: heat, leads: leads, pickTok: st.chosen, pct: pcts
                 });
             });
 
             /* ── build the stage (replaces the static fallback) ── */
             var tlStage = document.getElementById('tlStage');
-            var sceneEl = document.querySelector('.sticky-scene');
             var loopStrip = null, railWrap = null, railCells = [], vcCells = [], betCtx = null, betPick = null;
 
             if (tlStage) {
                 var html = '<div class="rail-label">THE ANSWER, SO FAR</div>';
                 html += '<div class="rail-wrap"><div class="rail">' +
-                    greedyRun.seq.map(function (t) { return '<span class="rail-cell">' + esc(t) + '</span>'; }).join('') +
+                    greedyRun.seq.map(function (t) { return '<span class="rail-cell">' + VB.esc(t) + '</span>'; }).join('') +
                     '</div><div class="rail-rule"></div>' +
                     '<div class="rail-done">' + N_DECISIONS + ' DECISIONS · 1 SENTENCE</div>' +
                     '<div class="shock"></div></div>';
                 html += '<div class="bet-head"><span class="bet-ctx" id="betCtx"></span>' +
                     '<span class="bet-pick" id="betPick"></span></div>';
                 html += '<div class="vfield">' + vocab.map(function (t, vi) {
-                    return '<span class="vc" style="--vi:' + vi + '"><b>' + esc(t) + '</b><i></i></span>';
+                    return '<span class="vc" style="--vi:' + vi + '"><b>' + VB.esc(t) + '</b><i></i></span>';
                 }).join('') + '</div>';
                 html += '<div class="loop-strip"><span class="ph-dot"></span>' +
                     '<span class="ph ph-read">READ</span><span class="sep">→</span>' +
@@ -1128,28 +1109,10 @@
                 betPick = tlStage.querySelector('#betPick');
             }
 
-            /* choreography helpers — retrigger, count-up, the APPEND flight.
+            /* choreography helpers — retrigger / count-up come from js/vb.js
+               (VB.motion); only the page-specific APPEND flight stays here.
                All guarded for reduced motion; the flight is transform-only
                and cancels itself when the state changes again. */
-            function retrig(el, cls) {
-                el.classList.remove(cls);
-                void el.offsetWidth;
-                el.classList.add(cls);
-            }
-            var cuId = 0;
-            function countUp(el, txt) {
-                var target = parseFloat(txt);
-                if (reduceMotion || isNaN(target)) { el.textContent = txt; return; }
-                var id = ++cuId, t0 = performance.now(), ms = 480;
-                (function frame(t) {
-                    if (id !== cuId) return;
-                    var k = Math.max(0, Math.min(1, (t - t0) / ms));
-                    var e = 1 - Math.pow(1 - k, 3);
-                    el.textContent = (target * e).toFixed(1) + '%';
-                    if (k < 1) requestAnimationFrame(frame);
-                    else el.textContent = txt;
-                })(t0);
-            }
             var flightTimer = null, flightAnim = null;
             function cancelFlight() {
                 if (flightTimer) { clearTimeout(flightTimer); flightTimer = null; }
@@ -1193,8 +1156,8 @@
             function applyStage(s) {
                 var st = stageStates[s] || stageStates[1];
                 if (s < 2) cancelFlight();
-                if (betCtx) { betCtx.innerHTML = st.ctxHTML; retrig(betCtx, 'swap'); }
-                if (betPick) { betPick.innerHTML = st.pickHTML; retrig(betPick, 'swap'); }
+                if (betCtx) { betCtx.innerHTML = st.ctxHTML; VB.motion.retrig(betCtx, 'swap'); }
+                if (betPick) { betPick.innerHTML = st.pickHTML; VB.motion.retrig(betPick, 'swap'); }
 
                 vcCells.forEach(function (c, i) {
                     var tok = vocab[i];
@@ -1227,12 +1190,12 @@
                 /* the per-decision choreography (states 2..n) */
                 if (s >= 2) {
                     if (!reduceMotion) {
-                        if (railCells[s - 2]) retrig(railCells[s - 2], 'pulse');
-                        if (railCells[s - 1]) retrig(railCells[s - 1], 'pulse');
+                        if (railCells[s - 2]) VB.motion.retrig(railCells[s - 2], 'pulse');
+                        if (railCells[s - 1]) VB.motion.retrig(railCells[s - 1], 'pulse');
                     }
                     var pkCell = vcCells[vocab.indexOf(st.pickTok)];
                     var pi = pkCell && pkCell.querySelector('i');
-                    if (pi) countUp(pi, st.pct[st.pickTok]);
+                    if (pi) VB.motion.countUp(pi, st.pct[st.pickTok]);
                     scheduleFlight(st.pickTok, pkCell, railCells[s]);
                 }
             }
@@ -1245,15 +1208,15 @@
 
             if (vcCells.length) applyStage(1);
 
-            /* the shared engine sets data-active-step; sync the stage */
-            if (sceneEl && vcCells.length && 'MutationObserver' in window) {
-                var mo = new MutationObserver(function () {
-                    var s = parseInt(sceneEl.getAttribute('data-active-step'), 10) || 1;
-                    applyStage(s);
+            /* the shared engine sets data-active-step; VBScene.onStep fires it
+               here — no hand-rolled MutationObserver (js/scene.js owns it).
+               scene.js is deferred, so register via VB.onReady. */
+            VB.onReady(function () {
+                window.VBScene.onStep(function (scene, step, index) {
+                    applyStage(index || 1);
                     cycleStrip();
                 });
-                mo.observe(sceneEl, { attributes: true, attributeFilter: ['data-active-step'] });
-            }
+            });
 
             /* ── ACT 03 · fork — shared prefix, two runs ── */
             var forkIdx = 0;
@@ -1267,7 +1230,7 @@
                     else if (mode === 'greedy') cls += ' safe';
                     else cls += ' wild';
                     if (worstTok && t === worstTok && i >= forkIdx) cls += ' worst';
-                    return '<span class="' + cls + '" style="--i:' + i + '">' + esc(t) + '</span>';
+                    return '<span class="' + cls + '" style="--i:' + i + '">' + VB.esc(t) + '</span>';
                 }).join('');
             }
             var minSampled = sampledRun.steps[0];
@@ -1282,7 +1245,7 @@
             var prod = 1;
             greedyRun.steps.forEach(function (st) { prod *= pOf(st.d, st.chosen); });
             var exp = prod.toExponential(2).split('e');
-            var prodTxt = exp[0] + ' × 10' + sup(parseInt(exp[1], 10));
+            var prodTxt = exp[0] + ' × 10' + VB.fmt.sup(parseInt(exp[1], 10));
 
             var statG = document.getElementById('statG');
             if (statG) statG.textContent = N_DECISIONS + ' DECISIONS · P(SENTENCE) ≈ ' + prodTxt;
@@ -1293,12 +1256,12 @@
                     if (pOf(st.d, st.chosen) < pOf(minSt.d, minSt.chosen)) minSt = st;
                 });
                 statS.textContent = sampledRun.steps.length + ' DECISIONS · LOWEST BET: ' +
-                    minSt.chosen + ' AT ' + pct(pOf(minSt.d, minSt.chosen));
+                    minSt.chosen + ' AT ' + VB.fmt.pct(pOf(minSt.d, minSt.chosen));
             }
             var fn = document.getElementById('forkNote');
             if (fn) {
                 fn.textContent = 'THEY AGREE ON ' + forkIdx + ' TOKEN' + (forkIdx === 1 ? '' : 'S') +
-                    ', THEN PART AT THE ' + (forkIdx + 1) + ordinal(forkIdx + 1) +
+                    ', THEN PART AT THE ' + (forkIdx + 1) + VB.fmt.ordinal(forkIdx + 1) +
                     ' — SAME SCORES, DIFFERENT ROLLS.';
             }
 
@@ -1314,7 +1277,7 @@
                     var hot = st === surest ? ' ev-hot' : '';
                     if (i) parts.push('<span class="cx" style="--i:' + (i - .5) + '">×</span>');
                     parts.push('<span class="ev-chip' + hot + '" style="--i:' + i + '"><b>' +
-                        esc(st.chosen) + '</b> ' + pct(pOf(st.d, st.chosen)) + '</span>');
+                        VB.esc(st.chosen) + '</b> ' + VB.fmt.pct(pOf(st.d, st.chosen)) + '</span>');
                 });
                 parts.push('<span class="ceq" style="--i:' + greedyRun.steps.length + '">=</span>');
                 parts.push('<span class="cprod" style="--i:' + (greedyRun.steps.length + 1) + '">' + prodTxt + '</span>');

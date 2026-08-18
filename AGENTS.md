@@ -37,8 +37,15 @@ hand-writes scene wiring:
   sets `data-active-step`, fills `[data-readout]`, and measures
   `--card-reserve` so the mobile diagram centers above the bottom-docked
   card. Exposes `window.VBScene` (`.onStep(fn)`, `.refresh()`).
+- `js/vb.js` — shared micro-helpers for page scripts on one namespace,
+  `window.VB`: `VB.reduceMotion`, `VB.esc(str)`, `VB.mulberry32(seed)`,
+  `VB.fmt.pct/ordinal/sup`, and `VB.motion.retrig/countUp`. Use these
+  instead of re-implementing them per page.
 
-Every page loads **both** `js/site.js` and `js/scene.js` (defer, in that
-order) — write the scene markup from `blog/template.html` and behavior is
-done. Do not add per-page scene JS; page scripts only compute honest state
-and key stage visuals off `data-active-step`.
+Every page loads **all three** shared scripts (`js/site.js` and
+`js/scene.js` with defer, in that order, then `js/vb.js` **without** defer
+so the helpers exist before page scripts run) — write the scene markup
+from `blog/template.html` and behavior is done. Do not add per-page scene
+JS; page scripts only compute honest state and key stage visuals off
+`data-active-step` (react via `window.VBScene.onStep(fn)`, never a
+hand-rolled MutationObserver).
