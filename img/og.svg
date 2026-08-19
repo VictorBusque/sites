@@ -1,46 +1,51 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="Víctor Busqué — Living Engineering Notes">
-  <title>Víctor Busqué — Living Engineering Notes</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Víctor Busqué — A Notebook of Curiosities</title>
+  <desc id="desc">A dark social card with a bright pixel signal glyph and the words A Notebook of Curiosities.</desc>
   <defs>
-    <!-- subtle engineering grid -->
-    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-      <path d="M60 0H0V60" fill="none" stroke="#ffffff" stroke-opacity="0.045" stroke-width="1"/>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" fill="none" stroke="#eae3d2" stroke-opacity=".055"/>
     </pattern>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#57d38c" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#57d38c" stop-opacity="0"/>
+    </linearGradient>
   </defs>
 
-  <!-- paper canvas -->
-  <rect width="1200" height="630" fill="#f2f0e9"/>
-  <!-- left ink panel -->
-  <rect width="1200" height="630" fill="#101010"/>
+  <rect width="1200" height="630" fill="#14110c"/>
   <rect width="1200" height="630" fill="url(#grid)"/>
+  <rect x="48" y="48" width="1104" height="534" fill="none" stroke="#eae3d2" stroke-opacity=".16"/>
+  <rect x="49" y="49" width="430" height="532" fill="url(#glow)"/>
 
-  <!-- VB monogram badge -->
-  <g transform="translate(96,96)">
-    <rect width="170" height="170" rx="38" fill="#1a1a1a" stroke="#ffffff" stroke-opacity="0.10"/>
-    <g transform="translate(4,0) scale(0.332)" fill="#c7ff3d">
-      <path d="M88,100 L166,412 L244,100 L200,100 L166,368 L132,100 Z"/>
-      <path d="M276,100 L324,100 A78,78 0 0 1 324,256 A78,78 0 0 1 324,412 L276,412 Z"/>
-    </g>
+  <!-- The favicon glyph becomes the card's central visual language: an
+       ASCII-adjacent signal made from one repeated square. -->
+  <g transform="scale(1.25)" fill="#c7ff3d">
+    <rect x="233" y="96" width="46" height="46"/>
+    <rect x="109" y="158" width="46" height="46"/>
+    <rect x="233" y="158" width="46" height="46"/>
+    <rect x="357" y="158" width="46" height="46"/>
+    <rect x="171" y="220" width="46" height="46"/>
+    <rect x="233" y="220" width="46" height="46"/>
+    <rect x="295" y="220" width="46" height="46"/>
+    <rect x="109" y="282" width="46" height="46"/>
+    <rect x="233" y="282" width="46" height="46"/>
+    <rect x="357" y="282" width="46" height="46"/>
+    <rect x="233" y="344" width="46" height="46"/>
   </g>
 
-  <!-- kicker -->
-  <text x="96" y="330" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="20" letter-spacing="5" fill="#c7ff3d" font-weight="700">VÍCTOR BUSQUÉ · ENGINEERING NOTES</text>
+  <!-- Terminal-style framing adds context without relying on a tiny logo. -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" letter-spacing="3">
+    <text x="96" y="92" fill="#c7ff3d">VB/01</text>
+    <text x="1080" y="92" fill="#a09a88" text-anchor="end">SIGNAL / NOTES</text>
+    <text x="96" y="548" fill="#a09a88">AI · SYSTEMS · SPACE · ENERGY</text>
+    <text x="1080" y="548" fill="#a09a88" text-anchor="end">EST. BARCELONA</text>
+  </g>
 
-  <!-- headline -->
-  <text x="92" y="420" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="88" font-weight="800" fill="#f2f0e9" letter-spacing="-2">Don&#8217;t just read it.</text>
-  <text x="92" y="500" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-style="italic" font-size="88" font-weight="400" fill="#c7ff3d" letter-spacing="-2">See it run.</text>
-
-  <!-- subhead -->
-  <text x="96" y="556" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="22" fill="#9a978e">Notes on AI · Software Engineering · Cloud &#8212; every idea taught with diagrams that move.</text>
-
-  <!-- right rail: topic branches -->
-  <g font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="18" font-weight="600" letter-spacing="2">
-    <g transform="translate(988,300)">
-      <rect x="-8" y="-30" width="20" height="20" fill="#c7ff3d"/>
-      <text x="22" y="-14" fill="#f2f0e9">01 · AI</text>
-      <rect x="-8" y="6" width="20" height="20" fill="#546cff"/>
-      <text x="22" y="22" fill="#9a978e">02 · SOFTWARE ENG.</text>
-      <rect x="-8" y="42" width="20" height="20" fill="#ff6b2c"/>
-      <text x="22" y="58" fill="#9a978e">03 · CLOUD</text>
-    </g>
+  <g transform="translate(638 166)">
+    <text x="0" y="0" fill="#57d38c" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" font-weight="700" letter-spacing="4">VÍCTOR BUSQUÉ</text>
+    <text x="0" y="91" fill="#eae3d2" font-family="Arial, Helvetica, sans-serif" font-size="68" font-weight="700" letter-spacing="-3">A Notebook</text>
+    <text x="0" y="164" fill="#eae3d2" font-family="Arial, Helvetica, sans-serif" font-size="68" font-weight="700" letter-spacing="-3">of <tspan fill="#c7ff3d" font-family="Georgia, serif" font-style="italic" font-weight="400">Curiosities.</tspan></text>
+    <path d="M0 209H464" stroke="#eae3d2" stroke-opacity=".22"/>
+    <text x="0" y="252" fill="#c9c2b1" font-family="Arial, Helvetica, sans-serif" font-size="23">Ideas in engineering, explained visually.</text>
+    <text x="0" y="287" fill="#a09a88" font-family="Arial, Helvetica, sans-serif" font-size="20">Don’t just read it. See it run.</text>
   </g>
 </svg>

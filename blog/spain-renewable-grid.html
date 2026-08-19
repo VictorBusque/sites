@@ -1698,16 +1698,10 @@
             }
         </style>
     </noscript>
+    <link rel="stylesheet" href="../css/post-progress.css">
 </head>
 
-<body>
-    <header class="header">
-        <div class="brand">Energy systems</div>
-        <div class="meta">SPAIN · 2026</div>
-    </header>
-    <div class="chapter" id="chapter">01 — THE SCALE</div>
-    <div class="progress" aria-hidden="true"><i id="progressBar"></i></div>
-
+<body data-vb-progress-start="#e2b72f" data-vb-progress-mid="#d56838" data-vb-progress-end="#688b7c">
     <main>
         <section class="scene hero" data-progress="hero">
             <div class="sun" aria-hidden="true"></div>
@@ -2143,8 +2137,6 @@
     <script>
         (() => {
             const scenes = [...document.querySelectorAll('.scene[data-progress]')];
-            const progressBar = document.getElementById('progressBar');
-            const chapter = document.getElementById('chapter');
             const powerStack = document.getElementById('powerStack');
             const demandLine = document.getElementById('demandLine');
             const dayFill = document.getElementById('dayFill');
@@ -2235,11 +2227,6 @@
             function tick() {
                 document.body.classList.add('is-scrolling');
                 const g = globalProgress();
-                progressBar.style.transform = `scaleY(${g})`;
-
-                const current = nearestScene();
-                chapter.textContent = chapters[current?.dataset.progress || 'hero'];
-
                 updateSceneClasses();
 
                 const cap = document.querySelector('[data-progress="capacity"]');
@@ -2342,6 +2329,7 @@
         })();
     </script>
 
+  <script src="../js/post-progress.js" defer></script>
 </body>
 
 </html>

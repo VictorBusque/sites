@@ -58,10 +58,10 @@ window.VB_POSTS = [
     {
         "slug": "blog/apollo-to-phone.html",
         "no": "01",
-        "title": "From Apollo to iPhone 17 Pro Max — 56 years of compute.",
+        "title": "Apollo and iPhone: Two Scales of Computing", 
         "date": "2026-08",
         "topic": "Hardware · Silicon",
         "tags": ["Apollo", "iPhone", "Silicon", "Compute"],
-        "deck": "A scrollytelling history of computational power from the Apollo Guidance Computer to the iPhone 17 Pro Max."
+        "deck": "Compare the Apollo Guidance Computer and iPhone 17 Pro Max on two scales: physical size, and the memory and specialized engines behind modern computing."
     }
 ];

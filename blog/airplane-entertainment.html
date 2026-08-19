@@ -39,15 +39,12 @@
   @media(max-width:700px){.topbar{height:58px;padding:0 18px}.brand{font-size:9px}.status{display:none}.progress{top:55px;left:18px;right:18px}.hero,.chapter,.closing{min-height:100svh;padding:94px 20px 74px;align-items:flex-end}.hero{min-height:108svh;padding-bottom:11svh}.chapter,.chapter:nth-child(odd){justify-content:flex-start}.chapter .copy{width:100%;padding:22px 20px 21px;background:linear-gradient(90deg,rgba(7,17,26,.91),rgba(7,17,26,.67))}h1{font-size:clamp(3.3rem,14.5vw,4.55rem);letter-spacing:-.075em;margin-bottom:22px;max-width:100%}.hero h1 br{display:block}h2{font-size:clamp(3rem,14.5vw,4.6rem)}.lead{font-size:16px;line-height:1.55}.chapter p{font-size:14px;line-height:1.63}.callout{font-size:12px;margin-top:17px}.legend{gap:9px;margin-top:15px;font-size:8px}.scene-caption{left:20px;top:74px}.scene-caption span{font-size:8px}.motion{bottom:11px;right:16px;padding:8px 9px;font-size:8px}.closing{align-items:center}.closing .copy{padding-left:18px}.closing p{font-size:clamp(1.65rem,8.1vw,2.4rem)}}
   @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.chapter .copy{transition:none;transform:none}.grain{display:none}}
 </style>
+    <link rel="stylesheet" href="../css/post-progress.css">
 </head>
-<body>
+<body data-vb-progress-start="#ff9d5c" data-vb-progress-mid="#77d7e8" data-vb-progress-end="#8ee0b7">
 <div id="aircraft-stage" aria-hidden="true"><canvas id="mesh"></canvas><div class="atmosphere"></div></div>
 <div class="grain" aria-hidden="true"></div>
-<header class="topbar"><div class="brand"><span class="brand-mark"></span>Cabin systems / 01</div><div class="status"><i></i> onboard network · nominal</div></header>
-<div class="progress" aria-hidden="true"><i id="bar"></i></div>
 <noscript><svg class="fallback-aircraft" viewBox="0 0 1000 460" aria-hidden="true"><path fill="#a9c5cb" d="M90 250Q130 150 310 126L825 185l115 45-115 45-515 59Q130 310 90 250Z"/><path fill="#799da6" d="m470 240 205 145h70l-106-145zM475 240 286 89h-72l119 151z"/><path fill="#9ebac0" d="m780 207 63-100h29l-23 112z"/></svg></noscript>
-<div class="scene-caption" aria-hidden="true"><b id="scene-number">00</b><span id="scene-name">the aircraft is the network</span></div>
-<button class="motion" id="motion" type="button" aria-pressed="false">reduce motion</button>
 <main>
 <section class="hero" data-name="the aircraft is the network"><div class="copy"><div class="eyebrow">A systems tour at 35,000 feet</div><h1>How a movie<br><em>crosses an airplane.</em></h1><p class="lead">A passenger presses play. What follows is not a trip to the internet, but a precise journey through a small, resilient edge network carried inside the aircraft.</p></div></section>
 <section class="chapter" data-scene="headend" data-name="01 / onboard origin"><div class="copy"><div class="num">01 — Head-end</div><h2>It starts in a rack.</h2><p>Deep in the aircraft, the IFE head-end stores the media library and runs the control software. It is a compact data center designed to fly.</p><div class="callout">The useful mental model: this is not “a screen with a movie.” It is a <b>distributed computer network</b> inside the fuselage.</div><div class="legend"><span>storage</span><span>control</span></div></div></section>
@@ -65,7 +62,7 @@
 <script>
 (() => {
   const canvas=document.getElementById('mesh'), ctx=canvas.getContext('2d');
-  const sections=[...document.querySelectorAll('[data-name]')], bar=document.getElementById('bar'), sceneNumber=document.getElementById('scene-number'), sceneName=document.getElementById('scene-name'), motionButton=document.getElementById('motion');
+  const sections=[...document.querySelectorAll('[data-name]')];
   let W=0,H=0,DPR=1,active=0,time=0,last=performance.now(),running=true,reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,dirty=true;
   const isMobile=()=>innerWidth<701;
   function resize(){DPR=Math.min(devicePixelRatio||1,isMobile()?1.3:1.7);W=innerWidth;H=innerHeight;canvas.width=W*DPR;canvas.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);dirty=true} addEventListener('resize',resize,{passive:true});resize();
@@ -106,13 +103,13 @@
     if(key==='boundary'){drawLine([V(-24,4,-4),V(-24,4,4)],palette.cyan,2);drawLine([V(-24,4,-4),V(-20,4,-4)],palette.cyan,2);drawLine([V(-24,4,4),V(-20,4,4)],palette.cyan,2);drawLine([V(-20,4,-4),V(-20,4,4)],palette.orange,2);label(V(-22,7,0),'LOGICAL BOUNDARY','IFE ≠ FLIGHT CONTROL',palette.orange)}}
   function backdrop(){ctx.clearRect(0,0,W,H);ctx.save();ctx.strokeStyle='rgba(167,217,224,.055)';ctx.lineWidth=1;for(let x=0;x<W;x+=64){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}for(let y=0;y<H;y+=64){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}ctx.restore();for(let i=0;i<30;i++){const x=(i*167)%W,y=(i*97)%H;ctx.fillStyle='rgba(179,225,230,.16)';ctx.fillRect(x,y,1,1)}}
   function render(){const key=sceneKey(active),target=cameraStates[key]||cameraStates.hero;['x','y','z'].forEach(k=>{currentCamera.pos[k]=lerp(currentCamera.pos[k],target.pos[k],reduced?1:.065);currentCamera.look[k]=lerp(currentCamera.look[k],target.look[k],reduced?1:.065)});backdrop();drawAircraft(key);network(key);}
-  function setActive(i){active=i;sections.forEach((s,n)=>s.classList.toggle('is-active',n===i));const name=sections[i].dataset.name||'';sceneName.textContent=name;sceneNumber.textContent=String(i).padStart(2,'0');dirty=true}
+  function setActive(i){active=i;sections.forEach((s,n)=>s.classList.toggle('is-active',n===i));dirty=true}
   const observer=new IntersectionObserver(entries=>{let winner=null;entries.forEach(e=>{if(e.isIntersecting&&(!winner||e.intersectionRatio>winner.intersectionRatio))winner=e});if(winner)setActive(sections.indexOf(winner.target))},{threshold:[.35,.55,.75]});sections.forEach(s=>observer.observe(s));setActive(0);
-  addEventListener('scroll',()=>{const max=Math.max(1,document.documentElement.scrollHeight-innerHeight);bar.style.width=(scrollY/max*100)+'%';dirty=true},{passive:true});
-  motionButton.addEventListener('click',()=>{const wasReduced=reduced;reduced=!reduced;motionButton.setAttribute('aria-pressed',String(reduced));motionButton.textContent=reduced?'motion reduced':'reduce motion';dirty=true;if(wasReduced&&!reduced&&running){last=performance.now();requestAnimationFrame(loop)}});
+  addEventListener('scroll',()=>{dirty=true},{passive:true});
   document.addEventListener('visibilitychange',()=>{running=!document.hidden;if(running&&!reduced){last=performance.now();requestAnimationFrame(loop)}});
   function loop(now){if(!running)return;const dt=Math.min(.05,(now-last)/1000);last=now;if(!reduced)time+=dt;render();if(!reduced)requestAnimationFrame(loop)}requestAnimationFrame(loop);
 })();
 </script>
+  <script src="../js/post-progress.js" defer></script>
 </body>
 </html>

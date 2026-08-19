@@ -1589,15 +1589,12 @@ footer::after {
             .s-needle { font-size: 10px; padding: 6px 14px; }
         }
     </style>
+    <link rel="stylesheet" href="../../css/post-progress.css">
 </head>
 
-<body>
+<body data-vb-progress-start="#c7ff3d" data-vb-progress-mid="#546cff" data-vb-progress-end="#ff6b2c">
     <!-- Chrome (nav, footer, progress, cursor) is embedded by this page's inlined runtime -->
-    <div data-vb-nav data-depth="1" data-status="TEMPLATE" data-status-em="DRAFT">
-        <noscript><a href="../index.html">VB</a> · <a href="../index.html#posts">Posts</a> · <a href="../about.html">About</a></noscript>
-    </div>
-
-    <header class="post-hero">
+<header class="post-hero">
         <div class="ghost" aria-hidden="true">T</div>
         <div class="crumb"><a href="../index.html">Index</a> / TEMPLATE — SCROLLYTELLING</div>
         <h1>
@@ -1812,14 +1809,7 @@ footer::after {
                 <span class="mono">data-vb-narrow</span> frame — see the scrollytelling reference.</p>
         </article>
     </main>
-
-    <nav class="post-nav">
-        <a href="../index.html"><span class="dir">← ALL POSTS</span><span class="t">The index.</span></a>
-        <a href="../index.html"><span class="dir">NEXT POST →</span><span class="t">Your first story.</span></a>
-    </nav>
-
-    <div data-vb-footer data-label="TEMPLATE · SCROLLYTELLING">
-        <noscript><div class="foot"><span>© 2026 VÍCTOR BUSQUÉ</span></div></noscript>
+</noscript>
     </div>
 
     <script>
@@ -1859,16 +1849,11 @@ footer::after {
         })();
     </script>
 <script>
-/* ── Inlined site runtime ────────────────────────────────────────────
-   Formerly the shared js/site.js — this copy belongs to this article
-   alone and may diverge from every other page. ── */
-/* ==========================================================================
-   site.js — shared site behaviors (chrome + reveals + legacy figures)
-   --------------------------------------------------------------------------
-   Shared components (embedded chrome):  [data-vb-nav] / [data-vb-footer]
-       the nav, footer and fixed chrome (#progress, cursor) are rendered
-       here, once, into every page — pages only keep mount points.
-   Scroll reveals:                       .reveal / .stagger / .mask
+/* ── Inlined article runtime ──────────────────────────────────────────
+   Formerly a shared runtime; this local copy drives only article-owned
+   reveals, motion preferences, and figures. The reading indicator is the
+   separate shared reading indicator component.
+   Scroll reveals: .reveal / .stagger / .mask
    Legacy figures:                       .fig > .fig-body
        looping figures get PAUSE / REPLAY; scripted figures get
        PREV / PLAY / NEXT / RESET (window.__figScripts).
@@ -1883,73 +1868,8 @@ footer::after {
     var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
-    /* ── Shared components (embedded chrome) ─────────────
-       Nav and footer are written once, here, and rendered into every
-       page. Mount points replace the hand-copied markup:
-
-         <div data-vb-nav data-active="about"
-              data-status="POST 01" data-status-em="AI-BASICS"></div>
-         <div data-vb-footer data-label="POST 01 · TOKEN BY TOKEN"></div>
-
-       data-active   posts | latest | about → aria-current="page"
-       data-status   mono prefix (optional)   data-status-em  bold tail
-       Links are root-relative (the site is served from the domain root,
-       like the /img/ favicons). Keep a <noscript> link row inside a mount
-       as the no-JS fallback — this block only runs with JS. */
+    /* ── Accessibility route ─────────────────────────────── */
     (function () {
-        /* fixed chrome first, so #progress exists for the scroller below */
-        if (!document.getElementById('progress')) {
-            [['progress', 'progress'], ['cDot', 'cursor-dot'], ['cRing', 'cursor-ring']]
-                .forEach(function (pair) {
-                    var el = document.createElement('div');
-                    el.id = pair[0];
-                    el.className = pair[1];
-                    document.body.appendChild(el);
-                });
-        }
-
-        document.querySelectorAll('[data-vb-nav]').forEach(function (mount) {
-            var active = mount.getAttribute('data-active');
-            var status = mount.getAttribute('data-status') || '';
-            var em = mount.getAttribute('data-status-em') || '';
-            /* Links are relative to the current page so they work over http and
-               file:// (which reports an absolute filesystem path in pathname,
-               unusable for depth). Depth is declared on the mount:
-               data-depth="0" at the site root, "1" one folder down (blog/). */
-            var depth = parseInt(mount.getAttribute('data-depth') || '0', 10) || 0;
-            var pre = depth ? new Array(depth + 1).join('../') : '';
-            var home = pre + 'index.html';
-            function link(href, key, label) {
-                return '<a href="' + href + '"' + (active === key ? ' aria-current="page"' : '') + '>' + label + '</a>';
-            }
-            var html = '<a class="logo" href="' + home + '">VB<i></i></a><div class="links">'
-                + link(home + '#posts', 'posts', 'Posts')
-                + link(pre + 'about.html', 'about', 'About')
-                + '<button class="motion-toggle" type="button" aria-pressed="false">Motion: on</button>'
-                + '</div>';
-            if (status || em) {
-                html += '<div class="status">' + (status ? status + ' / ' : '') + (em ? '<b>' + em + '</b>' : '') + '</div>';
-            }
-            var nav = document.createElement('nav');
-            nav.innerHTML = html;
-            mount.replaceWith(nav);
-        });
-
-        document.querySelectorAll('[data-vb-footer]').forEach(function (mount) {
-            var label = mount.getAttribute('data-label') || '';
-            var foot = document.createElement('footer');
-            foot.innerHTML = '<div class="footer-big mask">'
-                + '<span class="row"><span>BUILD.</span></span>'
-                + '<span class="row"><span>BREAK.</span></span>'
-                + '<span class="row"><span><em>EXPLAIN.</em></span></span>'
-                + '</div><div class="foot"><span>© ' + new Date().getFullYear()
-                + ' VÍCTOR BUSQUÉ</span><span>' + label + '</span></div>';
-            mount.replaceWith(foot);
-        });
-
-        /* Every page that has a document body gets a reliable keyboard route
-           past the shared navigation. A page only needs semantic <main> — no
-           per-page link markup. */
         var main = document.querySelector('main');
         if (main && !document.querySelector('.skip-link')) {
             if (!main.id) main.id = 'main-content';
@@ -1960,27 +1880,6 @@ footer::after {
             document.body.insertBefore(skip, document.body.firstChild);
         }
     })();
-
-    /* ── Scroll progress ─────────────────────────────────── */
-    var progress = document.getElementById('progress');
-    var progressTicking = false;
-    var nativeScrollProgress = window.CSS && window.CSS.supports &&
-        window.CSS.supports('animation-timeline: scroll(root block)');
-    function onScroll() {
-        if (progressTicking) return;
-        progressTicking = true;
-        requestAnimationFrame(function () {
-            progressTicking = false;
-            if (!progress) return;
-            var h = document.documentElement;
-            var max = h.scrollHeight - h.clientHeight;
-            progress.style.transform = 'scaleX(' + (max > 0 ? h.scrollTop / max : 0) + ')';
-        });
-    }
-    if (!nativeScrollProgress) {
-        addEventListener('scroll', onScroll, { passive: true });
-        onScroll();
-    }
 
     /* ── Intersection reveals ────────────────────────────── */
     if ('IntersectionObserver' in window) {
@@ -2012,54 +1911,6 @@ footer::after {
 
     /* ── Marquee: duplicate for a seamless loop ──────────── */
     document.querySelectorAll('.marquee-track').forEach(function (t) { t.innerHTML += t.innerHTML; });
-
-    /* ── Mobile nav menu ────────────────────────────────── */
-    (function () {
-        var nav = document.querySelector('nav');
-        if (!nav || nav.querySelector('.nav-toggle')) return;
-        var links = nav.querySelector('.links');
-        if (!links) return;
-
-        if (!links.id) links.id = 'nav-links';
-        Array.prototype.forEach.call(links.children, function (a, i) {
-            a.style.setProperty('--i', i);
-        });
-
-        var btn = document.createElement('button');
-        btn.className = 'nav-toggle';
-        btn.type = 'button';
-        btn.setAttribute('aria-label', 'Menu');
-        btn.setAttribute('aria-expanded', 'false');
-        btn.setAttribute('aria-controls', links.id);
-        btn.innerHTML = '<span class="nav-toggle-icon" aria-hidden="true"><i></i><i></i><i></i></span>';
-        nav.appendChild(btn);
-
-        var mobileNav = window.matchMedia('(max-width: 850px)');
-        function setOpen(open) {
-            /* A visually collapsed menu must not stay in the tab order.
-               On desktop the links are always available, regardless of
-               which state the mobile menu had before a resize. */
-            var shouldOpen = mobileNav.matches && open;
-            nav.classList.toggle('is-open', shouldOpen);
-            btn.classList.toggle('is-open', shouldOpen);
-            btn.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
-            btn.setAttribute('aria-label', shouldOpen ? 'Close menu' : 'Menu');
-            links.inert = mobileNav.matches && !shouldOpen;
-        }
-        btn.addEventListener('click', function () {
-            setOpen(!nav.classList.contains('is-open'));
-        });
-        nav.addEventListener('click', function (e) {
-            if (e.target.closest('a')) setOpen(false);
-        });
-        addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && nav.classList.contains('is-open')) setOpen(false);
-        });
-        function syncNav() { setOpen(false); }
-        if (mobileNav.addEventListener) mobileNav.addEventListener('change', syncNav);
-        else if (mobileNav.addListener) mobileNav.addListener(syncNav);
-        setOpen(false);
-    })();
 
     /* ── Reader motion preference ───────────────────────── */
     (function () {
@@ -2492,6 +2343,7 @@ footer::after {
 })();
 
 </script>
+    <script src="../../js/post-progress.js" defer></script>
 </body>
 
 </html>

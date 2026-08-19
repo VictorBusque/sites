@@ -835,30 +835,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       }
     }
   </style>
+    <link rel="stylesheet" href="../css/post-progress.css">
 </head>
 
-<body>
+<body data-vb-progress-start="#d9ff5b" data-vb-progress-mid="#8edfff" data-vb-progress-end="#b69cff">
   <canvas id="webgl" aria-hidden="true"></canvas>
   <a class="skip" href="#story">Skip to the packet journey</a>
   <div class="vignette" aria-hidden="true"></div>
   <div class="grain" aria-hidden="true"></div>
-
-  <div class="topbar">
-    <div class="brand">STARLINK / SYSTEMS IN MOTION</div>
-    <div class="meta">ENGINEERING EXPLAINER · LEO NETWORK</div>
-  </div>
-
-  <div class="progressRail" aria-hidden="true">
-    <span id="pageNo">01 / 07</span>
-    <i id="progressFill"></i>
-    <div class="progressDots">
-      <b class="active"></b><b></b><b></b><b></b><b></b><b></b><b></b>
-    </div>
-  </div>
-
-  <button id="mode" class="mode" type="button" aria-label="Toggle automatic animation">
-    AUTO PLAY · OFF
-  </button>
 
   <header class="hero">
     <div class="heroInner">
@@ -1121,9 +1105,6 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
             step.classList.toggle('is-active', i === best);
           });
           active = best;
-          document.querySelectorAll('.progressDots b').forEach((dot, i) => dot.classList.toggle('active', i <= active));
-          document.getElementById('progressFill').style.height = ((active + 1) / steps.length * 100) + '%';
-          document.getElementById('pageNo').textContent = `${String(active + 1).padStart(2, '0')} / ${String(steps.length).padStart(2, '0')}`;
           document.getElementById('tc').textContent = String(active + 1).padStart(2, '0');
           const labels = ['PHASED ARRAY', 'RF / KU', 'HANDOFF', 'OPTICAL ISL', 'RF DOWNLINK', 'DYNAMIC ROUTE', 'END-TO-END'];
           const paths = ['BEAM FORMATION', 'TERMINAL → SAT A', 'A → B', 'A → B → C → D', 'SAT → GATEWAY → FIBER', 'REROUTE AROUND GAP', 'TERMINAL → LEO → INTERNET'];
@@ -1378,7 +1359,6 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         const steps = [...document.querySelectorAll('.step')];
         const bounds = steps.map(() => ({ top: 0, bottom: 0 }));
         let active = 0, smoothStep = 0, auto = false, autoStart = 0;
-        const mode = document.getElementById('mode');
 
         function refreshBounds() {
           steps.forEach((el, i) => {
@@ -1401,9 +1381,6 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         function activate(i) {
           active = i;
           steps.forEach((s, j) => s.classList.toggle('is-active', j === i));
-          document.querySelectorAll('.progressDots b').forEach((d, j) => d.classList.toggle('active', j <= i));
-          document.getElementById('progressFill').style.height = ((i + 1) / steps.length * 100) + '%';
-          document.getElementById('pageNo').textContent = `${String(i + 1).padStart(2, '0')} / ${String(steps.length).padStart(2, '0')}`;
           document.getElementById('tc').textContent = String(i + 1).padStart(2, '0');
           if (auto) autoStart = performance.now();
         }
@@ -1607,19 +1584,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         // Scroll activation
         let lastScroll = scrollY;
         addEventListener('scroll', () => {
-          if (auto && Math.abs(scrollY - lastScroll) > 4) { auto = false; mode.classList.remove('active'); mode.textContent = 'AUTO PLAY · OFF' }
+          if (auto && Math.abs(scrollY - lastScroll) > 4) auto = false;
           lastScroll = scrollY;
           const s = chooseStep();
           if (s !== active) activate(s);
         }, { passive: true });
-
-        // Optional automatic walkthrough. It is intentionally opt-in.
-        mode.addEventListener('click', () => {
-          auto = !auto;
-          mode.classList.toggle('active', auto);
-          mode.textContent = auto ? 'AUTO PLAY · ON' : 'AUTO PLAY · OFF';
-          autoStart = performance.now();
-        });
 
         function autoTick(now) {
           if (auto && !reduced) {
@@ -1670,6 +1639,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       boot();
     })();
   </script>
+  <script src="../js/post-progress.js" defer></script>
 </body>
 
 </html>

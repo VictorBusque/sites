@@ -1,0 +1,29 @@
+/* Shared article chrome — an always-visible, top-edge reading indicator. */
+.vb-scroll-progress {
+    --vb-progress-start: #f4f1e8;
+    --vb-progress-mid: var(--vb-progress-start);
+    --vb-progress-end: #f4f1e8;
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 2147483647;
+    height: 5px;
+    overflow: hidden;
+    pointer-events: none;
+    background: rgba(255, 255, 255, .2);
+    box-shadow: 0 1px 10px rgba(0, 0, 0, .26);
+}
+
+.vb-scroll-progress > i {
+    display: block;
+    width: 100%;
+    height: 100%;
+    transform: scaleX(0);
+    transform-origin: left center;
+    will-change: transform;
+    background: linear-gradient(90deg, var(--vb-progress-start), var(--vb-progress-mid), var(--vb-progress-end));
+    box-shadow: 0 0 16px var(--vb-progress-end);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vb-scroll-progress > i { will-change: auto; }
+}

@@ -5,8 +5,10 @@ manifest) consistent with the published posts in blog/.
 
 Site architecture: one landing page (index.html) bound to standalone
 articles through metadata. Every article is a self-contained HTML file —
-its own styles, scripts, and chrome inlined. No article links the
-landing's shared files (css/site.css, js/*); each one is one-of-a-kind.
+its own styles, document, and scene logic. Posts share only the required
+reading indicator (/css/post-progress.css + /js/post-progress.js); no article
+links the landing's shared files (css/site.css, js/site.js, js/scene.js,
+js/vb.js).
 
 Checks, for every .html file at the top level of blog/ (files parked in
 blog/not-ready/ are WIP and invisible to this checker):
@@ -14,8 +16,10 @@ blog/not-ready/ are WIP and invisible to this checker):
     the post's own <title> / meta description
   * it carries a BlogPosting JSON-LD block, a canonical URL, and the
     OG/Twitter card basics
-  * it is truly standalone: no links to ../css/ or ../js/ assets —
-    styles and scripts are inlined in the page
+  * it loads the one shared top-edge reading indicator and has no persistent
+    navigation or masthead chrome
+  * it is otherwise standalone: no links to ../css/ or ../js/ assets —
+    styles and scene scripts are owned by the page
   * it is a semantic document: <main>
   * every sticky scene has a hidden visual stage and sequential,
     readable data-step articles (the honest-document contract)
@@ -101,18 +105,36 @@ def post_structure_errors(path, slug):
     if not re.search(r"<main\b[^>]*>", text) or "</main>" not in text:
         errors.append(f"'{slug}': article content needs a semantic <main>")
 
-    # Standalone contract: no links to the landing's shared assets. Strip
-    # script/style bodies first — the inlined runtime may legitimately
-    # mention the old file names in its provenance banners.
+    # The reading indicator is the one shared article component. Its palette
+    # stays local to the article through data-vb-progress-* attributes.
+    if not re.search(r'<link\s+rel="stylesheet"\s+href="\.\./css/post-progress\.css"\s*/?>', text):
+        errors.append(f"'{slug}': missing the shared ../css/post-progress.css reading indicator")
+    if not re.search(r'<script\s+src="\.\./js/post-progress\.js"\s+defer\s*></script>', text):
+        errors.append(f"'{slug}': missing the shared ../js/post-progress.js reading indicator")
+    if not re.search(r'<body\b[^>]*\bdata-vb-progress-start="[^"]+"[^>]*\bdata-vb-progress-mid="[^"]+"[^>]*\bdata-vb-progress-end="[^"]+"', text):
+        errors.append(f"'{slug}': set data-vb-progress-start, data-vb-progress-mid, and data-vb-progress-end on <body>")
+
+    # Standalone contract: never link the landing system. The shared reading
+    # indicator above is deliberately the only exception. Strip script/style
+    # bodies first — an inlined runtime may mention old file names in comments.
     stripped = re.sub(r"<script\b.*?</script>|<style\b.*?</style>", "", text, flags=re.S)
-    shared = re.search(r'<(?:link|script)\b[^>]*(?:\.\./css/|\.\./js/)', stripped)
+    stripped = re.sub(
+        r'<link\s+rel="stylesheet"\s+href="\.\./css/post-progress\.css"\s*/?>|'
+        r'<script\s+src="\.\./js/post-progress\.js"\s+defer\s*></script>',
+        "",
+        stripped,
+    )
+    shared = re.search(r'<(?:link|script)\b[^>]*(?:\.\./(?:css|js)/|/(?:css/site|js/(?:site|scene|vb))\.)', stripped)
     if shared:
         errors.append(
-            f"'{slug}': not standalone — posts inline their styles/scripts "
-            f"and never link ../css/ or ../js/ assets ({shared.group(0)}…)"
+            f"'{slug}': not standalone — posts own their styles/scene scripts and never link the landing system ({shared.group(0)}…)"
         )
     if not re.search(r'<style\b', text):
-        errors.append(f"'{slug}': a standalone post inlines at least a base <style> block")
+        errors.append(f"'{slug}': an article owns at least a base <style> block")
+    if re.search(r'<nav\b', stripped, re.I):
+        errors.append(f"'{slug}': posts use the hub for navigation — remove persistent <nav> chrome")
+    if re.search(r'<(?:header|div)\b[^>]*\bclass="[^"]*\b(?:masthead|topbar|header)\b[^"]*"', stripped, re.I):
+        errors.append(f"'{slug}': remove persistent masthead/topbar chrome; keep only the shared reading indicator")
 
     # Public metadata basics (full rules live in the seo skill).
     for pattern, label in (

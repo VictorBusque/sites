@@ -12,10 +12,13 @@ slow, visual explanation.
   `js/scene.js`, `js/vb.js`) and renders the shelf of posts from the
   manifest. `about.html` shares that system.
 - **The spokes:** each article at `blog/<slug>.html` is a **standalone,
-  one-of-a-kind HTML file**. It inlines its own styles, scripts, and chrome —
-  no article links `../css/` or `../js/` assets. Every article is free to
-  diverge from every other; nothing about an article is shared except the
-  craft standards below.
+  one-of-a-kind HTML file**. It owns its styles, document, and scene logic;
+  no article links `../css/` or `../js/` assets. The sole shared post chrome
+  is the required top-edge reading indicator: `../css/post-progress.css` +
+  `../js/post-progress.js` (or `../../` from `blog/not-ready/`), with
+  per-post gradient parameters on `<body>`.
+  Articles have no site navigation bar, masthead, or persistent post rail.
+  Every other visual decision is free to diverge.
 - **The binding:** articles are bound to the landing only through metadata —
   one object per post in `js/posts.js` (`window.VB_POSTS`). The landing reads
   the manifest and links each article; the article's own `<title>`,
@@ -29,7 +32,9 @@ article is its own small website.
 
 - Landing page: `index.html` (+ `css/site.css`, `js/site.js`, `js/scene.js`,
   `js/vb.js` — landing/about chrome only).
-- Published posts: `blog/<slug>.html` (top level), each fully self-contained.
+- Published posts: `blog/<slug>.html` (top level), each owns its document and
+  scene code; every one loads the shared relative `../css/post-progress.css`
+  and `../js/post-progress.js` reading indicator.
 - Parked works in progress: `blog/not-ready/` — redesigns waiting to ship.
   They are never in `js/posts.js`, never rendered on the shelf, absent from
   `sitemap.xml`, and disallowed in `robots.txt`.
@@ -58,13 +63,16 @@ and their references accurate when changing a shared contract.
   conclusion.
 - The template's inlined runtime (`VBScene`, `window.VB`) is a proven starting
   point, not a requirement — an article may replace any of it, but it must
-  keep the honest-document behavior above.
+  keep the honest-document behavior above. The shared reading indicator is
+  the exception: keep the relative `../css/post-progress.css` and
+  `../js/post-progress.js` references.
 
 ## Quality gates
 
 After a content or contract change, run the relevant checks. The post checker
-verifies the manifest binding, public metadata, sitemap, standalone-ness (no
-`../css/` or `../js/` links), and the sticky-scene honesty rules:
+verifies the manifest binding, public metadata, sitemap, required shared
+reading indicator, standalone-ness (no `../css/` or `../js/` links), and the
+sticky-scene honesty rules:
 
 ```sh
 python3 scripts/check_posts.py

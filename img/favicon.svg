@@ -1,12 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Víctor Busqué — VB monogram">
-  <title>Víctor Busqué</title>
-  <!-- ink rounded-square background -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">A Notebook of Curiosities</title>
+  <desc id="desc">A pixel-built abstract signal glyph.</desc>
+  <!-- An ASCII-adjacent signal glyph: deliberately discrete, not a shrunken
+       illustration. Its single form holds up as a tiny browser-tab mark. -->
   <rect width="512" height="512" rx="112" fill="#101010"/>
-  <!-- VB monogram, acid green, optically centred -->
-  <g transform="translate(11,0)" fill="#c7ff3d">
-    <!-- V — two bold strokes meeting at a pointed apex -->
-    <path d="M88,100 L166,412 L244,100 L200,100 L166,368 L132,100 Z"/>
-    <!-- B — vertical stem + two bellies -->
-    <path d="M276,100 L324,100 A78,78 0 0 1 324,256 A78,78 0 0 1 324,412 L276,412 Z"/>
+  <g fill="#c7ff3d">
+    <rect x="233" y="96" width="46" height="46"/>
+    <rect x="109" y="158" width="46" height="46"/>
+    <rect x="233" y="158" width="46" height="46"/>
+    <rect x="357" y="158" width="46" height="46"/>
+    <rect x="171" y="220" width="46" height="46"/>
+    <rect x="233" y="220" width="46" height="46"/>
+    <rect x="295" y="220" width="46" height="46"/>
+    <rect x="109" y="282" width="46" height="46"/>
+    <rect x="233" y="282" width="46" height="46"/>
+    <rect x="357" y="282" width="46" height="46"/>
+    <rect x="233" y="344" width="46" height="46"/>
   </g>
 </svg>
