@@ -20,6 +20,15 @@
    JSON so the checker can parse it directly. */
 window.VB_POSTS = [
     {
+        "slug": "blog/airplane-entertainment.html",
+        "no": "04",
+        "title": "An airplane's entertainment system is a CDN",
+        "date": "2026-08",
+        "topic": "Networks · CDN",
+        "tags": ["CDN", "Airplane", "Entertainment"],
+        "deck": "A deep dive into the content delivery network that powers in-flight entertainment."
+    },
+    {
         "slug": "blog/starlink.html",
         "no": "03",
         "title": "Starlink — A packet's journey through space",

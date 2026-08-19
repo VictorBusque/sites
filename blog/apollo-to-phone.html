@@ -466,6 +466,12 @@
             letter-spacing: .05em
         }
 
+        .copy--final {
+            top: auto;
+            bottom: 12%;
+            width: min(420px, 40%)
+        }
+
         .data {
             position: absolute;
             right: 6.5%;
@@ -996,120 +1002,11 @@
         @media (max-width:900px) {
             .hero-inner {
                 grid-template-columns: 1fr;
-                gap: 24px
+                gap: 30px
             }
 
             .hero-visual {
-                height: 360px
-            }
-
-            .copy {
-                width: 60%;
-                top: 10%;
-                left: 6%
-            }
-
-            .data {
-                width: 45%;
-                right: 6%;
-                bottom: 6%
-            }
-
-            .feature .callout {
-                width: 35%
-            }
-
-            .final-grid {
-                grid-template-columns: 1fr
-            }
-        }
-
-        @media (max-width:640px) {
-            .topbar {
-                padding: 15px 17px
-            }
-
-            .progress {
-                left: 8px;
-                top: 62px
-            }
-
-            .hero {
-                padding: 105px 20px 80px
-            }
-
-            .hero-inner {
-                gap: 4px
-            }
-
-            .hero-visual {
-                height: 270px
-            }
-
-            .core {
-                width: 145px
-            }
-
-            .chapter-title {
-                padding: 16vh 20px 8vh
-            }
-
-            .stick {
-                padding: 60px 0 30px;
-                height: 100svh;
-                min-height: 590px
-            }
-
-            .stage {
-                height: 86svh;
-                border-left: 0;
-                border-right: 0
-            }
-
-            .copy {
-                left: 6%;
-                top: 9%;
-                width: 74%
-            }
-
-            .copy h3 {
-                font-size: 27px
-            }
-
-            .copy p {
-                font-size: 12px
-            }
-
-            .copy .micro {
-                font-size: 9px
-            }
-
-            .data {
-                left: 6%;
-                right: 6%;
-                width: auto;
-                grid-template-columns: repeat(2, 1fr);
-                bottom: 7%
-            }
-
-            .data .cell b {
-                font-size: 15px
-            }
-
-            .data .cell span {
-                font-size: 8px
-            }
-
-            .label {
-                font-size: 8px
-            }
-
-            .boldlabel {
-                font-size: 10px
-            }
-
-            .timeline-shell {
-                padding: 8vh 20px
+                height: 380px
             }
 
             .timeline-head {
@@ -1120,44 +1017,282 @@
                 margin-top: 14px
             }
 
+            .final-grid {
+                grid-template-columns: 1fr;
+                gap: 44px
+            }
+
+            /* Sticky stages stack: copy on top, diagram in the middle, data below. */
+            .stick {
+                min-height: 0;
+                padding: 64px 18px 24px
+            }
+
+            .stage {
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+                width: 100%;
+                height: 100%;
+                padding: 16px 16px 14px
+            }
+
+            .stage::before {
+                display: none
+            }
+
+            .stage>svg {
+                position: static;
+                inset: auto;
+                display: block;
+                flex: 1 1 auto;
+                min-height: 150px;
+                max-height: min(54svh, 520px);
+                margin-block: auto;
+                width: 100%;
+                height: auto
+            }
+
+            .copy {
+                position: static;
+                width: auto;
+                max-width: none;
+                order: 0
+            }
+
+            .copy h3 {
+                font-size: clamp(23px, 5vw, 32px)
+            }
+
+            .copy p {
+                font-size: 13.5px;
+                max-width: 64ch
+            }
+
+            .data {
+                position: static;
+                left: auto;
+                right: auto;
+                bottom: auto;
+                width: auto;
+                order: 2;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px 16px
+            }
+
+            .meter {
+                position: static;
+                left: auto;
+                right: auto;
+                bottom: auto;
+                order: 3;
+                margin-top: 2px
+            }
+
+            /* Final scene: phone centered between the copy and the stat rows. */
+            .phone-stage {
+                position: static;
+                inset: auto;
+                order: 1;
+                flex: 1 1 auto;
+                min-height: 170px;
+                max-height: min(50svh, 460px);
+                margin-block: auto
+            }
+
+            .phone {
+                width: auto;
+                height: 100%;
+                max-height: 460px
+            }
+
+            .phone-word {
+                font-size: 8px
+            }
+
+            .feature .callout {
+                position: static;
+                right: auto;
+                top: auto;
+                width: auto;
+                order: 2;
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 0 18px
+            }
+
+            .feature .callout p {
+                grid-column: 1 / -1;
+                margin: 0 0 4px
+            }
+        }
+
+        @media (max-width:640px) {
+            .topbar {
+                padding: 14px 16px;
+                font-size: 10px;
+                letter-spacing: .12em
+            }
+
+            .progress {
+                left: 8px;
+                top: 56px
+            }
+
+            .hero {
+                padding: 104px 18px 64px
+            }
+
+            h1 {
+                font-size: clamp(40px, 11.5vw, 72px)
+            }
+
+            .hero-sub {
+                font-size: 15.5px
+            }
+
+            .hero-meta {
+                gap: 18px;
+                margin-top: 26px
+            }
+
+            .hero-inner {
+                gap: 18px
+            }
+
+            .hero-visual {
+                height: 300px
+            }
+
+            .core {
+                width: 150px
+            }
+
+            .chapter-title {
+                padding: 13vh 18px 7vh
+            }
+
+            .stick {
+                padding: 56px 12px 18px
+            }
+
+            .stage {
+                gap: 12px;
+                padding: 14px 14px 12px
+            }
+
+            .stage>svg {
+                min-height: 130px
+            }
+
+            .copy h3 {
+                font-size: 21px
+            }
+
+            .copy p {
+                font-size: 12.5px
+            }
+
+            .copy .micro {
+                font-size: 9px;
+                letter-spacing: .04em
+            }
+
+            .data {
+                gap: 8px 12px
+            }
+
+            .data .cell b {
+                font-size: 15px
+            }
+
+            .data .cell span {
+                font-size: 8px;
+                letter-spacing: .05em
+            }
+
+            /* The viewBox crops below shrink the canvas; bump in-SVG type to stay readable. */
+            .stage .label {
+                font-size: 12px
+            }
+
+            .stage .boldlabel {
+                font-size: 13px
+            }
+
+            [data-scene="phone"] .label {
+                font-size: 13px
+            }
+
+            [data-scene="phone"] .boldlabel {
+                font-size: 14px
+            }
+
+            .feature .callout .row b {
+                font-size: 15px
+            }
+
+            .feature .callout .row span {
+                font-size: 8px
+            }
+
+            .feature .callout p {
+                font-size: 11px
+            }
+
+            .phone-word {
+                font-size: 7.5px
+            }
+
             .tl {
-                height: 320px
+                height: 340px
             }
 
             .tl .dot span {
                 font-size: 8px
             }
 
-            .phone {
-                width: 205px
+            .edge-l span {
+                left: 0;
+                transform: none;
+                text-align: left
             }
 
-            .feature .callout {
-                right: 5%;
-                left: 53%;
-                top: 11%;
-                width: 42%
-            }
-
-            .callout .row b {
-                font-size: 15px
-            }
-
-            .callout .row span {
-                font-size: 8px
-            }
-
-            .callout p {
-                font-size: 11px
+            .edge-r span {
+                left: auto;
+                right: 0;
+                transform: none;
+                text-align: right
             }
 
             .final {
-                padding: 14vh 20px 12vh
+                padding: 13vh 18px 9vh
             }
 
-            .final-grid {
-                gap: 32px;
-                margin-top: 45px
+            .sources {
+                margin-top: 60px
+            }
+        }
+
+        @media (max-width:640px) and (max-height:720px) {
+            .data {
+                grid-template-columns: repeat(4, minmax(0, 1fr))
+            }
+
+            .data .cell b {
+                font-size: 13px
+            }
+
+            .copy p {
+                font-size: 12px
+            }
+
+            .stage>svg {
+                min-height: 120px
+            }
+
+            .feature .callout p {
+                display: none
             }
         }
     </style>
@@ -1486,7 +1621,7 @@
                         <div class="row"><b id="finalRam">≈12 GB</b><span>installed memory class</span></div>
                         <div class="row"><b id="finalWeight">233 g</b><span>whole phone mass</span></div>
                     </div>
-                    <div class="copy" style="left:7%;top:auto;bottom:12%;width:min(420px,40%)">
+                    <div class="copy copy--final">
                         <h3 id="finalTitle">The computer is now the thing you forget you are carrying.</h3>
                         <p id="finalCopy">Apple's published specs describe a 6-core CPU, 6-core GPU with neural
                             accelerators, 16-core Neural Engine and hardware ray tracing. A 2026 Geekbench 6 sample
@@ -1508,14 +1643,14 @@
                 </div>
                 <div class="tl" aria-label="Timeline of representative computing milestones">
                     <div class="tl-line"></div>
-                    <div class="dot top" style="left:4%"><span>1969 · AGC<br>~85k instr/s</span></div>
+                    <div class="dot top edge-l" style="left:4%"><span>1969 · AGC<br>~85k instr/s</span></div>
                     <div class="dot bottom" style="left:15%"><span>1971 · 4004<br>2,300 transistors</span></div>
                     <div class="dot top" style="left:27%"><span>1978 · 8086<br>29k transistors</span></div>
                     <div class="dot bottom" style="left:41%"><span>1989 · 486<br>15–20 MIPS</span></div>
                     <div class="dot top" style="left:57%"><span>1999 · PIII<br>9.5M transistors</span></div>
                     <div class="dot bottom" style="left:70%"><span>2007 · iPhone<br>128 MB RAM</span></div>
                     <div class="dot top" style="left:84%"><span>2023 · A17 Pro<br>19B transistors</span></div>
-                    <div class="dot bottom current" style="left:96%"><span>2025 · A19 Pro<br>6 CPU + 6 GPU + 16
+                    <div class="dot bottom current edge-r" style="left:96%"><span>2025 · A19 Pro<br>6 CPU + 6 GPU + 16
                             NE</span></div>
                 </div>
                 <div class="tl-caption">Scale warning: <strong>clock, MIPS, transistor count, memory and Geekbench
@@ -1609,6 +1744,29 @@
             const $ = s => document.querySelector(s);
             const $$ = s => Array.from(document.querySelectorAll(s));
 
+            // Narrow screens crop each stage's viewBox so the diagram fills the
+            // available band at a readable scale instead of shrinking to fit.
+            const NARROW = matchMedia('(max-width:900px)');
+            const VB = { agc: '500 150 400 340', phone: '250 130 560 400', hetero: '420 150 470 360' };
+            const SIL_KEYS = [[30, 160, 440, 400], [330, 130, 440, 430], [610, 90, 440, 470], [610, 90, 440, 470]];
+            const lerpKeys = (keys, t) => {
+                const n = keys.length - 1;
+                const s = Math.min(n - 1, Math.max(0, Math.floor(t * n)));
+                const f = clamp(t * n - s);
+                return keys[s].map((v, i) => lerp(v, keys[s + 1][i], f));
+            };
+
+            function applyViewBox() {
+                $$('[data-scene]').forEach(sec => {
+                    const svg = sec.querySelector('svg');
+                    if (!svg) return;
+                    const name = sec.dataset.scene;
+                    if (!NARROW.matches) { svg.setAttribute('viewBox', '0 0 1000 700'); return; }
+                    if (name === 'silicon') sceneSilicon(sceneState.silicon);
+                    else svg.setAttribute('viewBox', VB[name] || '0 0 1000 700');
+                });
+            }
+
             function makeDots(id, cols, rows, x, y, w, h, opacity = 1) {
                 const g = $(id); if (!g) return;
                 let out = '';
@@ -1699,6 +1857,11 @@
                 ];
                 const j = Math.min(3, Math.floor(p * 4));
                 $('#silTitle').textContent = t[j][0]; $('#silCopy').textContent = t[j][1]; $('#silMicro').textContent = t[j][2];
+                // On narrow screens the camera pans across the eras as the reader scrolls.
+                if (NARROW.matches) {
+                    const svg = $('[data-scene="silicon"] svg');
+                    if (svg) svg.setAttribute('viewBox', lerpKeys(SIL_KEYS, clamp(p)).map(v => v.toFixed(1)).join(' '));
+                }
             }
 
             function scenePhone(p) {
@@ -1793,6 +1956,8 @@
                 if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
                     $$('[data-scene]').forEach(el => setScene(el.dataset.scene, 1));
                 }
+                applyViewBox();
+                NARROW.addEventListener('change', applyViewBox);
             }
             return { init };
         })();
