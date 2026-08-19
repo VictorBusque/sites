@@ -20,22 +20,31 @@
    JSON so the checker can parse it directly. */
 window.VB_POSTS = [
     {
+        "slug": "blog/gnss.html",
+        "no": "05",
+        "title": "How GPS and Galileo Find Your Phone",
+        "date": "2026-08",
+        "topic": "Space · Navigation",
+        "tags": ["GNSS", "GPS", "Galileo", "Positioning"],
+        "deck": "How GPS and Galileo turn coded radio signals, satellite orbit data and precise timing from four satellites into the position shown on your phone."
+    },
+    {
         "slug": "blog/airplane-entertainment.html",
         "no": "04",
-        "title": "An airplane's entertainment system is a CDN",
+        "title": "How In-Flight Entertainment Uses a Cabin CDN",
         "date": "2026-08",
         "topic": "Networks · CDN",
         "tags": ["CDN", "Airplane", "Entertainment"],
-        "deck": "A deep dive into the content delivery network that powers in-flight entertainment."
+        "deck": "How an aircraft’s onboard media servers, cabin network and seat computers deliver films without sending every playback request to the internet."
     },
     {
         "slug": "blog/starlink.html",
         "no": "03",
-        "title": "Starlink — A packet's journey through space",
+        "title": "How a Starlink Packet Travels Through Space",
         "date": "2026-08",
         "topic": "Space · Networks",
         "tags": ["Starlink", "Lasers", "Latency"],
-        "deck": "A packet's route through the constellation: phased arrays on the ground, laser links between satellites, and the physics of latency from orbit."
+        "deck": "Follow one packet from a Starlink terminal through a moving satellite network, laser links and a gateway before it reaches the terrestrial internet."
     },
     {
         "slug": "blog/spain-renewable-grid.html",

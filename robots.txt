@@ -4,4 +4,4 @@ Allow: /
 # Works in progress live in /blog/not-ready/ — not rendered, not crawled
 Disallow: /blog/not-ready/
 
-Sitemap: https://victorbusque.com/sitemap.xml
+Sitemap: https://engineering.victorbusque.com/sitemap.xml

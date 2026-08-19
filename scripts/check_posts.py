@@ -95,7 +95,7 @@ def post_structure_errors(path, slug):
     text = path.read_text(encoding="utf-8")
     errors = []
 
-    canonical = f'https://victorbusque.com/{slug}'
+    canonical = f'https://engineering.victorbusque.com/{slug}'
     if not re.search(r'<link\s+rel="canonical"\s+href="' + re.escape(canonical) + r'"\s*/?>', text):
         errors.append(f"'{slug}': canonical must be '{canonical}'")
     if not re.search(r"<main\b[^>]*>", text) or "</main>" not in text:
@@ -186,7 +186,7 @@ def main():
         if not has_blog_posting(files[name]):
             errors.append(f"'{slug}': missing BlogPosting JSON-LD in <head>")
         errors.extend(post_structure_errors(files[name], slug))
-        if f"https://victorbusque.com/{slug}" not in locations:
+        if f"https://engineering.victorbusque.com/{slug}" not in locations:
             errors.append(f"'{slug}': missing from sitemap.xml")
 
     # Each manifest entry must point to a real file with a valid status.
@@ -218,7 +218,7 @@ def main():
 
     # Sitemap must list exactly the published posts — no parked, no wip, no ghosts.
     published = {
-        f"https://victorbusque.com/{e['slug']}" for e in entries
+        f"https://engineering.victorbusque.com/{e['slug']}" for e in entries
         if e.get("status") != "wip" and (ROOT / e.get("slug", "zzz")).is_file()
     }
     sitemap_blog = {loc for loc in locations if "/blog/" in loc}

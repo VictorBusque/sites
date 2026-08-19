@@ -9,15 +9,15 @@
         content="A scrollytelling history of computational power from the Apollo Guidance Computer to the iPhone 17 Pro Max.">
     <title>From Apollo to iPhone 17 Pro Max — 56 years of compute</title>
     <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://victorbusque.com/blog/apollo-to-phone.html">
+    <link rel="canonical" href="https://engineering.victorbusque.com/blog/apollo-to-phone.html">
 
     <!-- Open Graph -->
     <meta property="og:type" content="article">
     <meta property="og:site_name" content="Víctor Busqué — Curiosities">
     <meta property="og:title" content="From Apollo to iPhone 17 Pro Max — 56 years of compute">
     <meta property="og:description" content="A scrollytelling history of computational power from the Apollo Guidance Computer to the iPhone 17 Pro Max.">
-    <meta property="og:url" content="https://victorbusque.com/blog/apollo-to-phone.html">
-    <meta property="og:image" content="https://victorbusque.com/img/og.png">
+    <meta property="og:url" content="https://engineering.victorbusque.com/blog/apollo-to-phone.html">
+    <meta property="og:image" content="https://engineering.victorbusque.com/img/og.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:locale" content="en_US">
@@ -26,7 +26,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="From Apollo to iPhone 17 Pro Max — 56 years of compute">
     <meta name="twitter:description" content="A scrollytelling history of computational power from the Apollo Guidance Computer to the iPhone 17 Pro Max.">
-    <meta name="twitter:image" content="https://victorbusque.com/img/og.png">
+    <meta name="twitter:image" content="https://engineering.victorbusque.com/img/og.png">
 
     <!-- Structured data -->
     <script type="application/ld+json">
@@ -36,9 +36,9 @@
       "headline": "From Apollo to iPhone 17 Pro Max — 56 years of compute",
       "description": "A scrollytelling history of computational power from the Apollo Guidance Computer to the iPhone 17 Pro Max.",
       "datePublished": "2026-08-19",
-      "author": { "@type": "Person", "name": "Víctor Busqué", "url": "https://victorbusque.com/about.html" },
-      "image": "https://victorbusque.com/img/og.png",
-      "mainEntityOfPage": "https://victorbusque.com/blog/apollo-to-phone.html"
+      "author": { "@type": "Person", "name": "Víctor Busqué", "url": "https://engineering.victorbusque.com/about.html" },
+      "image": "https://engineering.victorbusque.com/img/og.png",
+      "mainEntityOfPage": "https://engineering.victorbusque.com/blog/apollo-to-phone.html"
     }
     </script>
     <style>
@@ -1310,14 +1310,14 @@
                 <div>
                     <div class="kicker">A visual history of compute</div>
                     <h1>From the Moon<br>to your pocket.</h1>
-                    <p class="hero-sub">In 1969, Apollo had a computer with <strong>2 KB of erasable memory</strong> and
+                    <p class="hero-sub">In 1969, Apollo had a computer with <strong>2,048 words of erasable memory</strong> and
                         roughly <strong>85,000 instructions per second</strong>. Today, the iPhone 17 Pro Max carries a
                         six-core A19 Pro, a 16-core Neural Engine and roughly <strong>12 GB of working memory</strong>.
                     </p>
                     <div class="hero-meta">
                         <div class="metric"><b>56 years</b><span>1969 → 2025</span></div>
-                        <div class="metric"><b>4.26 GHz</b><span>reported A19 Pro frequency</span></div>
-                        <div class="metric"><b>3.2M×</b><span>RAM, byte for byte</span></div>
+                        <div class="metric"><b>~8.3M×</b><span>4004 → A17 Pro transistors</span></div>
+                        <div class="metric"><b>~3.2M×</b><span>working memory vs AGC</span></div>
                     </div>
                 </div>
                 <div class="hero-visual" aria-hidden="true">
@@ -1413,45 +1413,32 @@
             <div class="stick">
                 <div class="stage">
                     <div class="copy">
-                        <h3 id="silTitle">From thousands of transistors to millions.</h3>
-                        <p id="silCopy">The 1971 Intel 4004 put 2,300 transistors on a chip. By 1989, Intel's i486
-                            integrated 1.2 million and was rated at roughly 15–20 million instructions per second.</p>
-                        <div class="micro" id="silMicro">CLOCKS RISE · LOGIC DENSITY RISES · COST PER FUNCTION FALLS
-                        </div>
+                        <h3 id="silTitle">Count the exponent, not the chip drawing.</h3>
+                        <p id="silCopy">A transistor is tiny enough that literal pictures stop working. This ruler makes the count physical: every vertical rung is ten times as many transistors.</p>
+                        <div class="micro" id="silMicro">ONE RUNG UP = 10× MORE SWITCHES ON A CHIP</div>
                     </div>
                     <svg viewBox="0 0 1000 700" role="img"
-                        aria-label="Animated silicon evolution from Intel 4004 to i486">
-                        <g id="silViz">
-                            <line x1="120" y1="430" x2="900" y2="430" class="line"></line>
-                            <g id="era4004">
-                                <rect x="120" y="315" width="118" height="118" rx="3" class="node"></rect>
-                                <g id="t4004"></g>
-                                <text x="120" y="470" class="boldlabel">4004 · 1971</text>
-                                <text x="120" y="492" class="label">2,300 transistors</text>
-                                <text x="120" y="511" class="label">108 kHz</text>
-                            </g>
-                            <g id="era8086">
-                                <rect x="400" y="285" width="150" height="148" rx="3" class="node"></rect>
-                                <g id="t8086"></g>
-                                <text x="400" y="470" class="boldlabel">8086 · 1978</text>
-                                <text x="400" y="492" class="label">29,000 transistors</text>
-                                <text x="400" y="511" class="label">4.77–10 MHz</text>
-                            </g>
-                            <g id="era486">
-                                <rect x="690" y="225" width="185" height="208" rx="3" class="node-hot"></rect>
-                                <g id="t486"></g>
-                                <text x="690" y="470" class="boldlabel">i486 · 1989</text>
-                                <text x="690" y="492" class="label hot">1.2M transistors</text>
-                                <text x="690" y="511" class="label hot">15–20 MIPS</text>
-                            </g>
-                            <text x="90" y="120" class="label">EACH STEP IS A NEW ECONOMY OF SCALE</text>
+                        aria-label="Logarithmic transistor-count scale from Intel 4004 to Apple A17 Pro">
+                        <g id="transistorViz">
+                            <text x="130" y="135" class="boldlabel">TRANSISTORS PER CHIP · LOG₁₀ SCALE</text>
+                            <text x="130" y="160" class="label">equal vertical distance = a tenfold increase</text>
+                            <line x1="500" y1="150" x2="500" y2="570" class="line"></line>
+                            <g id="transistorRungs"></g>
+                            <g id="transistor4004"><line x1="500" y1="526" x2="725" y2="526" class="line-hot"></line><circle cx="500" cy="526" r="7" fill="#d88b4a"></circle><text x="744" y="520" class="boldlabel">INTEL 4004 · 1971</text><text x="744" y="543" class="label hot">2,300 TRANSISTORS</text></g>
+                            <g id="transistor8086"><line x1="500" y1="466" x2="725" y2="466" class="line-hot"></line><circle cx="500" cy="466" r="7" fill="#d88b4a"></circle><text x="744" y="460" class="boldlabel">INTEL 8086 · 1978</text><text x="744" y="483" class="label hot">29,000 · 12.6× 4004</text></g>
+                            <g id="transistor486"><line x1="500" y1="399" x2="725" y2="399" class="line-hot"></line><circle cx="500" cy="399" r="7" fill="#d88b4a"></circle><text x="744" y="393" class="boldlabel">INTEL i486 · 1989</text><text x="744" y="416" class="label hot">1.2 MILLION · 522× 4004</text></g>
+                            <g id="transistorP3"><line x1="500" y1="361" x2="725" y2="361" class="line-hot"></line><circle cx="500" cy="361" r="7" fill="#d88b4a"></circle><text x="744" y="355" class="boldlabel">PENTIUM III · 1999</text><text x="744" y="378" class="label hot">9.5 MILLION · ~4,130× 4004</text></g>
+                            <g id="transistorA17"><line x1="500" y1="221" x2="725" y2="221" class="line-hot"></line><circle cx="500" cy="221" r="8" fill="#b8d8be"></circle><text x="744" y="215" class="boldlabel">APPLE A17 PRO · 2023</text><text x="744" y="238" class="label white">19 BILLION · ~8.3M× 4004</text></g>
+                            <g id="transistorLift"><circle cx="500" cy="526" r="15" fill="none" stroke="#f5c08b" stroke-width="1.5"></circle><circle cx="500" cy="526" r="4" fill="#f5c08b"></circle></g>
+                            <text x="130" y="430" class="boldlabel">THE RULER CLIMBS SEVEN ORDERS.</text>
+                            <text x="130" y="455" class="label">THE FINAL GAP IS NOT A LARGER ICON;</text><text x="130" y="474" class="label">IT IS MILLIONS OF TIMES THE 4004 COUNT.</text>
                         </g>
                     </svg>
                     <div class="data">
-                        <div class="cell"><b id="silBig">2,300</b><span id="silBigLabel">transistors</span></div>
-                        <div class="cell"><b id="silFreq">108 kHz</b><span>clock</span></div>
-                        <div class="cell"><b id="silMult">1×</b><span>relative transistor count</span></div>
-                        <div class="cell"><b id="silMips">—</b><span>throughput note</span></div>
+                        <div class="cell"><b id="silBig">2,300</b><span id="silBigLabel">Intel 4004</span></div>
+                        <div class="cell"><b id="silFreq">19B</b><span>A17 Pro transistors</span></div>
+                        <div class="cell"><b id="silMult">~8.3M×</b><span>4004 → A17 Pro</span></div>
+                        <div class="cell"><b id="silMips">7</b><span>orders of magnitude</span>
                     </div>
                     <div class="meter"><i id="silMeter"></i></div>
                 </div>
@@ -1460,10 +1447,9 @@
 
         <section class="chapter">
             <div class="chapter-title reveal">
-                <div class="num">03 / The desktop era</div>
-                <h2>By the late 1990s, a consumer PC was operating on a completely different scale.</h2>
-                <p>The Pentium III shipped at 550 MHz with 9.5 million transistors. A few years later, a computer that
-                    once needed a desk could fit into a pocket.</p>
+                <div class="num">03 / A scale you can see</div>
+                <h2>Memory makes the change physically legible.</h2>
+                <p>Clock speed and benchmark scores are not comparable across these machines. Working memory is more concrete: the Apollo Guidance Computer had about 3.75 KiB of erasable data memory; the original iPhone had 128 MB; the iPhone 17 Pro Max is reported with roughly 12 GB.</p>
             </div>
         </section>
 
@@ -1471,40 +1457,41 @@
             <div class="stick">
                 <div class="stage">
                     <div class="copy">
-                        <h3 id="phoneTitle">Then the computer stopped looking like a computer.</h3>
-                        <p id="phoneCopy">The original iPhone arrived in 2007 with a 412 MHz ARM11 processor and 128 MB
-                            RAM. That's tiny by today's standards, but it was already a general-purpose computer with a
-                            browser, a graphics stack and a real operating system in your hand.</p>
-                        <div class="micro" id="phoneMicro">THE FORM FACTOR CHANGES · THE COMPUTING ROLE DOESN'T</div>
+                        <h3 id="phoneTitle">This is a logarithmic scale, not a race.</h3>
+                        <p id="phoneCopy">Each vertical step doubles working memory. The distance between the markers therefore represents a real multiplication, rather than an illustrative change in the size of a device.</p>
+                        <div class="micro" id="phoneMicro">EVERY STEP UP = 2× MORE ERASABLE / WORKING MEMORY</div>
                     </div>
                     <svg viewBox="0 0 1000 700" role="img"
-                        aria-label="Animated transition from a desktop-era processor to the original iPhone">
-                        <g id="phoneViz">
-                            <rect x="535" y="215" width="245" height="170" rx="5" class="node"></rect>
-                            <rect x="565" y="245" width="185" height="108" rx="4" fill="#131713" stroke="#525950">
-                            </rect>
-                            <g id="screenDots"></g>
-                            <text x="550" y="420" class="boldlabel">PENTIUM III · 1999</text>
-                            <text x="550" y="442" class="label">550 MHz · 9.5M transistors</text>
-                            <g id="miniPhone" transform="translate(375 160)">
-                                <rect x="0" y="0" width="92" height="184" rx="12" fill="#252722" stroke="#767a72">
-                                </rect>
-                                <rect x="7" y="14" width="78" height="152" rx="9" fill="#0e110f"></rect>
-                                <circle cx="46" cy="176" r="3" fill="#777b73"></circle>
+                        aria-label="Logarithmic working-memory scale from Apollo Guidance Computer to iPhone 17 Pro Max">
+                        <g id="memoryViz">
+                            <text x="92" y="138" class="boldlabel">WORKING MEMORY · LOG₂ BYTES</text>
+                            <text x="92" y="162" class="label">equal vertical distance = a doubling</text>
+                            <line x1="492" y1="154" x2="492" y2="572" class="line"></line>
+                            <g class="memory-ticks">
+                                <path d="M480 170h24 M480 238h24 M480 306h24 M480 374h24 M480 442h24 M480 510h24 M480 570h24" class="line"></path>
+                                <text x="520" y="174" class="label">2^34 bytes</text><text x="520" y="242" class="label">2^30 · 1 GiB</text><text x="520" y="310" class="label">2^26 · 64 MiB</text><text x="520" y="378" class="label">2^22 · 4 MiB</text><text x="520" y="446" class="label">2^18 · 256 KiB</text><text x="520" y="514" class="label">2^14 · 16 KiB</text><text x="520" y="574" class="label">2^10 · 1 KiB</text><text x="430" y="550" text-anchor="end" class="label">~2^12 · 4 KiB</text><text x="430" y="293" text-anchor="end" class="label">2^27 · 128 MiB</text>
                             </g>
-                            <text x="367" y="385" class="boldlabel">iPHONE · 2007</text>
-                            <text x="367" y="407" class="label">412 MHz · 128 MB RAM</text>
-                            <path d="M 470 257 C 505 257 510 300 535 300" class="line-hot" id="formArrow"></path>
-                            <text x="80" y="340" class="boldlabel">THE COMPUTER BECOMES</text>
-                            <text x="80" y="367" class="label">a general-purpose object</text>
-                            <text x="80" y="386" class="label">people carry all day.</text>
+                            <g id="memoryAGC">
+                                <line x1="492" y1="546" x2="735" y2="546" class="line-hot"></line><circle cx="492" cy="546" r="7" fill="#d88b4a"></circle>
+                                <text x="754" y="540" class="boldlabel">APOLLO GUIDANCE COMPUTER · 1969</text><text x="754" y="563" class="label hot">~3.75 KiB ERASABLE DATA MEMORY</text>
+                            </g>
+                            <g id="memoryPhone">
+                                <line x1="492" y1="289" x2="735" y2="289" class="line-hot"></line><circle cx="492" cy="289" r="7" fill="#d88b4a"></circle>
+                                <text x="754" y="283" class="boldlabel">ORIGINAL iPHONE · 2007</text><text x="754" y="306" class="label hot">128 MB RAM · ~33,000× AGC</text>
+                            </g>
+                            <g id="memoryA19">
+                                <line x1="492" y1="179" x2="735" y2="179" class="line-hot"></line><circle cx="492" cy="179" r="7" fill="#b8d8be"></circle>
+                                <text x="754" y="173" class="boldlabel">iPHONE 17 PRO MAX · 2025</text><text x="754" y="196" class="label white">~12 GB REPORTED SYSTEM MEMORY · ~3.2M× AGC</text>
+                            </g>
+                            <text x="92" y="438" class="boldlabel">A LINEAR BAR WOULD HIDE APOLLO.</text>
+                            <text x="92" y="463" class="label">THE LOG SCALE KEEPS ALL THREE</text><text x="92" y="482" class="label">MACHINES ON ONE READABLE RULER.</text>
                         </g>
                     </svg>
                     <div class="data">
-                        <div class="cell"><b id="phoneMetric1">412 MHz</b><span>CPU frequency</span></div>
-                        <div class="cell"><b id="phoneMetric2">128 MB</b><span>RAM</span></div>
-                        <div class="cell"><b id="phoneMetric3">133×</b><span>RAM vs AGC</span></div>
-                        <div class="cell"><b id="phoneMetric4">~4.5×</b><span>clock vs AGC internal</span></div>
+                        <div class="cell"><b id="phoneMetric1">~3.75 KiB</b><span>AGC erasable data</span></div>
+                        <div class="cell"><b id="phoneMetric2">128 MB</b><span>original iPhone RAM</span></div>
+                        <div class="cell"><b id="phoneMetric3">~12 GB</b><span>iPhone 17 Pro Max reported</span></div>
+                        <div class="cell"><b id="phoneMetric4">~3.2M×</b><span>working memory vs AGC</span></div>
                     </div>
                     <div class="meter"><i id="phoneMeter"></i></div>
                 </div>
@@ -1615,19 +1602,15 @@
                     <div class="callout">
                         <p id="finalIntro">Watch the Apollo-era “computer” collapse into a phone as capability and
                             density accumulate.</p>
-                        <div class="row"><b id="finalClock">4.26 GHz</b><span>reported A19 Pro frequency</span></div>
-                        <div class="row"><b id="finalGeek">≈3,900</b><span>Geekbench 6 single-core sample</span></div>
-                        <div class="row"><b id="finalMulti">≈10,200</b><span>Geekbench 6 multi-core sample</span></div>
-                        <div class="row"><b id="finalRam">≈12 GB</b><span>installed memory class</span></div>
-                        <div class="row"><b id="finalWeight">233 g</b><span>whole phone mass</span></div>
+                        <div class="row"><b>19B</b><span>A17 Pro transistors · 2023</span></div>
+                        <div class="row"><b>~8.3M×</b><span>A17 Pro vs Intel 4004 count</span></div>
+                        <div class="row"><b>~12 GB</b><span>reported system memory</span></div>
+                        <div class="row"><b>~3.2M×</b><span>working memory vs AGC</span></div>
+                        <div class="row"><b>233 g</b><span>whole phone mass</span></div>
                     </div>
                     <div class="copy copy--final">
                         <h3 id="finalTitle">The computer is now the thing you forget you are carrying.</h3>
-                        <p id="finalCopy">Apple's published specs describe a 6-core CPU, 6-core GPU with neural
-                            accelerators, 16-core Neural Engine and hardware ray tracing. A 2026 Geekbench 6 sample
-                            records 3,889 single-core and 10,236 multi-core points. Those benchmark scores are not
-                            directly comparable to Apollo's instruction rate, but they illustrate the modern performance
-                            regime.</p>
+                        <p id="finalCopy">The scales above deliberately avoid turning unlike benchmarks into one score. They show two things that can be counted across eras: switches on a chip and working memory. A modern phone then spends that abundance on CPU, GPU, neural, media and I/O engines at once.</p>
                         <div class="micro">SAME WORD: “COMPUTER” · RADICALLY DIFFERENT SCALE</div>
                     </div>
                     <div class="meter"><i id="finalMeter"></i></div>
@@ -1747,14 +1730,7 @@
             // Narrow screens crop each stage's viewBox so the diagram fills the
             // available band at a readable scale instead of shrinking to fit.
             const NARROW = matchMedia('(max-width:900px)');
-            const VB = { agc: '500 150 400 340', phone: '250 130 560 400', hetero: '420 150 470 360' };
-            const SIL_KEYS = [[30, 160, 440, 400], [330, 130, 440, 430], [610, 90, 440, 470], [610, 90, 440, 470]];
-            const lerpKeys = (keys, t) => {
-                const n = keys.length - 1;
-                const s = Math.min(n - 1, Math.max(0, Math.floor(t * n)));
-                const f = clamp(t * n - s);
-                return keys[s].map((v, i) => lerp(v, keys[s + 1][i], f));
-            };
+            const VB = { agc: '500 150 400 340', silicon: '390 120 550 490', phone: '390 120 550 490', hetero: '420 150 470 360' };
 
             function applyViewBox() {
                 $$('[data-scene]').forEach(sec => {
@@ -1762,8 +1738,7 @@
                     if (!svg) return;
                     const name = sec.dataset.scene;
                     if (!NARROW.matches) { svg.setAttribute('viewBox', '0 0 1000 700'); return; }
-                    if (name === 'silicon') sceneSilicon(sceneState.silicon);
-                    else svg.setAttribute('viewBox', VB[name] || '0 0 1000 700');
+                    svg.setAttribute('viewBox', VB[name] || '0 0 1000 700');
                 });
             }
 
@@ -1782,10 +1757,14 @@
 
             function prepArt() {
                 makeDots('#romGrid', 18, 7, 565, 252, 220, 88, .85);
-                makeDots('#t4004', 7, 7, 140, 332, 72, 72, .65);
-                makeDots('#t8086', 10, 8, 420, 302, 106, 114, .82);
-                makeDots('#t486', 14, 12, 714, 245, 135, 160, 1);
-                makeDots('#screenDots', 13, 7, 585, 262, 142, 75, .6);
+                const rungs = $('#transistorRungs');
+                if (rungs) {
+                    const exponents = [3, 4, 5, 6, 7, 8, 9, 10];
+                    rungs.innerHTML = exponents.map((exp, i) => {
+                        const y = 550 - i * 50;
+                        return `<path d="M488 ${y}h24" class="line"></path><text x="530" y="${y + 4}" class="label">10^${exp}</text>`;
+                    }).join('');
+                }
             }
 
             function readProgress(el) {
@@ -1833,56 +1812,50 @@
             }
 
             function sceneSilicon(p) {
-                const scale = lerp(1, 10.0, p);
-                $('#t4004').style.opacity = lerp(1, .12, p);
-                $('#t8086').style.opacity = lerp(.2, 1, clamp((p - .15) * 1.35));
-                $('#t486').style.opacity = clamp((p - .42) * 1.9);
-                $('#silMeter').style.width = (p * 100) + '%';
-                const steps = [
-                    ['2,300', 'transistors', '108 kHz', '—'],
-                    ['29,000', 'transistors', '4.77–10 MHz', '—'],
-                    ['1.2M', 'transistors', '25 MHz class', '15–20 MIPS'],
-                    ['9.5M', 'transistors', '550 MHz', '—']
-                ];
-                const idx = Math.min(3, Math.floor(p * 4));
-                const vals = idx === 3 ? steps[3] : steps[idx];
-                $('#silBig').textContent = vals[0]; $('#silBigLabel').textContent = vals[1];
-                $('#silFreq').textContent = vals[2]; $('#silMips').textContent = vals[3];
-                $('#silMult').textContent = (idx === 0 ? '1×' : idx === 1 ? '12.6×' : idx === 2 ? '522×' : '4,130×');
+                const q = clamp(p);
+                const reveal = (id, start) => {
+                    const el = $(id); if (!el) return;
+                    const amount = clamp((q - start) * 5.5);
+                    el.style.opacity = amount;
+                    el.style.transform = `translateY(${lerp(22, 0, amount)}px)`;
+                };
+                reveal('#transistor4004', 0);
+                reveal('#transistor8086', .16);
+                reveal('#transistor486', .32);
+                reveal('#transistorP3', .48);
+                reveal('#transistorA17', .68);
+                const lift = $('#transistorLift');
+                if (lift) lift.setAttribute('transform', `translate(0 ${-305 * q})`);
+                $('#silMeter').style.width = (q * 100) + '%';
                 const t = [
-                    ['From thousands of transistors to millions.', 'The 1971 Intel 4004 put 2,300 transistors on a chip.', 'CLOCKS RISE · LOGIC DENSITY RISES · COST PER FUNCTION FALLS'],
-                    ['The chip gets denser.', 'The 8086 raised the transistor budget by more than an order of magnitude while becoming the foundation of the IBM PC era.', '29,000 TRANSISTORS'],
-                    ['Now arithmetic becomes a system.', 'The i486 crossed one million transistors and was rated at roughly 15–20 MIPS.', '15–20 MILLION INSTRUCTIONS / SECOND'],
-                    ['The desktop jumps another order of magnitude.', 'By the Pentium III era, 9.5 million transistors could run at hundreds of MHz in a mainstream PC processor.', '550 MHZ · 9.5M TRANSISTORS']
+                    ['Count the exponent, not the chip drawing.', 'The 4004 began with 2,300 transistors. A literal picture would make later chips look like a solid rectangle, so the scale is logarithmic.', 'ONE RUNG UP = 10× MORE TRANSISTORS'],
+                    ['The first decades add rungs quickly.', 'The 8086 has 29,000 transistors; the i486 has 1.2 million. The marker is climbing through powers of ten, not merely growing a little taller.', '2,300 → 29,000 → 1.2M'],
+                    ['Millions become billions.', 'The 2023 A17 Pro is reported at 19 billion transistors: roughly 8.3 million times the 4004 count. That is why the last marker needs a log ruler.', '19B · ~8.3M× THE 4004'],
+                    ['Scale changes what can fit.', 'More switches do not automatically equal a particular benchmark. They create room for caches, graphics, media and neural engines in the same piece of silicon.', 'SEVEN ORDERS OF MAGNITUDE']
                 ];
-                const j = Math.min(3, Math.floor(p * 4));
-                $('#silTitle').textContent = t[j][0]; $('#silCopy').textContent = t[j][1]; $('#silMicro').textContent = t[j][2];
-                // On narrow screens the camera pans across the eras as the reader scrolls.
-                if (NARROW.matches) {
-                    const svg = $('[data-scene="silicon"] svg');
-                    if (svg) svg.setAttribute('viewBox', lerpKeys(SIL_KEYS, clamp(p)).map(v => v.toFixed(1)).join(' '));
-                }
+                const i = Math.min(3, Math.floor(q * 4));
+                $('#silTitle').textContent = t[i][0]; $('#silCopy').textContent = t[i][1]; $('#silMicro').textContent = t[i][2];
             }
 
             function scenePhone(p) {
-                const f = clamp(p);
-                $('#formArrow').style.strokeDasharray = '6 6';
-                $('#formArrow').style.strokeDashoffset = -(f * 220);
-                $('#miniPhone').setAttribute('transform', `translate(${lerp(375, 265, f)} ${lerp(160, 240, f)}) scale(${lerp(.8, 1.4, f)})`);
-                $('#phoneViz').style.transform = `translateY(${lerp(24, 0, f)}px)`;
-                $('#phoneMeter').style.width = (p * 100) + '%';
+                const q = clamp(p);
+                const reveal = (id, start) => {
+                    const el = $(id); if (!el) return;
+                    el.style.opacity = clamp((q - start) * 5.2);
+                    el.style.transform = `translateY(${lerp(18, 0, clamp((q - start) * 4))}px)`;
+                };
+                reveal('#memoryAGC', 0);
+                reveal('#memoryPhone', .25);
+                reveal('#memoryA19', .55);
+                $('#phoneMeter').style.width = (q * 100) + '%';
                 const a = [
-                    ['Then the computer stopped looking like a computer.', 'The original iPhone arrived in 2007 with a 412 MHz ARM11 processor and 128 MB RAM.', 'THE FORM FACTOR CHANGES · THE COMPUTING ROLE DOESN\'T'],
-                    ['A pocket computer appears.', 'Its memory was already 128 MB—roughly 33,000 times the AGC\'s ~3.75 KiB of erasable data memory.', '~33,000× AGC DATA RAM'],
-                    ['And the software stack grows around it.', 'Browser. Graphics. Sensors. Networking. An operating system. The “computer” now lives inside a product people call a phone.', 'GENERAL-PURPOSE COMPUTE GOES MOBILE'],
-                    ['The trajectory is now obvious.', 'The next eighteen years will multiply cores, caches, memory and specialization far faster than the human eye can see.', 'NEXT: HETEROGENEOUS SILICON']
+                    ['This is a logarithmic scale, not a race.', 'The Apollo Guidance Computer’s erasable data memory was about 3.75 KiB. It sits near the bottom of the ruler, but it remains visible because each vertical step is a doubling.', 'A LOG SCALE PRESERVES THE SMALL END'],
+                    ['One pocket computer creates a huge gap.', 'The original iPhone’s 128 MiB of RAM is about 33,000 times the AGC’s erasable data memory. The point is not that their workloads were alike; it is that memory stopped being the scarce material that shaped every decision.', '128 MiB · ~33,000× AGC'],
+                    ['The gap grows into millions.', 'A reported 12 GiB in the iPhone 17 Pro Max is about 3.2 million times the AGC data store, byte for byte. The ruler makes the exponent visible without pretending a modern benchmark equals an Apollo instruction.', '~12 GiB · ~3.2M× AGC'],
+                    ['Computation became abundant in several dimensions.', 'Memory is only one ruler. Transistors, energy efficiency, parallelism and specialized engines all changed too—but this one gives the expansion a physical scale the eye can follow.', 'ONE HONEST RULER · MANY OTHER CURVES']
                 ];
-                const i = Math.min(3, Math.floor(p * 4));
+                const i = Math.min(3, Math.floor(q * 4));
                 $('#phoneTitle').textContent = a[i][0]; $('#phoneCopy').textContent = a[i][1]; $('#phoneMicro').textContent = a[i][2];
-                $('#phoneMetric1').textContent = i < 1 ? '412 MHz' : i < 2 ? '600 MHz class' : i < 3 ? '1+ GHz class' : '4.26 GHz';
-                $('#phoneMetric2').textContent = i < 1 ? '128 MB' : i < 2 ? '256 MB' : i < 3 ? 'GB class' : '≈12 GB';
-                $('#phoneMetric3').textContent = i < 1 ? '33,000×' : '↑';
-                $('#phoneMetric4').textContent = i < 1 ? '4.5×' : '↑';
             }
 
             function sceneHetero(p) {
@@ -1916,7 +1889,7 @@
                 $('#finalIntro').style.opacity = clamp(q * 2);
                 const t = [
                     ['The machine is getting smaller.', 'The Apollo computer was physically large, memory-starved and mission-specific.'],
-                    ['The capability is getting denser.', 'Transistors, caches, memory and specialized engines are being packed into a fraction of the mass.'],
+                    ['The capability is getting denser.', 'The log rulers show the countable change: millions more switches than the 4004 and millions more working-memory bytes than the AGC.'],
                     ['The architecture becomes heterogeneous.', 'A modern SoC is not one faster CPU; it is a federation of compute engines sharing memory and power.'],
                     ['The computer is now the thing you forget you are carrying.', 'The word “computer” survived. The physical constraints changed beyond recognition.']
                 ];

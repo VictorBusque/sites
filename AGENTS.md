@@ -1,6 +1,6 @@
 # Víctor Busqué — A Notebook of Curiosities
 
-This repository publishes `victorbusque.com`: one curious idea per
+This repository publishes `engineering.victorbusque.com`: one curious idea per
 scroll-driven document. Engineering is the centre, not a boundary; topics can
 include AI, systems, Python, cloud, craft, or anything that benefits from a
 slow, visual explanation.
