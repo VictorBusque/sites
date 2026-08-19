@@ -21,7 +21,7 @@
 window.VB_POSTS = [
     {
         "slug": "blog/gnss.html",
-        "no": "05",
+        "no": "04",
         "title": "How GPS and Galileo Find Your Phone",
         "date": "2026-08",
         "topic": "Space · Navigation",
@@ -30,7 +30,7 @@ window.VB_POSTS = [
     },
     {
         "slug": "blog/airplane-entertainment.html",
-        "no": "04",
+        "no": "03",
         "title": "How In-Flight Entertainment Uses a Cabin CDN",
         "date": "2026-08",
         "topic": "Networks · CDN",
@@ -39,7 +39,7 @@ window.VB_POSTS = [
     },
     {
         "slug": "blog/starlink.html",
-        "no": "03",
+        "no": "02",
         "title": "How a Starlink Packet Travels Through Space",
         "date": "2026-08",
         "topic": "Space · Networks",
@@ -48,20 +48,11 @@ window.VB_POSTS = [
     },
     {
         "slug": "blog/spain-renewable-grid.html",
-        "no": "02",
+        "no": "01",
         "title": "Spain, at Renewable Scale.",
         "date": "2026-08",
         "topic": "Energy · Grid",
         "tags": ["Solar", "Wind", "Grid", "Spain"],
         "deck": "A visual story about the current scale of Spain's renewable electricity deployment in 2026."
-    },
-    {
-        "slug": "blog/apollo-to-phone.html",
-        "no": "01",
-        "title": "Apollo and iPhone: Two Scales of Computing", 
-        "date": "2026-08",
-        "topic": "Hardware · Silicon",
-        "tags": ["Apollo", "iPhone", "Silicon", "Compute"],
-        "deck": "Compare the Apollo Guidance Computer and iPhone 17 Pro Max on two scales: physical size, and the memory and specialized engines behind modern computing."
     }
 ];
