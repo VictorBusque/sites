@@ -1,64 +1,49 @@
 /* ── Single post manifest ──────────────────────────────────────────────
-   One object per published post in blog/. window.VB_POSTS is read by
-   index.html to render the shelf. Nothing here is invented: no entry,
-   no row. When a post ships, add it below (slug is the href, no is the
-   stable post number, date 'YYYY-MM', topic free-form) and run
-   scripts/check_posts.py. Renders newest first. The queue lives in
-   docs/ideas.md. The array body is strict JSON so the checker can parse
-   it directly. */
+   One object per published post at the top level of blog/. window.VB_POSTS
+   is read by index.html to render the shelf. Nothing here is invented:
+   no entry, no row.
+
+   blog/not-ready/ holds works in progress — redesigns parked until they
+   ship. Those articles are never in this manifest, never rendered on the
+   shelf, and excluded from sitemap + robots. When a parked article is
+   finished, move it to blog/<slug>.html and add its row here (dropping
+   any "status": "wip" draft marker) in the same change.
+
+   An entry with "status": "wip" is an unfinished article that already
+   sits at its final blog/ URL: index.html does not render it, the
+   checker skips its metadata checks, and the file itself must stay
+   noindex. Drop the field when it ships.
+
+   slug is the href, no is the stable post number, date 'YYYY-MM', topic
+   free-form. Run scripts/check_posts.py after any change. Renders newest
+   first. The idea queue lives in docs/ideas.md. The array body is strict
+   JSON so the checker can parse it directly. */
 window.VB_POSTS = [
     {
+        "slug": "blog/starlink.html",
+        "no": "03",
+        "title": "Starlink — A packet's journey through space",
+        "date": "2026-08",
+        "topic": "Space · Networks",
+        "tags": ["Starlink", "Lasers", "Latency"],
+        "deck": "A packet's route through the constellation: phased arrays on the ground, laser links between satellites, and the physics of latency from orbit."
+    },
+    {
+        "slug": "blog/spain-renewable-grid.html",
+        "no": "02",
+        "title": "Spain, at Renewable Scale.",
+        "date": "2026-08",
+        "topic": "Energy · Grid",
+        "tags": ["Solar", "Wind", "Grid", "Spain"],
+        "deck": "A visual story about the current scale of Spain's renewable electricity deployment in 2026."
+    },
+    {
         "slug": "blog/apollo-to-phone.html",
-        "no": "06",
-        "title": "How compute went from Apollo to the iPhone.",
+        "no": "01",
+        "title": "From Apollo to iPhone 17 Pro Max — 56 years of compute.",
         "date": "2026-08",
         "topic": "Hardware · Silicon",
         "tags": ["Apollo", "iPhone", "Silicon", "Compute"],
-        "deck": "From Apollo's 2 KB of RAM to a phone in your pocket: scroll the curves — frequency, transistor density, memory, parallelism and specialization — that made the leap."
-    },
-    {
-        "slug": "blog/gps-is-not-just-gps.html",
-        "no": "05",
-        "title": "How GPS Turns Time Into Location.",
-        "date": "2026-08",
-        "topic": "Space · Infrastructure",
-        "tags": ["GPS", "Galileo", "PNT"],
-        "deck": "GPS and Galileo do more than draw a blue dot. Four clocks in orbit locate devices and synchronise networks, grids, markets—until a signal is blocked or faked."
-    },
-    {
-        "slug": "blog/european-cloud.html",
-        "no": "04",
-        "title": "Can Europe Build a Sovereign Cloud?",
-        "date": "2026-08",
-        "topic": "Europe · Cloud",
-        "tags": ["Europe", "Cloud", "Data Act"],
-        "deck": "A European cloud needs more than servers on European soil: control of keys, operators, software, supply chain and a credible exit. See the layers that matter."
-    },
-    {
-        "slug": "blog/digital-dependence.html",
-        "no": "03",
-        "title": "Europe’s Digital Dependence.",
-        "date": "2026-08",
-        "topic": "Europe · Technology",
-        "tags": ["Europe", "Sovereignty", "Standards"],
-        "deck": "Europe’s software and cloud dependence is a stack: chips, identity, devices, cloud, apps and data. Follow dependencies, the exits and what sovereignty can mean."
-    },
-    {
-        "slug": "blog/one-process-per-person.html",
-        "no": "02",
-        "title": "How WhatsApp handles 100B messages a day.",
-        "date": "2026-08",
-        "topic": "Systems · Distributed",
-        "tags": ["Erlang", "Architecture", "E2EE"],
-        "deck": "How WhatsApp carries a hundred billion messages a day: one Erlang process per connection, queues that live in memory, islands that replicate in one direction, and keys the servers never hold."
-    },
-    {
-        "slug": "blog/token-by-token.html",
-        "no": "01",
-        "title": "How LLMs write text, token by token.",
-        "date": "2026-02",
-        "topic": "AI · LLMs",
-        "tags": ["LLM", "Sampling"],
-        "deck": "An LLM is a next-token predictor. Walk the loop with a toy model trained on twelve sentences — read, score, pick, append — and watch the whole vocabulary compete for every token."
+        "deck": "A scrollytelling history of computational power from the Apollo Guidance Computer to the iPhone 17 Pro Max."
     }
 ];

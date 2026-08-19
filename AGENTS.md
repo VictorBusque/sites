@@ -5,15 +5,39 @@ scroll-driven document. Engineering is the centre, not a boundary; topics can
 include AI, systems, Python, cloud, craft, or anything that benefits from a
 slow, visual explanation.
 
+## Architecture — hub and spokes
+
+- **The hub:** `index.html`, a single, fully featured, SEO-optimized landing
+  page. It owns the shared visual system (`css/site.css`, `js/site.js`,
+  `js/scene.js`, `js/vb.js`) and renders the shelf of posts from the
+  manifest. `about.html` shares that system.
+- **The spokes:** each article at `blog/<slug>.html` is a **standalone,
+  one-of-a-kind HTML file**. It inlines its own styles, scripts, and chrome —
+  no article links `../css/` or `../js/` assets. Every article is free to
+  diverge from every other; nothing about an article is shared except the
+  craft standards below.
+- **The binding:** articles are bound to the landing only through metadata —
+  one object per post in `js/posts.js` (`window.VB_POSTS`). The landing reads
+  the manifest and links each article; the article's own `<title>`,
+  meta description, canonical, OG/Twitter cards, and `BlogPosting` JSON-LD
+  must agree with its manifest row.
+
+In short: the landing is the only page built from shared components; every
+article is its own small website.
+
 ## Source of truth
 
-- Published posts: `blog/<slug>.html` (one idea per file).
-- Post manifest and landing-shelf data: `js/posts.js` (`window.VB_POSTS`).
+- Landing page: `index.html` (+ `css/site.css`, `js/site.js`, `js/scene.js`,
+  `js/vb.js` — landing/about chrome only).
+- Published posts: `blog/<slug>.html` (top level), each fully self-contained.
+- Parked works in progress: `blog/not-ready/` — redesigns waiting to ship.
+  They are never in `js/posts.js`, never rendered on the shelf, absent from
+  `sitemap.xml`, and disallowed in `robots.txt`.
+- Post manifest (the only landing↔post binding): `js/posts.js`.
   Do not add post data to `index.html`; topics and tags remain free-form.
 - New-idea queue: `docs/ideas.md`.
-- Shared visual and interaction system: `css/site.css`, `js/site.js`,
-  `js/scene.js`, and `js/vb.js`.
-- The canonical post scaffold: `blog/template.html`.
+- Post scaffold: `blog/not-ready/template.html` — a complete standalone
+  article with a working base stylesheet, runtime, and scene catalog inlined.
 
 ## Required guidance
 
@@ -22,33 +46,25 @@ or shared-system change. Use `.agents/skills/seo/SKILL.md` for every public
 page change that may affect search or social metadata. Keep those instructions
 and their references accurate when changing a shared contract.
 
-## Shared-system contract
+## Craft contract (applies to every article, standalone or not)
 
-- Pages load `js/site.js`, then `js/scene.js`, both with `defer`; load
-  `js/vb.js` without `defer` before page scripts. Use the relative paths from
-  `blog/template.html` for posts.
-- Shared nav/footer are mounts (`[data-vb-nav]`, `[data-vb-footer]`) rendered
-  by `js/site.js`. Keep their `<noscript>` fallback; do not hand-copy chrome.
-- `js/scene.js` owns sticky-scene activation, cards, progress rails, and
-  `data-active-step`; it also supplies conventional step labels when omitted.
-  Page scripts may compute honest state and subscribe with `VBScene.onStep`;
-  never add a competing `MutationObserver` or scroll handler.
-- `js/site.js` owns reading progress, the keyboard skip link, responsive
-  navigation, and the reader's ambient-motion pause preference. Do not copy
-  those controls into a post.
-- A sticky stage is decorative (`aria-hidden="true"`); its step paragraphs
-  carry the complete conclusion in document order. The modules fall back to
-  that document if JavaScript or IntersectionObserver is unavailable.
-- `js/vb.js` owns reusable helpers on `window.VB`. Reuse them instead of
-  copying escaping, formatting, PRNG, or motion helpers into pages.
-- New page styles are page-scoped. Change shared CSS only for a behaviour that
-  genuinely belongs to every document. Never edit `mock.html` or `mock-1.html`.
+- A post is a semantic document first: it must read as a complete article
+  with JavaScript off and under reduced motion. Sticky-scene stages are
+  decorative (`aria-hidden="true"`); step paragraphs carry the conclusions
+  in document order.
+- Nothing is faked: every readout, count, or number is computed state or a
+  verified fact.
+- Motion has meaning, honors `prefers-reduced-motion`, and never hides the
+  conclusion.
+- The template's inlined runtime (`VBScene`, `window.VB`) is a proven starting
+  point, not a requirement — an article may replace any of it, but it must
+  keep the honest-document behavior above.
 
 ## Quality gates
 
-After a content or shared-system change, run the relevant checks. The post
-checker verifies the manifest, public metadata, sitemap, shared shell, and
-sticky-scene contract:
+After a content or contract change, run the relevant checks. The post checker
+verifies the manifest binding, public metadata, sitemap, standalone-ness (no
+`../css/` or `../js/` links), and the sticky-scene honesty rules:
 
 ```sh
 python3 scripts/check_posts.py
@@ -57,6 +73,11 @@ node --check js/scene.js
 node --check js/vb.js
 git diff --check
 ```
+
+Unlisted or in-progress articles in `blog/` carry `<meta name="robots"
+content="noindex, nofollow">`; works in progress parked in
+`blog/not-ready/` are invisible to the checker, and drafts registered in
+`js/posts.js` with `"status": "wip"` stay off the shelf until they ship.
 
 Verify narrow mobile layout, keyboard navigation, and reduced motion whenever
 layout or interaction changes. Do not attempt browser screenshots in this

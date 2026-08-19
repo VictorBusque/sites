@@ -1,42 +1,50 @@
 ---
 name: create-a-blog-entry
 description: >
-  Creates new scrollytelling articles for the engineering blog in this repo
-  (landing page index.html + posts at blog/<slug>.html that teach one idea as a
-  scroll-driven narrative). Use whenever writing a new post, adding or editing
-  scenes, touching the shared design system (css/site.css), the shared system
-  (js/site.js + js/scene.js), or updating the landing page's cards and copy. Enforces the
-  site's voice, design tokens, motion standards and scrollytelling conventions
-  so every agent produces consistent, polished pages.
+  Creates articles for the notebook at victorbusque.com: a single, fully
+  featured landing page (index.html) plus standalone, one-of-a-kind posts at
+  blog/<slug>.html — each a self-contained scroll-driven document with its own
+  inlined styles, scripts, and chrome, bound to the landing only through the
+  js/posts.js manifest. Use whenever writing a new post, editing an article,
+  touching the landing system (css/site.css, js/site.js, js/scene.js,
+  js/vb.js), or updating the landing page's cards and copy. Enforces the
+  site's voice, craft standards, and scrollytelling conventions so every
+  article is honest, polished, and complete on its own.
 metadata:
   author: Víctor Busqué
-  version: "4.3.0"
+  version: "5.0.0"
   site: notebook-of-curiosities
 ---
 
-# Create a Scrollytelling Blog Entry
+# Create a Standalone Scrollytelling Post
 
-Every post on this site is a **scrollytelling article**: one idea, told as a
-guided visual experience. Scrolling is the reader's timeline — scenes pin a
+The site is a **hub and spokes**: one landing page, and articles that are each
+their own small website. Every post is a **standalone scrollytelling
+article** — one idea, told as a guided visual experience, in a single
+self-contained HTML file. Scrolling is the reader's timeline — scenes pin a
 visual while step-by-step text scrolls over it, diagrams transform as you
 travel, and the story has a beginning, middle, and end. The reader steps
 through the process; nothing is faked.
 
 This skill is the site-specific application of the **scrollytelling skill**
 (Atelier, in the pi-extensions repo). That skill is the craft source of truth
-for storyboarding, scene design, progressive enhancement, and validation; this
-file adds the site's contracts: shared system, voice, and landing page wiring.
+for storyboarding, scene design, progressive enhancement, and validation —
+including its single-file output contract, which this site now follows
+exactly. This file adds the site's contracts: the standalone rule, voice, and
+the landing binding through `js/posts.js`.
 
-## The one deliberate deviation
+## The architecture in one paragraph
 
-The Atelier skill's output contract says "one self-contained `.html` file, no
-linked local asset". **Posts on this site deliberately override that rule**:
-they live inside the victorbusque.com site, link `css/site.css` and
-`js/site.js` and `js/scene.js` (shared tokens, nav, footer, fonts, reveals, scene engine), and
-are not standalone artifacts. Everything else in that skill — story first,
-scenes, scroll choreography, accessibility, mobile, performance, validation —
-applies in full. State this trade-off in code comments, don't silently break
-it.
+`index.html` is the hub: fully featured, SEO-optimized, built from the
+landing's own system (`css/site.css`, `js/site.js`, `js/scene.js`,
+`js/vb.js`) and rendering its shelf from `js/posts.js` (`window.VB_POSTS`).
+Each `blog/<slug>.html` is a spoke: a standalone page that inlines
+everything it needs and **never links `../css/` or `../js/` assets**. The
+only contract between an article and the landing is metadata: the manifest
+row plus the article's own `<title>`, description, canonical, OG/Twitter
+cards, and `BlogPosting` JSON-LD, which must all agree. Articles are
+one-of-a-kind — two posts may share craft standards and house style, but no
+component is shared by reference.
 
 ## Golden rules (never break)
 
@@ -53,43 +61,41 @@ it.
 4. **Polished, no AI slop.** No "systems online" metaphors, no hacker/nerd
    slang, no emoji, no invented stats, no filler adjectives. Plain,
    confident, precise prose.
-5. **Use the shared system.** Never redefine tokens, fonts, nav, footer or
-   reveal mechanics — they live in `css/site.css`. Never hand-write scene
-   wiring — the scene module in `js/scene.js` handles step cards, the
-   progress rail, `data-active-step`, and the mobile bottom-sheet layout.
-   Never re-implement the micro-helpers in `js/vb.js` (`window.VB`: `esc`,
-   `mulberry32`, `fmt.pct/ordinal/sup`, `motion.retrig/countUp`,
-   `reduceMotion`) — import them from the module instead. Page-specific
-   styles add to the system, they never restyle it.
-6. **Never touch `mock-1.html` / `mock.html`.** They are historical mockups,
-   not part of the site.
+5. **Standalone means owned.** Everything a post needs — base styles,
+   runtime, helpers, chrome — lives inline in that file, copied from the
+   scaffold and then owned by the article. Edit the inlined copies freely;
+   that is the point. But keep the honest-document behavior they provide
+   (document-first fallbacks, reduced-motion collapse, real states at every
+   scroll position). If a future article replaces the scaffold's runtime
+   with something bespoke, it must preserve that behavior.
+6. **The landing binding is metadata only.** Register the post in
+   `js/posts.js` and keep its SEO block in agreement. Never add post data to
+   `index.html`, and never make an article depend on landing files.
 
 Full file ownership and contracts: [references/FILE-MAP.md](references/FILE-MAP.md).
-Scene engine and recipes: [references/SCROLLYTELLING.md](references/SCROLLYTELLING.md).
+Scene recipes: [references/SCROLLYTELLING.md](references/SCROLLYTELLING.md).
 Browser-platform rationale: [references/PLATFORM.md](references/PLATFORM.md).
 
-## Defaults the shared system already provides
+## What the scaffold inlines for you
 
-Write semantic content and named scene states; the modules supply the
-repeated interaction work:
-
-- `js/site.js` renders chrome, a keyboard skip link, responsive navigation,
-  a reader-controlled ambient-motion pause, and the reading-progress rail.
-  The rail uses a CSS scroll timeline when supported and an rAF fallback
-  otherwise.
-- `js/scene.js` turns a `.sticky-scene` into the full interaction: exclusive
-  step activation, `data-active-step`, the card wrapper, mobile progress rail,
-  a conventional `STEP 01 / 05` label if one is omitted, card-reserve
-  measurement, and a safe document fallback when IntersectionObserver is
-  unavailable.
-- `css/site.css` keeps the stage pinned through the final step, docks mobile
-  cards at the bottom, handles safe-area space, and restores document flow for
-  reduced motion.
+`blog/template.html` (the canonical starting point) already contains, inlined
+and working: the base stylesheet (tokens, chrome, reveals, scene system,
+responsive + reduced-motion blocks), the site runtime (nav/footer mounts,
+progress, cursor, reveals), the scene runtime (step cards, progress rail,
+`data-active-step`, mobile bottom sheet, `--card-reserve`), and the
+`window.VB` helpers (`esc`, `mulberry32`, `fmt.pct/ordinal/sup`,
+`motion.retrig/countUp`, `reduceMotion`). The load order inside the file is
+part of the contract: helpers in `<head>`, page script at end of body, then
+the site + scene runtimes — preserve it when you reorganize.
 
 This means an author normally writes a decorative `aria-hidden` stage plus
-ordered `<article class="step" data-step="…">` paragraphs. Do not add local
-scroll handlers, `MutationObserver`s, progress bars, pause buttons, or step
-label plumbing.
+ordered `<article class="step" data-step="…">` paragraphs, and page-specific
+logic in one inline script before the runtime blocks. If the article keeps
+the scaffold's scene runtime, do not add local scroll handlers,
+`MutationObserver`s, progress bars, or step-label plumbing — the runtime
+already does it; page scripts compute honest state and key stage states off
+`data-active-step`, registering reactions with `VB.onReady(fn)` +
+`window.VBScene.onStep(fn)`.
 
 ## Workflow
 
@@ -128,48 +134,42 @@ with the conclusion written out, not hidden in motion.
 ### 2. Copy the template
 
 ```bash
-cp blog/template.html blog/<slug>.html
+cp blog/not-ready/template.html blog/<slug>.html
 ```
 
-`blog/template.html` is a working scrollytelling post that doubles as a
-catalog: a sticky scene with a transforming diagram, split and comparison
-scenes, a metrics scene, a breather, and every prose piece. It is the
-canonical starting point and is kept current — always copy from it.
+`blog/not-ready/template.html` is a working standalone post that doubles as
+a catalog: a sticky scene with a transforming diagram, split and comparison
+scenes, a metrics scene, a breather, and every prose piece — with the base
+stylesheet and runtime inlined. It is kept current; always copy from it.
 
 `<slug>`: lowercase, hyphenated, one idea per article (e.g. `the-queue.html`,
 `token-budget.html`, `kv-cache.html`).
 
-### 3. Build the post, then update its registration
+### 3. Build the post
 
 Replace in order: `<title>` and meta → hero (`crumb`, `h1`, `dek`,
 `post-meta`) → acts (prose sections + scenes) → `post-nav` links → footer
-label. Update the `status` in `<nav>` (e.g. `POST 03 / WAITING`).
+label. Update the `status` in the nav mount (e.g. `POST 03 / WAITING`).
 
-Shared pieces that must stay **exactly as in the template**:
+Pieces of the scaffold that must survive the copy **exactly** (they are the
+progressive-enhancement and binding contract):
 
-- `<link rel="stylesheet" href="../css/site.css">` in `<head>`
-- All three shared scripts in `<head>`: `<script src="../js/site.js"
-  defer></script>` then `<script src="../js/scene.js" defer></script>`,
-  then `<script src="../js/vb.js"></script>` (no `defer` — page scripts
-  need `window.VB` during parsing)
 - The `<html class="js">` gate script in `<head>` (set before the body parses
-  — see the template; without it scenes degrade to a plain document)
-- The shared-component mounts, rendered by `js/site.js`:
-  `<div data-vb-nav data-status="POST NN" data-status-em="TOPIC"></div>`
-  (nav + status) and `<div data-vb-footer data-label="…"></div>` (footer) —
-  each keeping a `<noscript>` link row. Never hand-write `<nav>`, `<footer>`,
-  `#progress`, `#cDot` or `#cRing`; the engine embeds them.
-- `post-hero`, `post-prose`, `post-nav` structure and classes
-- The motion defaults: `--ease-*` and `--t-*` variables, `.reveal` /
-  `.stagger` / `.mask` / `.h-line` reveal classes
+  — without it scenes degrade to a plain document)
+- The inlined `window.VB` helper block in `<head>` (page scripts use it while
+  parsing)
+- The nav/footer mounts (`[data-vb-nav]`, `[data-vb-footer]`) with their
+  `<noscript>` fallback rows — the inlined runtime renders into them
+- The `<script>` order at end of body: page script first, then the inlined
+  site + scene runtime blocks (matching the original defer semantics)
+- The full SEO block (see the seo skill): canonical, OG/Twitter cards,
+  `BlogPosting` JSON-LD
+- `post-hero`, `post-prose`, `post-nav` structure — unless the article's
+  one-of-a-kind design deliberately replaces them
 
-Script order is a hard rule: `js/site.js` and `js/scene.js` load with
-`defer` (in that order) and `js/vb.js` loads without `defer` (it must exist
-before page scripts parse); inline page scripts run during parsing.
-Page-specific scene logic goes in an inline `<script>` before `</body>` —
-never after the shared tags, never in a module. Every article ships the
-same three shared scripts, so scene behavior and helpers are identical
-everywhere.
+Everything else — theme, palette, stage design, fonts, scene mechanics — is
+the article's own. Diverge boldly; the house style is a starting point, not a
+police.
 
 ### 4. Build the document first, then enhance
 
@@ -180,22 +180,17 @@ adding any motion. Then enhance in this order (from the Atelier skill):
 HTML        semantic story and static fallback
 CSS         layout, visual system, simple motion
 CSS timelines  progressive, continuous scroll-linked enhancement (@supports)
-IntersectionObserver  discrete step activation (done by js/scene.js)
+IntersectionObserver  discrete step activation (the scaffold's runtime)
 requestAnimationFrame custom continuous state or Canvas drawing
 Canvas/WebGL genuinely spatial or high-density visual explanation
 ```
 
-The shared scene module in `js/scene.js` already provides step activation,
-step-card wrapping, the progress rail, and the mobile bottom-sheet layout for
-sticky scenes. Page scripts only do what it can't: compute honest state and
-drive per-step stage states via `data-active-step` CSS hooks. If a page must
-react to step changes, register with `window.VBScene.onStep(fn)` inside
-`VB.onReady(fn)` — never hand-roll a `MutationObserver` on
-`data-active-step`. For escaping, seeded PRNG, number formatting, and
-retrigger/count-up motion, use the shared helpers on `window.VB`
-(`js/vb.js`) instead of copying them in.
+The scaffold's scene runtime already provides step activation, step-card
+wrapping, the progress rail, and the mobile bottom-sheet layout for sticky
+scenes. Page scripts only do what it can't: compute honest state and drive
+per-step stage states via `data-active-step` CSS hooks.
 
-### 5. Register the document on the landing shelf
+### 5. Bind the post to the landing
 
 Add one object to the `posts` array in `js/posts.js` at the site root (the
 site's single post manifest, `window.VB_POSTS` — `index.html` reads it and
@@ -225,6 +220,13 @@ the `title` must equal the post's `<title>` (only case and a trailing
 document ships. Update the site's framing copy (hero demo labels, marquee
 items) only if the site's promise changes.
 
+While an article is being written, park it in `blog/not-ready/` (never in
+the manifest) or register it at its final URL with `"status": "wip"` plus a
+`noindex` file: the landing filters wip rows out of the shelf and the checker
+relaxes its metadata checks. Shipping means moving the file to `blog/`,
+dropping the status field, and completing the page's canonical, OG/Twitter
+cards, JSON-LD, and sitemap row in the same pass.
+
 ### 6. Verify (run the checklist)
 
 After adding or editing a post, run the consistency guard:
@@ -237,10 +239,14 @@ node --check js/vb.js
 git diff --check
 ```
 
-It fails unless every file in `blog/` has a matching `js/posts.js` entry
-whose `title`/`deck` match the post's own `<title>` and meta description,
-and every manifest entry points at a real file carrying a `BlogPosting`
-JSON-LD block in its `<head>`. Fix any drift it reports before shipping.
+It fails unless every top-level file in `blog/` has a matching `js/posts.js`
+entry whose `title`/`deck` match the post's own `<title>` and meta
+description; every manifest entry points at a real file carrying a
+`BlogPosting` JSON-LD block, a canonical, and OG/Twitter cards; every post is
+standalone (no `../css/` or `../js/` links, at least one `<style>` block);
+the sticky-scene honesty rules hold; and the sitemap lists exactly the
+published posts. Parked `blog/not-ready/` drafts are invisible to it; unlisted
+top-level drafts must be `noindex`.
 
 See [Checklist](#checklist) and the validation section in
 [references/SCROLLYTELLING.md](references/SCROLLYTELLING.md#validation) before
@@ -252,9 +258,9 @@ handing an article over.
   `post-prose`. Section headings are concrete, not cute ("The problem",
   "Selection sort, step by step").
 - **Scenes:** each scene gets a `scene-head` with an act label (e.g.
-  `ACT 02`) and a concrete name (e.g. `THE MECHANISM`). The shared engine
-  derives the mono `STEP k / n` label from ordered `data-step` values; only
-  author `.step-k` when its wording genuinely needs to differ.
+  `ACT 02`) and a concrete name (e.g. `THE MECHANISM`). The runtime derives
+  the mono `STEP k / n` label from ordered `data-step` values; only author
+  `.step-k` when its wording genuinely needs to differ.
 - **Captions** (`.fig-caption` and scene captions) open with `<b>What to
   watch</b>` and tell the reader exactly which element moves and what it
   means. Max ~2 sentences.
@@ -269,6 +275,8 @@ handing an article over.
 ## Scene vocabulary (quick reference)
 
 Full recipes: [references/SCROLLYTELLING.md](references/SCROLLYTELLING.md).
+All classes below come from the scaffold's inlined base stylesheet — an
+article keeps, restyles, or replaces them at will.
 
 - `sticky-scene` — a tall scroll track with a pinned dark stage; step cards
   scroll over it. The workhorse of the site.
@@ -280,27 +288,26 @@ Full recipes: [references/SCROLLYTELLING.md](references/SCROLLYTELLING.md).
 - `breather` — a low-information beat between demanding ideas (a big serif
   line, a quote).
 
-Reuse the shared classes from `css/site.css` (`scene`, `sticky-scene`,
-`scene-head`, `step`, …) and add page-specific styles (diagram choreography,
-keyframes) in the page's inline `<style>`. Dark stages use `--stage` with the
-32px grid, exactly like the legacy figure canvases — never invent a new stage
-background.
+Dark stages use the `--stage` background with the 32px grid — or the
+article's own equivalent.
 
-## Design system (quick reference)
+## House style (quick reference)
 
-Full reference: [references/DESIGN.md](references/DESIGN.md).
+Full reference: [references/DESIGN.md](references/DESIGN.md). The house style
+is the default look, not a mandate — but keep it unless the article has a
+reason to differ.
 
-- Tokens live in `css/site.css`: `--ink #101010`, `--paper #f2f0e9`,
-  `--paper-2 #ece9de`, `--acid #c7ff3d`, `--blue #546cff`, `--orange #ff6b2c`,
-  `--muted #716f68`, `--line #111`.
+- Palette tokens: `--ink #101010`, `--paper #f2f0e9`, `--paper-2 #ece9de`,
+  `--acid #c7ff3d`, `--blue #546cff`, `--orange #ff6b2c`, `--muted #716f68`,
+  `--line #111`, `--stage #121212`.
 - Type: Unbounded (display/headings), Instrument Serif (italic accents and
   big numerals), Newsreader (body), DM Mono (labels/readouts).
 - Semantic color on dark stages: **acid** = found / settled / active flow,
   **blue** = currently being examined / structure, **orange** = the thing to
   watch right now. Keep this mapping consistent across posts — readers learn
   it once.
-- Sticky stages: `position: sticky; top: 0; height: 100svh`, `--stage`
-  background + grid, decorative bottom-right circle, `scene-head` bar.
+- Sticky stages: `position: sticky; top: 0; height: 100svh`, dark background
+  + grid, decorative bottom-right circle, `scene-head` bar.
 - Step cards: paper background, ink border, 420px max width, mono `STEP k / n`
   label, one short paragraph.
 
@@ -320,19 +327,18 @@ Full reference: [references/MOTION.md](references/MOTION.md).
 - Every scene must make sense at any scroll position: intermediate and
   reverse states are real states, critical conclusions exist in the DOM text,
   and the scene is intelligible if the reader jumps via the scrollbar.
-- `prefers-reduced-motion: reduce` is handled globally — the overlay collapses
-  to a plain stacked document. Never disable that block.
+- `prefers-reduced-motion: reduce` must collapse the article to a plain
+  stacked document. Never weaken that block in the inlined styles.
 
 ## Checklist
 
 - [ ] Storyboarded (acts + per-section question/payoff) before coding
-- [ ] Copied `blog/template.html`; shared files untouched
-- [ ] `<html class="js">` gate present in `<head>`; relative paths correct:
-      `../index.html`, `../css/site.css`, `../js/site.js`, `../js/scene.js`,
-      `../js/vb.js`
+- [ ] Copied `blog/not-ready/template.html`; landing files untouched
+- [ ] `<html class="js">` gate present in `<head>`; no `../css/` or `../js/`
+      links anywhere — the post is standalone
 - [ ] Document-first: the page reads as a complete article with JS disabled
       and with reduced motion (stage + stacked steps, all text visible)
-- [ ] Every `sticky-scene` uses the shared engine contract: `[data-step]`
+- [ ] Every `sticky-scene` honors the honesty contract: `[data-step]`
       articles in an unbroken 1…n sequence, a decorative `aria-hidden` stage,
       readable paragraph fallback text, stage states keyed off
       `data-active-step`, and `[data-readout]` if a live stage indicator is
@@ -345,8 +351,8 @@ Full reference: [references/MOTION.md](references/MOTION.md).
 - [ ] Scroll-timeline enhancements sit inside `@supports (animation-timeline:
       view())` and have a working discrete fallback
 - [ ] Do not add CDN scripts, analytics, or `fetch()` without an explicit
-      product need and approval. The existing Google Fonts stylesheet is the
-      only third-party presentation dependency.
+      product need and approval. The Google Fonts stylesheet is the only
+      accepted third-party presentation dependency.
 - [ ] `js/posts.js` entry added with a slug that matches the file, title/deck
       matching the post's `<title>` and meta description; no stale rows;
       `python3 scripts/check_posts.py` passes; the shelf shows the new post
@@ -354,10 +360,9 @@ Full reference: [references/MOTION.md](references/MOTION.md).
 - [ ] Mobile check at 390px: sticky stage fits (labels ≥ 8px rendered), step
       cards boot bottom-docked and stay readable, lanes/rails stack, nothing
       clips or crosses into the next section; reverse scrolling remains stable
-- [ ] Keyboard check: the shared “Skip to content” link reaches `<main>`,
-      the navigation and motion control are focusable, and no scene requires
-      a pointer to understand
+- [ ] Keyboard check: the “Skip to content” link reaches `<main>`, navigation
+      and controls are focusable, and no scene requires a pointer to
+      understand
 - [ ] Motion check: `prefers-reduced-motion` exposes the document fallback;
-      the shared “Motion: on/off” control pauses ambient loops without hiding
-      the scroll-controlled states
+      ambient loops pause without hiding the scroll-controlled states
 - [ ] Copy follows the tone rules; no fake stats, no slang, no emoji

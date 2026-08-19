@@ -10,7 +10,7 @@ cards, reveals, micro-interactions.
 (ease-out deceleration), nothing bounces playfully. Energy lives in the accent
 colors and in the mechanism's own motion, not in gimmicks.
 
-Signature constants (defined in `css/site.css`):
+Signature constants (defined in each page's inlined base styles):
 
 - `--ease-out: cubic-bezier(.16, 1, .3, 1)` — 80% of movement
 - `--ease-snap: cubic-bezier(.2, 0, 0, 1)` — micro-interactions, hovers
@@ -64,7 +64,7 @@ local highlight uses the bottom.
 - **Anticipation:** if an element will appear, give it a beat — a marker that
   fades/scales in just before it moves, a glow that builds before a swap.
 - **Settling:** after a swap or a found state, let a pulse or ring echo
-  (`.pop`, `.ping` keyframes are shared) so the reader registers the moment,
+  (`.pop`, `.ping` keyframes come with the base styles) so the reader registers the moment,
   then return to idle.
 - **Consistency:** within an article, the same semantic state always uses the
   same color and motion (orange = the thing to watch, blue = examining,
@@ -91,7 +91,7 @@ feel alive without demanding attention: 2.4–3s for pings, 7–10s for slow
 floats, and marquee/grid drift at 26–30s. If two loops share a beat, offset
 them (stagger delays) instead of syncing them.
 
-The shared `Motion: on/off` control pauses these ambient loops and persists
+The `Motion: on/off` control in the inlined chrome pauses these ambient loops and persists
 the reader's choice. It is the default pause mechanism for movement that runs
 beside content; do not create a local duplicate. Keep scroll-driven scene
 states separate: they are controlled by the reader and must remain legible at
@@ -99,7 +99,7 @@ every position.
 
 ## Reduced motion
 
-The global `prefers-reduced-motion` block in `css/site.css` is the safety
+The global `prefers-reduced-motion` block in each page's base styles is the safety
 net — it collapses durations to near-zero, forces reveals visible, and
 restores sticky scenes to plain document flow (stage static, steps stacked,
 all text visible). When a scene's *meaning* depends on a diagram state, the

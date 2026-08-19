@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
 
-# Block the template from being indexed (it's a scaffold, not content)
-Disallow: /blog/template.html
+# Works in progress live in /blog/not-ready/ — not rendered, not crawled
+Disallow: /blog/not-ready/
 
 Sitemap: https://victorbusque.com/sitemap.xml

@@ -9,7 +9,7 @@ description: >
   presents in search results and social previews.
 metadata:
   author: Víctor Busqué
-  version: "1.1.0"
+  version: "1.2.0"
   site: notebook-of-curiosities
 ---
 
@@ -94,7 +94,9 @@ hides "LLM" entirely.
 
 ## Open Graph and Twitter
 
-Every public page ships the full card set (see `blog/template.html`):
+Every public page ships the full card set inline in its own `<head>` (see
+`blog/template.html`) — posts are standalone files, so their SEO block is
+theirs alone:
 
 - `og:type` (`website` for index/about, `article` for posts), `og:site_name`,
   `og:title`, `og:description`, `og:url`, `og:locale`
@@ -132,7 +134,8 @@ Every public page ships the full card set (see `blog/template.html`):
   update the prev/next links of adjacent posts.
 - The landing `js/posts.js` shelf is the hub: deck text doubles as the
   SERP-snippet voice of the site. No entry without a file, no file
-  without an entry (create-a-blog-entry rule).
+  without an entry (create-a-blog-entry rule). The manifest is the only
+  landing↔post binding — never mirror post data into `index.html`.
 - Cross-link between posts only where the reader genuinely benefits
   ("the sampling loop behind this is its own note").
 
@@ -141,9 +144,10 @@ Every public page ships the full card set (see `blog/template.html`):
 - **Every shipped page must be in `sitemap.xml`** — this is the step that
   gets forgotten. When a post ships, add its `<url>` (priority 0.9,
   changefreq monthly) and bump `lastmod` for changed pages (real dates,
-  commit date).
-- `robots.txt` disallows `/blog/template.html` only. Never disallow
-  anything else; never noindex a real page.
+  commit date). The sitemap lists exactly the published posts: parked
+  `blog/not-ready/` articles and wip drafts never appear.
+- `robots.txt` disallows `/blog/not-ready/` only. Never disallow anything
+  else; never noindex a real page.
 - Every public page: `<meta name="robots" content="index, follow">`.
 
 ## Checklist (run when shipping or editing any page)
@@ -162,7 +166,9 @@ Every public page ships the full card set (see `blog/template.html`):
 
 - **New post:** do SEO while doing step 3 of create-a-blog-entry (replace
   `<title>` and meta) — title, description, OG/Twitter, JSON-LD, sitemap
-  entry, all in the same pass, before the landing-page registration.
+  entry, all in the same pass, before the landing-page registration. Drop
+  the draft's `noindex` and its manifest `"status": "wip"` together, when
+  the article ships.
 - **Editing a shipped page:** if the idea didn't change, keep the title's
   keyword contract; re-check char budgets and sync og/twitter.
 - **Landing page:** its title should say what the site is

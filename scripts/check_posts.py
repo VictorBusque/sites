@@ -3,25 +3,30 @@
 check_posts.py — keep js/posts.js (window.VB_POSTS, the single post
 manifest) consistent with the published posts in blog/.
 
-Checks, for every .html file in blog/ (excluding template.html):
-  * it has an entry in the manifest  (shelf row exists)
-  * the manifest title matches the post's <title> tag
-  * the manifest deck matches the post's meta description
-  * the post carries a BlogPosting JSON-LD block
-  * the canonical, shared scripts, component mounts, and semantic <main>
-    match the site contract
-  * every sticky scene has a hidden visual stage and sequential, readable
-    data-step articles (the shared module supplies the card behavior)
+Site architecture: one landing page (index.html) bound to standalone
+articles through metadata. Every article is a self-contained HTML file —
+its own styles, scripts, and chrome inlined. No article links the
+landing's shared files (css/site.css, js/*); each one is one-of-a-kind.
+
+Checks, for every .html file at the top level of blog/ (files parked in
+blog/not-ready/ are WIP and invisible to this checker):
+  * it has an entry in the manifest and the manifest title/deck match
+    the post's own <title> / meta description
+  * it carries a BlogPosting JSON-LD block, a canonical URL, and the
+    OG/Twitter card basics
+  * it is truly standalone: no links to ../css/ or ../js/ assets —
+    styles and scripts are inlined in the page
+  * it is a semantic document: <main>
+  * every sticky scene has a hidden visual stage and sequential,
+    readable data-step articles (the honest-document contract)
 
 And for every manifest entry:
-  * the file it points to exists
+  * the file it points to exists and is indexable (or is a wip draft:
+    "status": "wip" — not rendered on the shelf, checker relaxed,
+    file must stay noindex until it ships)
 
-The sitemap must also list each published post. These are intentionally
-structural checks: they make every entry inherit the shared system instead of
-re-implementing it page by page.
-
-The unlisted `blog/template.html` is checked against the shared post shell too,
-so the next article starts from a working contract.
+The sitemap must list exactly the published posts — parked not-ready
+articles and wip drafts never appear in it.
 
 Exit code 0 when clean, 1 when anything disagrees. Run after adding or
 editing a post, before shipping.
@@ -36,8 +41,8 @@ import xml.etree.ElementTree as ET
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 BLOG = ROOT / "blog"
+NOT_READY = BLOG / "not-ready"
 MANIFEST = ROOT / "js" / "posts.js"
-EXCLUDE = {"template.html"}
 SITEMAP = ROOT / "sitemap.xml"
 
 
@@ -86,30 +91,37 @@ def is_noindex(path):
 
 
 def post_structure_errors(path, slug):
-    """Return author-facing errors for the shared post and scene contract."""
+    """Author-facing errors for the standalone-post and honest-document contract."""
     text = path.read_text(encoding="utf-8")
     errors = []
 
     canonical = f'https://victorbusque.com/{slug}'
     if not re.search(r'<link\s+rel="canonical"\s+href="' + re.escape(canonical) + r'"\s*/?>', text):
         errors.append(f"'{slug}': canonical must be '{canonical}'")
-    if not re.search(r"<script>document\.documentElement\.className \+= ' js';</script>", text):
-        errors.append(f"'{slug}': missing the early .js enhancement gate from blog/template.html")
-
-    script_paths = [
-        '<script src="../js/site.js" defer></script>',
-        '<script src="../js/scene.js" defer></script>',
-        '<script src="../js/vb.js"></script>',
-    ]
-    positions = [text.find(script) for script in script_paths]
-    if -1 in positions or positions != sorted(positions):
-        errors.append(f"'{slug}': shared scripts must be site.js → scene.js → vb.js (template order)")
-    if not re.search(r'<div\s+[^>]*data-vb-nav\b', text):
-        errors.append(f"'{slug}': missing [data-vb-nav] shared-chrome mount")
-    if not re.search(r'<div\s+[^>]*data-vb-footer\b', text):
-        errors.append(f"'{slug}': missing [data-vb-footer] shared-chrome mount")
-    if not re.search(r'<main\b[^>]*>', text) or '</main>' not in text:
+    if not re.search(r"<main\b[^>]*>", text) or "</main>" not in text:
         errors.append(f"'{slug}': article content needs a semantic <main>")
+
+    # Standalone contract: no links to the landing's shared assets. Strip
+    # script/style bodies first — the inlined runtime may legitimately
+    # mention the old file names in its provenance banners.
+    stripped = re.sub(r"<script\b.*?</script>|<style\b.*?</style>", "", text, flags=re.S)
+    shared = re.search(r'<(?:link|script)\b[^>]*(?:\.\./css/|\.\./js/)', stripped)
+    if shared:
+        errors.append(
+            f"'{slug}': not standalone — posts inline their styles/scripts "
+            f"and never link ../css/ or ../js/ assets ({shared.group(0)}…)"
+        )
+    if not re.search(r'<style\b', text):
+        errors.append(f"'{slug}': a standalone post inlines at least a base <style> block")
+
+    # Public metadata basics (full rules live in the seo skill).
+    for pattern, label in (
+        (r'<meta\s+property="og:title"', "og:title"),
+        (r'<meta\s+property="og:image"', "og:image"),
+        (r'<meta\s+name="twitter:card"', "twitter:card"),
+    ):
+        if not re.search(pattern, text):
+            errors.append(f"'{slug}': missing {label} (see the seo skill)")
 
     scene_re = re.compile(
         r'<section\b[^>]*\bclass="[^"]*\bsticky-scene\b[^"]*"[^>]*>(.*?)</section>', re.S
@@ -142,21 +154,27 @@ def sitemap_locations():
 
 def main():
     entries, by_slug = load_manifest()
-    # Drafts copied from the template deliberately retain noindex until their
-    # metadata and manifest row are ready. They are not published posts yet.
-    files = {
-        p.name: p for p in BLOG.glob("*.html")
-        if p.name not in EXCLUDE and not is_noindex(p)
-    }
+    files = {p.name: p for p in BLOG.glob("*.html")}
     errors = []
     locations = sitemap_locations()
 
-    # Each published file must be in the manifest.
     for name in sorted(files):
         slug = f"blog/{name}"
         entry = by_slug.get(slug)
         if entry is None:
-            errors.append(f"'{slug}' has no entry in js/posts.js — add one or remove the file")
+            # Unlisted drafts are fine while clearly unpublished.
+            if not is_noindex(files[name]):
+                errors.append(
+                    f"'{slug}' is not in js/posts.js — add an entry (status wip "
+                    f"while drafting) or mark it noindex"
+                )
+            continue
+        if entry.get("status") == "wip":
+            if not is_noindex(files[name]):
+                errors.append(f"'{slug}' is wip in js/posts.js — keep the file noindex until it ships")
+            continue
+        if is_noindex(files[name]):
+            errors.append(f"'{slug}' is published in js/posts.js but marked noindex — publish it or set status wip")
             continue
         # Compare case-insensitively, ignoring trailing period — the tab
         # title may be title-cased while the shelf is sentence-cased.
@@ -171,19 +189,19 @@ def main():
         if f"https://victorbusque.com/{slug}" not in locations:
             errors.append(f"'{slug}': missing from sitemap.xml")
 
-    template = BLOG / "template.html"
-    if template.is_file():
-        errors.extend(post_structure_errors(template, "blog/template.html"))
-
-    # Each manifest entry must point to a real file.
+    # Each manifest entry must point to a real file with a valid status.
     for e in entries:
         slug = e.get("slug", "")
+        if e.get("status") not in (None, "wip"):
+            errors.append(f"js/posts.js entry '{slug}': status must be omitted (published) or 'wip'")
         missing = [k for k in ("slug", "no", "title", "date", "topic", "deck") if not e.get(k)]
         if missing:
             errors.append(f"js/posts.js entry '{slug or '[unknown]'}' missing field(s): {', '.join(missing)}")
             continue
         if not re.fullmatch(r"blog/[a-z0-9]+(?:-[a-z0-9]+)*\.html", slug):
             errors.append(f"js/posts.js slug '{slug}' must be a lowercase blog/<slug>.html path")
+        if slug.startswith("blog/not-ready/"):
+            errors.append(f"js/posts.js slug '{slug}' points into the parked WIP folder — publish to blog/ or leave it unlisted")
         if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", e["date"]):
             errors.append(f"js/posts.js entry '{slug}' has invalid date '{e['date']}' (use YYYY-MM)")
         if not re.fullmatch(r"\d+", e["no"]):
@@ -192,15 +210,28 @@ def main():
             errors.append(f"js/posts.js entry '{slug}' has invalid tags (use a list of non-empty strings)")
         if not (ROOT / slug).is_file():
             errors.append(f"js/posts.js points to '{slug}' but no such file exists")
-        elif is_noindex(ROOT / slug):
-            errors.append(f"js/posts.js points to '{slug}', but that file is marked noindex (publish its metadata first)")
+
+    # The landing is the hub: it must load the manifest and link posts through it.
+    landing = (ROOT / "index.html").read_text(encoding="utf-8")
+    if "js/posts.js" not in landing:
+        errors.append("index.html no longer loads js/posts.js — the landing binds posts through the manifest")
+
+    # Sitemap must list exactly the published posts — no parked, no wip, no ghosts.
+    published = {
+        f"https://victorbusque.com/{e['slug']}" for e in entries
+        if e.get("status") != "wip" and (ROOT / e.get("slug", "zzz")).is_file()
+    }
+    sitemap_blog = {loc for loc in locations if "/blog/" in loc}
+    for loc in sitemap_blog - published:
+        errors.append(f"sitemap.xml lists '{loc}' but it is not a published post — remove the row (parked/wip articles are not listed)")
 
     if errors:
         print("Blog manifest or page contract is OUT OF CONSISTENCY:")
         for err in errors:
             print("  ✗ " + err)
         sys.exit(1)
-    print(f"OK — {len(entries)} post(s) match the manifest and published-post contract.")
+    wip = sum(1 for e in entries if e.get("status") == "wip")
+    print(f"OK — {len(entries) - wip} published + {wip} wip post(s) match the manifest and the standalone-post contract.")
     sys.exit(0)
 
 

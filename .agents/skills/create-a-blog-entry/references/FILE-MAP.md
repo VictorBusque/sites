@@ -1,107 +1,101 @@
 # Site File Map
 
-Repo: `Documents/sites` — a notebook of curiosities, told as scroll-driven documents.
-This map is the source of truth for what exists and what each file is allowed
-to contain.
+Repo: `Documents/sites` — a notebook of curiosities: one landing page plus
+standalone, one-of-a-kind scroll-driven articles. This map is the source of
+truth for what exists and what each file is allowed to contain.
 
 ## Layout
 
 ```
 sites/
-├── index.html                  # Landing page (the only page at repo root)
+├── index.html                  # THE HUB — landing page, fully featured,
+│                               #   SEO-optimized; renders the shelf from
+│                               #   js/posts.js; owns the shared system below
 ├── css/
-│   └── site.css                # SHARED design system — tokens, nav, footer,
-│                               #   reveals, scene system, legacy figure system,
-│                               #   responsive, reduced motion
+│   └── site.css                # Landing/about design system — tokens, nav,
+│                               #   footer, reveals, scene system, responsive,
+│                               #   reduced motion. ARTICLES NEVER LINK IT.
 ├── js/
-│   ├── site.js                 # SHARED — chrome, skip link, progress,
-│   │                           #   motion preference, reveals, legacy figures
-│   ├── scene.js                # SHARED scene module — sticky-scene step cards,
-│   │                           #   labels, progress rail, data-active-step,
-│   │                           #   mobile bottom-sheet layout (--card-reserve)
-│   └── vb.js                   # SHARED micro-helpers for page scripts:
-│                               #   window.VB — esc, mulberry32, fmt.*,
-│                               #   motion.retrig/countUp, reduceMotion
+│   ├── site.js                 # Landing/about chrome: nav/footer mounts,
+│   │                           #   progress, cursor, reveals, motion pause
+│   ├── scene.js                # Landing scene module (sticky scenes on the
+│   │                           #   landing). Posts inline their own copy.
+│   ├── vb.js                   # Micro-helpers (window.VB) for landing page
+│   │                           #   scripts. Posts inline their own copy.
+│   └── posts.js                # THE BINDING — single post manifest
+│                               #   (window.VB_POSTS) read by index.html
 ├── blog/
-│   ├── template.html           # Working scrollytelling post + scene catalog
-│   └── <slug>.html             # One article per file (the-queue.html, …)
-├── about.html                  # Personal page — uses the LEGACY figure system
+│   ├── <slug>.html             # One standalone article per file — its own
+│   │                           #   styles, scripts, and chrome, inlined.
+│   │                           #   Top level = published, rendered on shelf
+│   └── not-ready/              # Parked WIP redesigns — never in the
+│                               #   manifest, shelf, sitemap, or robots;
+│                               #   includes template.html (the scaffold)
+├── about.html                  # Personal page — landing system + legacy figures
 ├── .agents/skills/create-a-blog-entry/
 │   ├── SKILL.md
 │   └── references/             # SCROLLYTELLING.md, DESIGN.md, MOTION.md,
 │                               #   PLATFORM.md
-├── mock-1.html                 # Historical mockup — DO NOT TOUCH
-├── mock.html                   # Historical mockup — DO NOT TOUCH
+├── docs/ideas.md               # New-idea queue
 ├── README.md                   # Personal notes
-├── robots.txt
-└── sitemap.xml                 # Public URLs; update real lastmod dates when pages change
+├── robots.txt                  # Disallows /blog/template.html only
+├── sitemap.xml                 # Public URLs; update real lastmod dates when pages change
+└── scripts/check_posts.py      # Enforces the manifest + standalone contract
 ```
 
 ## File ownership
 
 | File | You may | You may not |
 |---|---|---|
-| `css/site.css` | Extend (new shared components, keyframes, tokens) | Restyle existing shared classes to fit one page |
-| `js/site.js` | Fix bugs, add site-chrome features | Move it, break `defer` ordering, add page-specific logic |
-| `js/scene.js` | Fix bugs, extend the scene contract | Split scene logic across pages; change the step-card contract without updating this map and the skill |
-| `js/vb.js` | Fix bugs, add general-purpose helpers (esc, rng, fmt, motion) | Duplicate a helper into a page instead of using `window.VB`; add page-specific logic |
 | `index.html` | Update landing copy and shelf presentation | Duplicate post data; it belongs in `js/posts.js` |
-| `blog/<slug>.html` | Everything inside the page (styles, scripts, prose, scenes) | Duplicate shared system or hand-write scene wiring |
-| `blog/template.html` | Keep it current as the catalog + starting point | Remove scene kinds or layout pieces it documents |
-| `about.html` | Fix bugs in its inline figure logic | Convert it to scrollytelling — it intentionally keeps the legacy figure system (it documents how the author learns) |
-| `mock*.html` | Nothing | Anything |
+| `css/site.css`, `js/site.js`, `js/scene.js`, `js/vb.js` | Extend/fix the landing system | Point a blog article at any of them |
+| `js/posts.js` | Add/update manifest rows when posts ship | Invent rows without files, or stash post data anywhere else |
+| `blog/<slug>.html` | Everything — the whole file is the article's own: styles, scripts, chrome, prose, scenes | Link `../css/` or `../js/` assets; depend on any file outside `blog/` (except `/img/` static assets and external fonts) |
+| `blog/not-ready/` | Park WIP redesigns here while reworking them; move back to `blog/` + add the manifest row when done | Render, list, or crawl parked files — they are invisible to the shelf, sitemap, and robots |
+| `blog/not-ready/template.html` | Keep it current as the standalone scaffold + catalog | Remove scene kinds or layout pieces it documents |
+| `about.html` | Fix bugs in its inline figure logic | Convert it to scrollytelling — it intentionally keeps the legacy figure system |
+| `scripts/check_posts.py` | Extend the contract checks | Weaken the standalone or honesty rules |
 
-## Contracts with the shared files
+## The binding contract (landing ↔ posts)
 
-- **`css/site.css` guarantees:** `.progress`, `.cursor-dot/ring`, `nav`,
-  `.logo`, `.marquee`, `.reveal/.stagger/.mask/.h-line`, `.btn`, `.tag`,
-  the scene system (`.scene`, `.sticky-scene`, `.scene-head`, `.step`,
-  `.breather`, …), the legacy figure system (`.fig` frame, `.fig-btn`),
-  `footer`, tokens, keyframes, responsive + reduced-motion blocks.
-- **`js/site.js` guarantees:** embeds the shared components — the nav
-  (`[data-vb-nav]`, knobs `data-active` / `data-status` / `data-status-em`),
-  the footer (`[data-vb-footer]`, knob `data-label`), and the fixed chrome
-  (`#progress`, `#cDot`, `#cRing`); fills `#progress`; observes `.reveal/.stagger/
-  .mask`; duplicates `.marquee-track`; powers the custom cursor; adds a
-  reader-facing skip link (when a semantic `<main>` exists) and a persisted
-  ambient-motion pause control; powers the legacy figure engine; and handles
-  responsive SVG framing (`data-vb-narrow`). Its reading-progress rail uses a
-  native CSS scroll timeline when available and rAF otherwise.
-- **`js/scene.js` guarantees:** for every `.sticky-scene` it wraps each
-  `[data-step]`'s content in a `.step-card` (injecting a `.step-progress`
-  rail and conventional `.step-k` label when missing), toggles `.is-active`
-  as a step crosses its activation window, sets
-  `data-active-step` on the section, fills `[data-readout]` with
-  `STEP k / n`, and measures the tallest card into `--card-reserve` so the
-  portrait bottom-sheet layout centers the diagram above the card. Public
-  API: `window.VBScene.onStep(fn)` / `.refresh()` / `.init()`.
-- **`js/vb.js` guarantees:** one namespace, `window.VB`, with the
-  general-purpose helpers page scripts reach for — `VB.reduceMotion`,
-  `VB.esc(str)` (HTML-escape computed text before `innerHTML`),
-  `VB.mulberry32(seed)` (deterministic seeded PRNG), `VB.fmt.pct/ordinal/sup`
-  (number formatters), `VB.motion.retrig(el, cls)` and
-  `VB.motion.countUp(el, txt[, opts])` (animation choreography). Never
-  re-implement these in a page.
-- **Pages must:** include **all three** shared files (`js/site.js` then
-  `js/scene.js`, both `defer`, in that order, then `js/vb.js` **without**
-  defer so `window.VB` exists while page scripts parse), keep the
-  component mounts (`[data-vb-nav]` / `[data-vb-footer]`, with their
-  `<noscript>` fallbacks), set the `<html class="js">` gate in `<head>`,
-  add only page-scoped styles, and register page logic in an inline
-  `<script>` before `</body>`. To react to scene step changes, register with
-  `window.VBScene.onStep(fn)` inside `VB.onReady(fn)` — never hand-roll a
-  `MutationObserver` on `data-active-step`. Pages with a sticky scene make
-  the stage decorative (`aria-hidden="true"`) and carry the conclusion in
-  step text.
+- **`js/posts.js` is the only link.** One strict-JSON object per post
+  (`slug`, `no`, `title`, `date`, `topic`, `tags`, `deck`); `index.html`
+  reads `window.VB_POSTS` and renders the shelf. No entry without a file, no
+  file without an entry.
+- **Each post carries its own public metadata** and it must agree with the
+  manifest: `<title>` ↔ `title`, `<meta name="description">` ↔ `deck`, plus
+  canonical, OG/Twitter cards, and `BlogPosting` JSON-LD pointing at
+  `https://victorbusque.com/blog/<slug>.html`.
+- **A post publishes when it moves out of `blog/not-ready/` (or drops its
+  `"status": "wip"` draft marker) and its manifest row is live.** Parked
+  files are never listed; a top-level wip draft must carry `<meta
+  name="robots" content="noindex, nofollow">`; unlisted top-level files
+  must also stay noindex.
+
+## The standalone contract (per article)
+
+- Everything the article needs is inlined: at least one `<style>` block, all
+  scripts, the nav/footer markup or runtime, scene wiring, helpers. No
+  `<link>`/`<script>` may reference `../css/` or `../js/`.
+- Allowed external references: root-relative static assets (`/img/…`,
+  `/site.webmanifest`), the Google Fonts stylesheet, absolute `https://`
+  metadata URLs (og:image, canonical).
+- The scaffold's inlined blocks keep a provenance banner ("Formerly the
+  shared … this copy belongs to this article"). Treat inlined copies as the
+  article's own code: edit them freely, but preserve the honest-document
+  behavior they ship (no-JS stacked document, reduced-motion collapse, real
+  states at every scroll position, honest readouts).
+- `blog/template.html` is the canonical scaffold: `<html class="js">` gate +
+  `window.VB` helpers in `<head>`, page script at end of body, then the
+  inlined site + scene runtimes (that order reproduces the historical defer
+  semantics and must be preserved when reorganizing).
 
 ## Scrollytelling vs legacy figures
 
-- All narrative pages (`index.html`, `about.html`, `blog/*.html`) are
-  scrollytelling. The shared scene engine handles step activation; pages
-  key stage states off `data-active-step`.
+- The landing and posts are scrollytelling. The scaffold's scene runtime
+  handles step activation; pages key stage states off `data-active-step`.
 - The legacy `.fig` system (fig-head, fig-body, PAUSE/REPLAY controls) is
-  kept in `css/site.css` / `js/site.js` for compatibility but is currently
-  unused by any page. Do not start new work on it.
+  kept for `about.html` compatibility. Do not start new work on it.
 
 Never mix the two on one page.
 
@@ -109,5 +103,5 @@ Never mix the two on one page.
 
 The skill is versioned in its frontmatter (`metadata.version`). Bump the minor
 version when standards change; bump the major when the file contract changes
-(new shared file, breaking engine change). Update `SKILL.md`'s golden rules and
-this map in the same change.
+(e.g. the 5.0.0 move to standalone posts). Update `SKILL.md`'s golden rules
+and this map in the same change.

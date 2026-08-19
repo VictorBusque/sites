@@ -121,7 +121,7 @@
     <style>
         /* ── Landing-only styles ──────────────────────────── */
 
-        /* ═══ Observatory theme (matches blog/token-by-token.html) ═══
+        /* ═══ Observatory theme (matches blog/not-ready/token-by-token.html) ═══
            Warm graphite night + bone + jade, steel-sky, ember. Page-scoped
            overrides of the light system in css/site.css. All text pairs
            verified >= 4.5:1 on their surfaces. */
@@ -1136,6 +1136,7 @@
             }
 
             var entries = (window.VB_POSTS || [])
+                .filter(function (e) { return e.status !== 'wip'; })
                 .slice().sort(function (a, b) { return b.date.localeCompare(a.date); });
             search.value = query;
             render(entries);

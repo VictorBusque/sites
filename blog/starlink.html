@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#04060b">
+<title>Starlink — A packet's journey through space</title>
+<meta name="description" content="A packet's route through the constellation: phased arrays on the ground, laser links between satellites, and the physics of latency from orbit.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://victorbusque.com/blog/starlink.html">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Víctor Busqué — Curiosities">
+<meta property="og:title" content="Starlink — A packet's journey through space">
+<meta property="og:description" content="A packet's route through the constellation: phased arrays on the ground, laser links between satellites, and the physics of latency from orbit.">
+<meta property="og:url" content="https://victorbusque.com/blog/starlink.html">
+<meta property="og:image" content="https://victorbusque.com/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="en_US">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Starlink — A packet's journey through space">
+<meta name="twitter:description" content="A packet's route through the constellation: phased arrays on the ground, laser links between satellites, and the physics of latency from orbit.">
+<meta name="twitter:image" content="https://victorbusque.com/img/og.png">
+
+<!-- Structured data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Starlink — A packet's journey through space",
+  "description": "A packet's route through the constellation: phased arrays on the ground, laser links between satellites, and the physics of latency from orbit.",
+  "datePublished": "2026-08-19",
+  "author": { "@type": "Person", "name": "Víctor Busqué", "url": "https://victorbusque.com/about.html" },
+  "image": "https://victorbusque.com/img/og.png",
+  "mainEntityOfPage": "https://victorbusque.com/blog/starlink.html"
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#04060b;--ink:#f4f1e9;--muted:#9ca4af;--dim:#5b6470;--line:rgba(255,255,255,.11);--panel:rgba(7,10,17,.84);--lime:#d7ff54;--cyan:#7ce6ff;--orange:#ffb267;--violet:#b99aff;--stage:59vh}
+*{box-sizing:border-box}html{background:var(--bg);scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 50% 15%,#0a1020 0,#04060b 46%,#03050a 100%);color:var(--ink);font-family:Manrope,system-ui,sans-serif;overflow-x:hidden}canvas{display:block}::selection{background:var(--lime);color:#03050a}
+#webgl{position:fixed;inset:0;width:100vw;height:100vh;z-index:1;pointer-events:none}.grain{position:fixed;inset:-40%;z-index:6;pointer-events:none;opacity:.052;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");mix-blend-mode:screen}
+.topbar{position:fixed;inset:0 0 auto;z-index:8;padding:22px 30px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;font:500 10px/1 DM Mono,monospace;letter-spacing:.16em;text-transform:uppercase}.brand{color:#edf0ec}.meta{color:#737c88}
+.progress{position:fixed;z-index:8;left:22px;top:50%;transform:translateY(-50%);height:144px;width:2px;background:rgba(255,255,255,.13);border-radius:2px}.progress i{display:block;width:2px;height:0;background:var(--lime);border-radius:2px;transition:height .22s ease}.progress span{position:absolute;left:-2px;top:-22px;transform:translateX(-100%);font:500 9px/1 DM Mono,monospace;color:#7b8490;white-space:nowrap}
+.hero{position:relative;z-index:2;min-height:100svh;display:grid;place-items:center;padding:12vh 9vw 7vh;text-align:center}.hero-inner{max-width:980px}.eyebrow{font:500 10px/1 DM Mono,monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--lime);margin-bottom:25px}.hero h1{margin:0;font:400 clamp(62px,9vw,138px)/.82 'Instrument Serif',serif;letter-spacing:-.05em}.hero h1 em{font-style:italic;color:#c8ccd3}.hero p{max-width:710px;margin:31px auto 0;font-size:clamp(15px,1.45vw,18px);line-height:1.72;color:#9fa7b2}.hero .path{margin:33px auto 0;max-width:620px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap}.path b{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.025);border-radius:999px;padding:8px 11px;font:500 9px/1 DM Mono,monospace;color:#a8b0bb;text-transform:uppercase;letter-spacing:.08em}.scrollcue{margin-top:48px;font:500 9px/1 DM Mono,monospace;letter-spacing:.16em;text-transform:uppercase;color:#69717e}.scrollcue span{display:inline-block;margin-left:8px;animation:drift 1.7s ease-in-out infinite}@keyframes drift{50%{transform:translateY(6px);opacity:.4}}
+.story{position:relative;z-index:3;max-width:1500px;margin:auto}.grid{display:grid;grid-template-columns:minmax(320px,1fr) minmax(400px,520px);gap:7vw;padding:2vh 7vw 14vh}.stageWrap{position:sticky;top:0;height:var(--stage);align-self:start}.stageFrame{position:relative;width:100%;height:100%}.sceneLabel{position:absolute;top:17px;right:0;text-align:right;max-width:250px;font:500 9px/1.45 DM Mono,monospace;letter-spacing:.13em;text-transform:uppercase;color:#69727e}.legend{position:absolute;left:0;top:18px;display:flex;gap:13px;flex-wrap:wrap;font:500 8px/1 DM Mono,monospace;color:#68717e;text-transform:uppercase;letter-spacing:.08em}.legend span{display:inline-flex;align-items:center;gap:6px}.legend i{display:inline-block;width:14px;height:2px;border-radius:2px}.legend .rf{background:var(--cyan)}.legend .laser{background:var(--violet)}.legend .ground{background:var(--orange)}.telemetry{position:absolute;left:0;bottom:16px;font:500 9px/1.65 DM Mono,monospace;color:#606975;letter-spacing:.08em;text-transform:uppercase}.telemetry strong{color:#dce1e4;font-weight:500}.hint{position:absolute;right:0;bottom:18px;font:500 8px/1 DM Mono,monospace;letter-spacing:.11em;text-transform:uppercase;color:#535c68}
+.copy{position:relative;z-index:3}.step{min-height:81vh;display:flex;align-items:center;padding:5vh 0}.card{width:100%;border:1px solid var(--line);background:linear-gradient(145deg,rgba(10,13,20,.86),rgba(8,11,18,.62));backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-radius:24px;padding:31px 32px 33px;box-shadow:0 22px 90px rgba(0,0,0,.28);opacity:.32;transform:translateY(10px) scale(.987);transition:opacity .45s ease,transform .55s cubic-bezier(.22,.61,.36,1),border-color .45s ease}.step.is-active .card{opacity:1;transform:none;border-color:rgba(215,255,84,.24)}.kicker{display:flex;align-items:center;gap:10px;color:#7e8792;font:500 10px/1 DM Mono,monospace;letter-spacing:.13em;text-transform:uppercase;margin-bottom:20px}.dot{width:7px;height:7px;border-radius:50%;background:var(--lime);box-shadow:0 0 18px rgba(215,255,84,.9)}h2{margin:0 0 18px;font:400 clamp(34px,4.6vw,57px)/.92 'Instrument Serif',serif;letter-spacing:-.025em}h2 em{font-style:italic;color:#d5d8dd}.body{font-size:14px;line-height:1.78;color:#a6aeb8}.body strong{color:#eff1eb;font-weight:600}.formula{margin-top:23px;padding:13px 15px;border-left:1px solid rgba(215,255,84,.62);background:rgba(255,255,255,.028);font:500 10px/1.65 DM Mono,monospace;color:#c5cbd2}.metrics{display:flex;gap:24px;flex-wrap:wrap;margin-top:25px}.metric{min-width:90px}.metric b{display:block;font:500 24px/1 DM Mono,monospace;letter-spacing:-.04em;color:#edf1ea}.metric span{display:block;margin-top:7px;color:#68717d;font:500 8px/1.4 DM Mono,monospace;letter-spacing:.1em;text-transform:uppercase}.micro{margin-top:25px;color:#666f7a;font:500 9px/1.55 DM Mono,monospace;letter-spacing:.06em;text-transform:uppercase}.micro b{color:#aeb6bf;font-weight:500}
+.after{position:relative;z-index:3;max-width:900px;margin:auto;padding:0 8vw 13vh}.afterCard{border-top:1px solid var(--line);padding-top:34px}.after h3{margin:0 0 15px;font:400 42px/.95 'Instrument Serif',serif}.after p{margin:0;color:#969eaa;font-size:13px;line-height:1.8}.sources{position:relative;z-index:3;border-top:1px solid var(--line);padding:50px 8vw 75px;color:#727b87;font-size:11px;line-height:1.75}.sources b{color:#bbc2ca;font-weight:600}.sources a{color:#bec4cb;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.16)}
+@media(max-width:900px){:root{--stage:51svh}.topbar{padding:17px 18px}.meta{display:none}.progress{left:auto;right:12px;height:100px}.progress span{left:auto;right:-2px;transform:translateX(100%)}.hero{padding:12vh 20px 6vh}.hero h1{font-size:clamp(62px,18vw,98px)}.hero p{font-size:14px}.grid{display:block;padding:0 15px 16vh}.stageWrap{margin:0 -15px;height:var(--stage)}.sceneLabel{right:15px;top:11px}.legend{left:15px;top:11px;max-width:55%}.telemetry{left:15px;bottom:11px}.hint{right:15px;bottom:12px}.step{min-height:73vh;align-items:flex-end;padding:16vh 0 5vh}.card{padding:24px 22px 25px;border-radius:19px}.body{font-size:13px;line-height:1.72}h2{font-size:40px}.after{padding:0 22px 12vh}.after h3{font-size:37px}}
+@media(max-width:520px){:root{--stage:48svh}.hero{min-height:93svh}.eyebrow{margin-bottom:20px}.hero p{margin-top:26px;line-height:1.58}.path{gap:7px!important}.path b{font-size:8px;padding:7px 9px}.scrollcue{margin-top:38px}.step{min-height:78vh;padding-top:20vh}.metrics{gap:17px}.metric b{font-size:21px}.formula{font-size:9px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.card{transition:none}.scrollcue span{animation:none}}
+</style>
+</head>
+<body>
+<canvas id="webgl"></canvas><div id="rendererError" style="position:fixed;inset:0;z-index:7;display:none;place-items:center;background:#04060b;color:#dfe5df;font:500 11px/1.6 DM Mono,monospace;letter-spacing:.08em;text-align:center;padding:30px;text-transform:uppercase;">Three.js could not load.<br>Try opening this page with an internet connection.</div><div class="grain"></div>
+<div class="topbar"><div class="brand">STARLINK / SYSTEMS IN MOTION</div><div class="meta">ENGINEERING EXPLAINER · LEO NETWORK</div></div>
+<div class="progress"><span id="pageNo">01 / 07</span><i id="progressFill"></i></div>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow">A packet's journey through low Earth orbit</div>
+    <h1>The internet<br>is <em>moving.</em></h1>
+    <p>Follow one packet from a laptop on Earth to the wider internet. The trick is not “a satellite in the sky” — it is a chain of electronically steered radio links, moving spacecraft, optical lasers, ground gateways and software choosing the path in real time.</p>
+    <div class="path"><b>terminal</b><b>RF</b><b>satellite</b><b>laser mesh</b><b>gateway</b><b>internet</b></div>
+    <div class="scrollcue">Scroll to make the packet move <span>↓</span></div>
+  </div>
+</header>
+
+<main class="story"><div class="grid">
+  <div class="stageWrap"><div class="stageFrame">
+    <div class="legend"><span><i class="rf"></i>RF</span><span><i class="laser"></i>OPTICAL</span><span><i class="ground"></i>GROUND</span></div>
+    <div class="sceneLabel" id="sceneLabel">SYSTEM OVERVIEW / LEO</div>
+    <div class="telemetry">LINK <strong id="tl">IDLE</strong><br>PATH <strong id="th">—</strong><br>STEP <strong id="tc">01</strong></div>
+    <div class="hint" id="hint">SCROLL TO DRIVE THE VIEW</div>
+  </div></div>
+
+  <div class="copy" id="copy">
+    <section class="step" data-step="0">
+      <div class="card"><div class="kicker"><span class="dot"></span>01 / Start at the user</div>
+      <h2>The “dish” is really a <em>steerable radio.</em></h2>
+      <p class="body">Open the terminal and you do not find a little motor that constantly points a conventional dish. The user antenna is a <strong>phased array</strong>: many small radiating elements work together. By changing the relative phase of those elements, the terminal makes the combined electromagnetic wave add up strongly in one direction and cancel more strongly elsewhere.</p>
+      <div class="formula">Δφ across elements → different wavefront direction → beam can move without mechanically rotating the antenna.</div>
+      <div class="metrics"><div class="metric"><b>0°→θ</b><span>electronic steering</span></div><div class="metric"><b>Ku</b><span>user link band</span></div></div>
+      <div class="micro">WATCH <b>the tiny array elements fire with different phase offsets</b></div></div>
+    </section>
+
+    <section class="step" data-step="1">
+      <div class="card"><div class="kicker"><span class="dot"></span>02 / The first hop</div>
+      <h2>Now the beam reaches a <em>moving satellite.</em></h2>
+      <p class="body">The terminal is not locked to one spacecraft forever. It can see multiple satellites while they cross the sky. A narrow RF beam is formed toward one satellite, while the network prepares the next link before the current one becomes a poor choice.</p>
+      <div class="formula">Earth → phased-array terminal → Ku-band link → satellite payload.</div>
+      <div class="metrics"><div class="metric"><b>~550 km</b><span>typical LEO shell</span></div><div class="metric"><b>10s</b><span>satellites can be visible</span></div></div>
+      <div class="micro">WATCH <b>the RF cone track the spacecraft instead of the terminal physically rotating</b></div></div>
+    </section>
+
+    <section class="step" data-step="2">
+      <div class="card"><div class="kicker"><span class="dot"></span>03 / Handoff</div>
+      <h2>Then the network <em>moves the link.</em></h2>
+      <p class="body">LEO satellites move quickly across the sky. So Starlink constantly evaluates which satellite offers the best usable path — including obstruction and link quality — and performs a <strong>beam / satellite handoff</strong> while keeping the session alive.</p>
+      <div class="formula">Satellite A weakening → Satellite B rising → schedule B → switch RF link → continue packets.</div>
+      <div class="micro">WATCH <b>one beam fade while another lights up before the first disappears</b></div></div>
+    </section>
+
+    <section class="step" data-step="3">
+      <div class="card"><div class="kicker"><span class="dot"></span>04 / Space-to-space</div>
+      <h2>Inside the constellation, <em>lasers take over.</em></h2>
+      <p class="body">Modern Starlink spacecraft can pass traffic directly between satellites using <strong>optical inter-satellite links</strong>. A laser terminal points at a neighboring spacecraft, acquires the link, and sends data through free space instead of immediately dropping every packet to Earth.</p>
+      <div class="formula">RF from user → satellite → optical ISL → satellite → optical ISL → …</div>
+      <div class="metrics"><div class="metric"><b>3×</b><span>laser ISLs on V2 Mini</span></div><div class="metric"><b>200 Gbps</b><span>up to per laser link</span></div></div>
+      <div class="micro">NOTE <b>V3 is a newer design: 6 optical links rated up to 400 Gbps each</b></div></div>
+    </section>
+
+    <section class="step" data-step="4">
+      <div class="card"><div class="kicker"><span class="dot"></span>05 / Back to Earth</div>
+      <h2>A <em>gateway</em> is where space meets fiber.</h2>
+      <p class="body">Eventually the packet has to leave the satellite network and enter terrestrial infrastructure. A Starlink gateway communicates with the spacecraft over RF, while its terrestrial side connects into Starlink’s ground network and internet <strong>Points of Presence</strong>. The gateway is the bridge between the orbital fabric and the fiber world.</p>
+      <div class="formula">Satellite RF downlink → gateway earth station → terrestrial network / PoP → internet.</div>
+      <div class="micro">WATCH <b>the packet change transport domain: RF → fiber / terrestrial routing</b></div></div>
+    </section>
+
+    <section class="step" data-step="5">
+      <div class="card"><div class="kicker"><span class="dot"></span>06 / Routing</div>
+      <h2>The path is chosen <em>in real time.</em></h2>
+      <p class="body">There is no fixed “Starlink route.” The usable topology changes as satellites move, gateways become available, links congest, and obstructions change. Traffic can stay in space for several hops, or drop to Earth earlier when that is the shorter or better path.</p>
+      <div class="formula">Choose a usable path across a moving graph — not a permanent wire.</div>
+      <div class="metrics"><div class="metric"><b>dynamic</b><span>topology</span></div><div class="metric"><b>shortest ≠ only</b><span>objective</span></div></div>
+      <div class="micro">WATCH <b>the same packet reroute when a ground path is deliberately made unavailable</b></div></div>
+    </section>
+
+    <section class="step" data-step="6">
+      <div class="card"><div class="kicker"><span class="dot"></span>07 / The whole system</div>
+      <h2>So the dish is only the <em>front door.</em></h2>
+      <p class="body">What makes Starlink unusual is the composition: a steerable user terminal, a moving constellation of LEO routers, high-capacity optical links between spacecraft, gateways and terrestrial PoPs. From the user’s perspective it looks like Wi-Fi. Underneath, it behaves much more like a <strong>distributed network whose routers happen to be flying around Earth.</strong></p>
+      <div class="formula">Laptop → terminal → RF → satellite → laser mesh / gateway → internet → reverse path → terminal → laptop.</div>
+      <div class="micro">FINAL VIEW <b>watch one packet traverse the complete architecture</b></div></div>
+    </section>
+  </div>
+</div></main>
+
+<section class="after"><div class="afterCard"><h3>Why the architecture matters</h3><p>LEO reduces propagation distance. Phased arrays make links steerable without large mechanical antennas. Optical inter-satellite links let traffic cross oceans without touching terrestrial fiber. Gateways connect the orbital network back to the internet. Put together, those pieces create a network that trades fixed infrastructure for a moving, redundant graph.</p></div></section>
+
+<section class="sources"><b>Engineering notes & sources</b><br>
+Starlink publishes that its satellites use advanced phased-array antennas and optical inter-satellite links; its public technology page describes V2-era spacecraft with three optical links up to 200 Gbps, while its V3 announcement describes six 400 Gbps optical links and next-generation beamforming hardware. Starlink also describes automatic satellite switching and real-time obstruction-aware behavior.<br><br>
+<a href="https://starlink.com/technology" target="_blank" rel="noreferrer">Starlink Technology</a> · <a href="https://www.starlink.com/updates/starlink-beam-switching" target="_blank" rel="noreferrer">Starlink Beam Switching</a> · <a href="https://starlink.com/updates/starlink-version-3-satellites" target="_blank" rel="noreferrer">Starlink V3 Satellites</a> · <a href="https://www.starlink.com/public-files/StarlinkLatency.pdf" target="_blank" rel="noreferrer">Starlink latency engineering note</a>
+</section>
+
+<script>
+(function loadThree(){
+  const urls=[
+    'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js',
+    'https://unpkg.com/three@0.160.0/build/three.min.js'
+  ];
+  let i=0;
+  function next(){
+    if(i>=urls.length){document.getElementById('rendererError').style.display='grid';return;}
+    const sc=document.createElement('script');
+    sc.src=urls[i++];
+    sc.onload=start;
+    sc.onerror=next;
+    document.head.appendChild(sc);
+  }
+  next();
+})();
+
+function start(){
+(()=>{
+'use strict';
+const canvas=document.getElementById('webgl');
+const isMobile=matchMedia('(max-width:900px)').matches;
+const reduced=matchMedia('(prefers-reduced-motion:reduce)').matches;
+let renderer;
+try{
+ renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'});
+}catch(e){document.getElementById('rendererError').style.display='grid';return;}
+renderer.setPixelRatio(Math.min(devicePixelRatio,isMobile?1.45:1.9));
+renderer.setSize(innerWidth,innerHeight,false);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(33,innerWidth/innerHeight,.1,100);
+camera.position.set(0,.3,11.8);
+const root=new THREE.Group();scene.add(root);
+const clock=new THREE.Clock();
+
+const lime=0xd7ff54,cyan=0x7ce6ff,orange=0xffb267,violet=0xb99aff,white=0xf0f1e8,steel=0x64707a;
+function mat(color,opacity=1){return new THREE.MeshBasicMaterial({color,transparent:opacity<1,opacity,depthWrite:false});}
+function glowTexture(){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d'),g=x.createRadialGradient(64,64,2,64,64,64);g.addColorStop(0,'rgba(255,255,255,.95)');g.addColorStop(.18,'rgba(255,255,255,.5)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,128,128);return new THREE.CanvasTexture(c)}
+function glowSprite(color,size=.18){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture(),color,transparent:true,opacity:.9,depthWrite:false}));s.scale.set(size,size,size);root.add(s);return s}
+const isometricGlow=glowSprite(0x193040,4.5); isometricGlow.position.set(0,.6,-2); isometricGlow.material.opacity=.22;
+
+const starCount=isMobile?650:1300;const starPos=new Float32Array(starCount*3);for(let i=0;i<starCount;i++){const r=25+Math.random()*35,a=Math.random()*Math.PI*2,b=Math.acos(2*Math.random()-1);starPos[i*3]=r*Math.sin(b)*Math.cos(a);starPos[i*3+1]=r*Math.cos(b);starPos[i*3+2]=r*Math.sin(b)*Math.sin(a)}
+const starGeo=new THREE.BufferGeometry();starGeo.setAttribute('position',new THREE.BufferAttribute(starPos,3));scene.add(new THREE.Points(starGeo,new THREE.PointsMaterial({color:0x82909f,size:isMobile?.028:.034,transparent:true,opacity:.75,depthWrite:false})))
+const earth=new THREE.Mesh(new THREE.SphereGeometry(7.9,48,48),new THREE.MeshBasicMaterial({color:0x07101a,transparent:true,opacity:.16,side:THREE.BackSide,depthWrite:false}));earth.position.y=-8.05;root.add(earth);
+const arc=new THREE.Mesh(new THREE.TorusGeometry(7.92,.035,6,180,Math.PI*1.08),mat(0x335f73,.55));arc.rotation.x=Math.PI/2;arc.position.set(0,-1.1,0);root.add(arc);
+function createLine(color=cyan,opacity=0){const g=new THREE.BufferGeometry();g.setFromPoints([new THREE.Vector3(),new THREE.Vector3()]);const l=new THREE.Line(g,new THREE.LineBasicMaterial({color,transparent:true,opacity,depthWrite:false}));root.add(l);return l}
+function setLine(l,a,b,opacity){l.geometry.setFromPoints([a,b]);l.material.opacity=opacity}
+function pulseSprite(color,size=.18){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture(),color,transparent:true,opacity:1,depthWrite:false}));s.scale.set(size,size,size);root.add(s);return s}
+
+const terminal=new THREE.Group();root.add(terminal);terminal.position.set(-3.8,-2.35,0);terminal.rotation.z=-.14;
+const roof=new THREE.Mesh(new THREE.BoxGeometry(2.5,.15,1.65),mat(0x1a2228,1));roof.position.y=-.55;terminal.add(roof);
+const panel=new THREE.Mesh(new THREE.BoxGeometry(1.65,.1,1.12),mat(0x98a8ae,1));panel.position.y=-.34;panel.rotation.x=-.65;terminal.add(panel);
+const panelFrame=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.7,.12,1.17)),new THREE.LineBasicMaterial({color:0xe3ebe7,transparent:true,opacity:.18,depthWrite:false}));panelFrame.position.copy(panel.position);panelFrame.rotation.copy(panel.rotation);terminal.add(panelFrame);
+const elements=[];const eGeo=new THREE.CircleGeometry(.027,8);for(let r=0;r<12;r++){for(let c=0;c<18;c++){const e=new THREE.Mesh(eGeo,mat(white,1));const px=(c-8.5)*.081,pz=(r-5.5)*.075;e.position.set(px,-.275,pz);e.rotation.x=-.65;terminal.add(e);elements.push(e)}}
+const arrayGlow=pulseSprite(cyan,.8);arrayGlow.position.copy(terminal.position);arrayGlow.position.y=-.05;arrayGlow.visible=false;const beamA=createLine(cyan,0),beamB=createLine(cyan,0);const wavefronts=[];for(let i=0;i<7;i++){const l=createLine(cyan,0);wavefronts.push(l)}
+function makeSatellite({name='SAT',scale=1}={}){const g=new THREE.Group();g.userData.name=name;g.scale.setScalar(scale);const body=new THREE.Mesh(new THREE.BoxGeometry(.62,.25,.42),mat(0xd5dcd7,1));g.add(body);const dark=new THREE.Mesh(new THREE.BoxGeometry(.44,.16,.03),mat(0x25313a,1));dark.position.z=-.22;g.add(dark);const panelMat=mat(0x33424c,1);const p1=new THREE.Mesh(new THREE.BoxGeometry(1.3,.055,.34),panelMat),p2=p1.clone();p1.position.x=-.96;p2.position.x=.96;g.add(p1,p2);const user=new THREE.Mesh(new THREE.BoxGeometry(.42,.02,.28),mat(cyan,1));user.position.y=-.15;g.add(user);g.userData.userPanel=user;const lasers=[];for(const side of [-1,1]){const l=new THREE.Mesh(new THREE.BoxGeometry(.05,.05,.11),mat(violet,1));l.position.set(side*.37,.06,0);g.add(l);lasers.push(l)}g.userData.lasers=lasers;const halo=pulseSprite(cyan,.42);halo.position.set(0,0,0);halo.material.opacity=.6;g.add(halo);g.userData.halo=halo;return g}
+const satA=makeSatellite({name:'A',scale:1.05}),satB=makeSatellite({name:'B',scale:1.0}),satC=makeSatellite({name:'C',scale:.92}),satD=makeSatellite({name:'D',scale:.86});[satA,satB,satC,satD].forEach(s=>root.add(s));const satPositions={A:new THREE.Vector3(-.3,2.35,0),B:new THREE.Vector3(2.45,2.8,.15),C:new THREE.Vector3(5.0,2.15,-.25),D:new THREE.Vector3(6.9,2.75,.2)};
+const gateway=new THREE.Group();root.add(gateway);gateway.position.set(4.15,-2.1,0);const gPad=new THREE.Mesh(new THREE.CylinderGeometry(1.1,.9,.12,32),mat(0x182229,1));gateway.add(gPad);const gBase=new THREE.Mesh(new THREE.BoxGeometry(1.2,.45,.75),mat(0x2f3a42,1));gBase.position.y=.28;gateway.add(gBase);const dish=new THREE.Mesh(new THREE.CylinderGeometry(.68,.68,.07,48),mat(0xd0d8d3,1));dish.rotation.x=Math.PI/2;dish.rotation.z=-.3;dish.position.y=.65;gateway.add(dish);const dishRing=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.CylinderGeometry(.69,.69,.08,48)),new THREE.LineBasicMaterial({color:white,transparent:true,opacity:.32,depthWrite:false}));dishRing.rotation.copy(dish.rotation);dishRing.position.copy(dish.position);gateway.add(dishRing);const gatewayBeam=createLine(orange,0),groundLine=createLine(orange,0);const popNodes=[];for(let i=0;i<4;i++){const n=new THREE.Mesh(new THREE.BoxGeometry(.23,.11,.18),mat(orange,.8));n.position.set(5.7+i*.58,-1.9-.12*i,0);root.add(n);popNodes.push(n)}const fiberSegments=[];for(let i=0;i<popNodes.length-1;i++)fiberSegments.push(createLine(orange,0));
+const laserLines=[];for(let i=0;i<8;i++)laserLines.push(createLine(violet,0));const rfDown=createLine(orange,0),rfTerm=createLine(cyan,0),handoffA=createLine(cyan,0),handoffB=createLine(cyan,0);
+const packet=pulseSprite(lime,.22);const trail=[];for(let i=0;i<7;i++){const t=pulseSprite(lime,.08);t.material.opacity=.14;trail.push(t)}
+const sceneTag=document.createElement('div');sceneTag.style.cssText='position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:500 9px/1 DM Mono,monospace;letter-spacing:.11em;color:#5f6974;pointer-events:none;white-space:nowrap;text-transform:uppercase;opacity:0;transition:opacity .3s';document.querySelector('.stageFrame').appendChild(sceneTag);
+const steps=[...document.querySelectorAll('.step')];let active=0;let smoothStep=0;const stepBounds=steps.map(s=>({el:s,top:0,bottom:0}));
+function refreshBounds(){for(const b of stepBounds){const r=b.el.getBoundingClientRect();b.top=r.top+scrollY;b.bottom=b.top+r.height}}
+function chooseStep(){const y=scrollY+innerHeight*.5;let idx=0;for(let i=0;i<stepBounds.length;i++)if(y>=stepBounds[i].top&&y<=stepBounds[i].bottom)idx=i;return idx}
+function localProgress(i){const b=stepBounds[i];return Math.max(0,Math.min(1,(scrollY+innerHeight*.62-b.top)/(Math.max(1,b.bottom-b.top-innerHeight*.2))))}
+function activate(i){active=i;steps.forEach((s,j)=>s.classList.toggle('is-active',j===i));document.getElementById('progressFill').style.height=((i+1)/steps.length*100)+'%';document.getElementById('pageNo').textContent=String(i+1).padStart(2,'0')+' / '+String(steps.length).padStart(2,'0');document.getElementById('tc').textContent=String(i+1).padStart(2,'0')}
+function p(a,b,t){return a.clone().lerp(b,Math.max(0,Math.min(1,t)))}function ease(t){return t*t*(3-2*t)}
+function setElementPhases(time,dir){elements.forEach((e,i)=>{const r=Math.floor(i/18),c=i%18;const phase=(c*.55+r*.21-time*dir)*Math.PI;const hot=.5+.5*Math.cos(phase);e.material.color.setRGB(.65+.35*hot,.72+.22*hot,.72+.20*hot);e.scale.setScalar(.82+.28*hot)})}
+function posSat(s,name){s.position.copy(satPositions[name])}
+function resetScene(){posSat(satA,'A');posSat(satB,'B');posSat(satC,'C');posSat(satD,'D');[satA,satB,satC,satD].forEach(s=>{s.visible=true;s.userData.halo.visible=false;s.userData.userPanel.material.opacity=1});gateway.visible=true;terminal.visible=true;popNodes.forEach(n=>n.visible=true)}
+function updateScene(step,prog,time){resetScene();smoothStep+=(step-smoothStep)*.1;const local=ease(prog);const arrayPos=terminal.position.clone();camera.position.z+=(isMobile?12.9:11.6-camera.position.z)*.06;let targetLook=new THREE.Vector3(0,0,0),cx=0,cy=.1;setElementPhases(time,step===0?1.7:0.7);arrayGlow.visible=step<=2;arrayGlow.material.opacity=step===0?.16:step<=2?.09:0;arrayGlow.position.copy(arrayPos);setLine(beamA,arrayPos.clone().add(new THREE.Vector3(.05,.18,0)),satA.position,step===0?0:step<=2?.75:0);
+if(step===0){packet.visible=false;trail.forEach(q=>q.visible=false);satA.visible=satB.visible=satC.visible=satD.visible=false;gateway.visible=false;popNodes.forEach(n=>n.visible=false);const dir=new THREE.Vector3(.65,.92,0).normalize();for(let i=0;i<wavefronts.length;i++){const d=-.45+i*.17+local*1.7;const a=arrayPos.clone().add(dir.clone().multiplyScalar(d));const b=a.clone().add(new THREE.Vector3(1.05,0,.8));setLine(wavefronts[i],a,b,.12+.04*Math.sin(time*4+i))}sceneTag.textContent='PHASE OFFSETS → CONSTRUCTIVE INTERFERENCE';sceneTag.style.opacity='1';cx=-2;cy=-.25;targetLook=arrayPos.clone()}
+else if(step===1){sceneTag.style.opacity='0';satA.userData.halo.visible=true;const from=arrayPos.clone().add(new THREE.Vector3(.1,.2,0));satA.position.x=satPositions.A.x+Math.sin(time*.55)*.18;satA.position.y=satPositions.A.y+Math.cos(time*.55)*.08;setLine(rfTerm,from,satA.position,.82);packet.visible=true;trail.forEach(q=>q.visible=true);packet.position.copy(p(from,satA.position,local));trail.forEach((q,i)=>{q.position.copy(p(from,satA.position,Math.max(0,local-i*.08)));q.material.opacity=.14*(1-i/trail.length)});cx=-.7;cy=.25;targetLook.set(-.3,.3,0)}
+else if(step===2){sceneTag.textContent='SATELLITE HANDOFF / LINK DIVERSITY';sceneTag.style.opacity='1';satA.position.copy(satPositions.A);satB.position.copy(satPositions.B);satA.userData.halo.visible=prog<.55;satB.userData.halo.visible=prog>.28;setLine(handoffA,arrayPos.clone().add(new THREE.Vector3(.08,.2,0)),satA.position,.72*(1-Math.max(0,(local-.58)*2.2)));setLine(handoffB,arrayPos.clone().add(new THREE.Vector3(.08,.2,0)),satB.position,Math.max(0,(local-.22))*1.02);packet.visible=true;trail.forEach(q=>q.visible=true);const from=arrayPos.clone().add(new THREE.Vector3(.08,.2,0));const ht=Math.min(1,local*1.25);if(ht<.62)packet.position.copy(p(from,satA.position,ht/.62));else packet.position.copy(p(satA.position,satB.position,(ht-.62)/.38));cx=-.3;cy=.2;targetLook.set(.45,1,0)}
+else if(step===3){sceneTag.textContent='OPTICAL ISL / LASER MESH';sceneTag.style.opacity='1';gateway.visible=false;terminal.visible=false;const pairs=[[satA,satB],[satB,satC],[satC,satD],[satA,satC],[satB,satD]];laserLines.forEach((l,i)=>{if(i<pairs.length){const [u,v]=pairs[i];setLine(l,u.position,v.position,i<3?.62:.17*local)}else l.material.opacity=0});[satA,satB,satC,satD].forEach(s=>s.userData.halo.visible=true);const pts=[satA.position.clone(),satB.position.clone(),satC.position.clone(),satD.position.clone()];const mu=Math.min(.999,local*3.05),mk=Math.min(2,Math.floor(mu));packet.visible=true;trail.forEach(q=>{q.visible=true;q.position.lerp(packet.position,.16)});packet.position.copy(p(pts[mk],pts[mk+1],mu-mk));cx=1.15;cy=.35;targetLook.set(2.6,2.1,0)}
+else if(step===4){sceneTag.textContent='RF DOWNLINK → GATEWAY → GROUND';sceneTag.style.opacity='1';terminal.visible=false;satC.visible=false;satD.visible=false;satA.userData.halo.visible=satB.userData.halo.visible=true;setLine(rfDown,satA.position,gateway.position.clone().add(new THREE.Vector3(-.2,.65,0)),.82);popNodes.forEach(n=>n.visible=true);for(let i=0;i<fiberSegments.length;i++)setLine(fiberSegments[i],popNodes[i].position,popNodes[i+1].position,.48);const gq=gateway.position.clone().add(new THREE.Vector3(-.2,.65,0)),fp=popNodes[3].position.clone();packet.visible=true;trail.forEach(q=>q.visible=true);if(local<.68)packet.position.copy(p(satA.position,gq,local/.68));else packet.position.copy(p(gq,fp,(local-.68)/.32));cx=.4;cy=-.15;targetLook.set(1.8,.2,0)}
+else if(step===5){sceneTag.textContent='DYNAMIC PATH / ROUTE AROUND THE GAP';sceneTag.style.opacity='1';gateway.visible=true;popNodes.forEach(n=>n.visible=true);terminal.visible=true;const pairs=[[satA,satB],[satB,satC],[satC,satD]];pairs.forEach((q,i)=>setLine(laserLines[i],q[0].position,q[1].position,.4));setLine(rfTerm,terminal.position.clone().add(new THREE.Vector3(.1,.2,0)),satA.position,.62);setLine(rfDown,satC.position,gateway.position.clone().add(new THREE.Vector3(-.2,.65,0)),.62);const routePts=[terminal.position.clone().add(new THREE.Vector3(.1,.2,0)),satA.position.clone(),satB.position.clone(),satC.position.clone(),gateway.position.clone().add(new THREE.Vector3(-.2,.65,0)),popNodes[3].position.clone()];const ru=Math.min(.999,local*(routePts.length-1)),rk=Math.min(routePts.length-2,Math.floor(ru));packet.visible=true;trail.forEach(q=>q.visible=true);packet.position.copy(p(routePts[rk],routePts[rk+1],ru-rk));cx=.2;cy=.15;targetLook.set(1.1,.6,0)}
+else {sceneTag.style.opacity='0';posSat(satA,'A');posSat(satB,'B');posSat(satC,'C');posSat(satD,'D');gateway.visible=true;terminal.visible=true;popNodes.forEach(n=>n.visible=true);setLine(rfTerm,terminal.position.clone().add(new THREE.Vector3(.1,.2,0)),satA.position,.7);setLine(laserLines[0],satA.position,satB.position,.38);setLine(laserLines[1],satB.position,satC.position,.38);setLine(laserLines[2],satC.position,satD.position,.38);setLine(rfDown,satD.position,gateway.position.clone().add(new THREE.Vector3(-.2,.65,0)),.65);for(let i=0;i<fiberSegments.length;i++)setLine(fiberSegments[i],popNodes[i].position,popNodes[i+1].position,.42);const pts=[terminal.position.clone().add(new THREE.Vector3(.1,.2,0)),satA.position.clone(),satB.position.clone(),satC.position.clone(),satD.position.clone(),gateway.position.clone().add(new THREE.Vector3(-.2,.65,0)),popNodes[3].position.clone()];const total=pts.length-1,u=(local*total)%total,k=Math.min(total-1,Math.floor(u));packet.position.copy(p(pts[k],pts[k+1],u-k));packet.visible=true;cx=.1;cy=.25;targetLook.set(.8,.4,0)}
+if(step<4){gateway.visible=false;popNodes.forEach(n=>n.visible=false);rfDown.material.opacity=0}
+const xTarget=cx+(isMobile?0:-.2);camera.position.x+=(xTarget-camera.position.x)*.055;camera.position.y+=(cy-camera.position.y)*.055;camera.lookAt(targetLook)}
+function tick(){const t=clock.getElapsedTime();const s=chooseStep();if(s!==active)activate(s);const prog=localProgress(active);updateScene(active,prog,t);renderer.render(scene,camera);requestAnimationFrame(tick)}
+activate(0);refreshBounds();addEventListener('resize',()=>{renderer.setPixelRatio(Math.min(devicePixelRatio,isMobile?1.45:1.9));renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();refreshBounds()});setTimeout(refreshBounds,250);tick();
+})();
+}
+</script>
+</body>
+</html>

@@ -1,11 +1,11 @@
 # Scrollytelling Reference
 
-How posts work on this site: the scene vocabulary, the shared engine contract,
-progressive enhancement, responsive and reduced-motion rules, and how to
-validate a finished article. The craft (storyboarding, choreography,
-accessibility) lives in the Atelier **scrollytelling** skill in the
-pi-extensions repo — read it before writing a scene. This file is the
-site-specific application.
+How posts work on this site: the scene vocabulary, the scene runtime that
+the scaffold inlines into every post, progressive enhancement, responsive
+and reduced-motion rules, and how to validate a finished article. The craft
+(storyboarding, choreography, accessibility) lives in the Atelier
+**scrollytelling** skill in the pi-extensions repo — read it before writing
+a scene. This file is the site-specific application.
 
 ## Storyboard (before code)
 
@@ -29,15 +29,16 @@ as a document.
 
 ## Scene vocabulary
 
-All classes below are shared in `css/site.css` unless marked (page).
+All classes below come from the base stylesheet the scaffold inlines (each
+page owns its copy) unless marked (page).
 
 ### sticky-scene — the workhorse
 
 A tall track (`n` × 100svh) with a
 pinned dark stage; step cards scroll over it. The stage is the visual; the
 steps carry the narrative in DOM order. On mobile the step text is a rounded
-bottom sheet with a progress rail; the scene module (`js/scene.js`) handles
-all of it.
+bottom sheet with a progress rail; the scene runtime (inlined by the
+scaffold) handles all of it.
 
 ```html
 <section class="sticky-scene" data-scene>
@@ -62,7 +63,8 @@ all of it.
 </section>
 ```
 
-Engine contract (already in `js/scene.js`, don't rewrite it):
+Runtime contract (inlined by the scaffold — keep it intact unless the
+article deliberately replaces it, preserving the fallbacks):
 
 - Each `.step` with `[data-step]` is wrapped in a `.step-card` (with a
   `.step-progress` rail and conventional `.step-k` label injected), gets
@@ -85,7 +87,7 @@ Progressive enhancement for the overlay:
 - Without IntersectionObserver: the module removes the `.js` enhancement gate
   and preserves that same plain-document state.
 - Under `prefers-reduced-motion: reduce`: the same stacked-document layout
-  (see the shared reduced-motion block). Do not rely on the overlay there.
+  (see the reduced-motion block of the base styles). Do not rely on the overlay there.
 
 ### scene / split — copy beside a bounded visual
 
@@ -101,7 +103,7 @@ Progressive enhancement for the overlay:
 </section>
 ```
 
-Collapses to vertical order below 850px (shared CSS). Use for establishing
+Collapses to vertical order below 850px (base stylesheet). Use for establishing
 scenes where the visual is small and the prose does the work.
 
 ### comparison — before/after or A/B
@@ -125,7 +127,7 @@ rule. No diagram. Place one after dense scenes so the next idea lands.
 ### full-bleed (page)
 
 A cinematic visual that breaks the prose column. Wide SVG stages: declare
-`data-vb-narrow="minX minY w h"` and `js/site.js` swaps the viewBox below
+`data-vb-narrow="minX minY w h"` and the inlined runtime swaps the viewBox below
 850px (reframed, never shrunken), plus a mobile font bump in the page's media
 query (labels ≥ 8px rendered).
 
@@ -137,7 +139,7 @@ From the Atelier skill — start at the bottom, climb only as needed:
 HTML        semantic story and static fallback
 CSS         layout, visual system, simple motion
 CSS timelines  scroll-linked opacity/transform/rotation (progressive)
-IntersectionObserver  discrete step activation (shared engine)
+IntersectionObserver  discrete step activation (scaffold runtime)
 requestAnimationFrame custom continuous state or Canvas
 Canvas/WebGL genuinely spatial or high-density explanation
 ```
@@ -161,10 +163,10 @@ path, a bar filling). Feature-detect and keep the base state meaningful:
 Never put essential conclusions in a scroll-timeline-only animation — they are
 decoration over the step story.
 
-### Shared scene module (IntersectionObserver) — `js/scene.js`
+### Scene runtime (IntersectionObserver) — inlined by the scaffold
 
-Already in `js/scene.js` (load it after `js/site.js`, both `defer`). Do not
-duplicate it per page. For every `.sticky-scene` it:
+Already inlined in every post from `blog/template.html` (the page owns its
+copy). For every `.sticky-scene` it:
 
 - wraps each `[data-step]`'s content in a `.step-card` and injects a
   `.step-progress` rail plus a conventional label when one is not authored;
@@ -211,8 +213,8 @@ Prefer CSS/IO unless the extra machinery clearly buys comprehension.
 
 - Sticky stages stay sticky on mobile; shrink heights with `svh` and keep the
   diagram centered, labels ≥ 8px rendered.
-- On portrait phones the step text becomes a **bottom sheet** (shared in
-  `css/site.css`): a rounded, docked card capped at `44vh` (scrolls if its
+- On portrait phones the step text becomes a **bottom sheet** (from the base
+  stylesheet): a rounded, docked card capped at `44vh` (scrolls if its
   text is long) with a progress rail. Each step owns one `100svh` viewport,
   so the card boots at the bottom and has a stable reading interval. The scene module exposes
   `--card-reserve` on the stage so the diagram centers in the space above the
@@ -228,12 +230,12 @@ Prefer CSS/IO unless the extra machinery clearly buys comprehension.
 
 ## Reduced motion
 
-The shared block in `css/site.css` collapses durations and, for scenes,
+The reduced-motion block in each page's base styles collapses durations and, for scenes,
 restores document flow (stage static, steps stacked, all text visible). Do
 not weaken it. If a scene's *meaning* depends on a diagram state, ensure the
 step text states the conclusion — it always should.
 
-The shared navigation also exposes `Motion: on/off`, which pauses ambient
+The inlined chrome also exposes `Motion: on/off`, which pauses ambient
 loops without changing the reader-controlled scroll states. Do not add a
 second pause button inside a normal scene.
 

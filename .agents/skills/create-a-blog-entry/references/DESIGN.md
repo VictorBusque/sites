@@ -1,11 +1,12 @@
 # Design Reference
 
-Single source of truth for how the site looks. All tokens, base styles,
-navigation, footer and reveal mechanics live in `css/site.css` — never
-duplicate or restyle them. Pages may only **add** page-specific styles in an
-inline `<style>` block.
+The house style — how the site looks by default. Every article inlines its
+own copy of the base stylesheet from `blog/template.html` (the landing keeps
+its copy at `css/site.css`); each page owns its copy and may diverge from
+the house freely. Keep the defaults unless the article has a reason to
+differ; add article-specific styles in its inline `<style>` blocks.
 
-## Tokens (css/site.css, `:root`)
+## Tokens (base stylesheet, `:root`)
 
 | Token | Value | Use |
 |---|---|---|
@@ -38,13 +39,13 @@ line-height ~ `.86`. One line per span; an `<em>` adds the serif accent.
 
 ## Layout
 
-- **Nav + footer (embedded):** rendered by `js/site.js` into mount points —
+- **Nav + footer (embedded):** rendered by the page's inlined runtime into mount points —
   `<div data-vb-nav data-active="…" data-status="…" data-status-em="…">`
   and `<div data-vb-footer data-label="…">`, each with a `<noscript>`
   fallback row. Links are root-relative. Never hand-write them.
 - **Nav:** fixed 70px, sticky, `#f2f0e9e8` + backdrop blur, logo left, links
   right (`.links a::after` underline scales from right), reader `Motion:
-  on/off` control, `.status` far right (`POST NN / TOPIC`). `js/site.js` also
+  on/off` control, `.status` far right (`POST NN / TOPIC`). The runtime also
   inserts a keyboard-only “Skip to content” link before the chrome whenever a
   page has `<main>`.
 - **Post hero:** `post-hero` — crumb (link back to `../index.html`), `h1` with
@@ -60,10 +61,10 @@ line-height ~ `.86`. One line per span; an `<em>` adds the serif accent.
   small mono `foot` line. Rendered by the engine from `[data-vb-footer]` —
   change the label on the mount, never the markup.
 
-## Reveal system (shared)
+## Reveal system (from the scaffold)
 
 - `.reveal` / `.reveal.seen` — fade + rise on scroll (IntersectionObserver in
-  `js/site.js`).
+  the inlined runtime).
 - `.stagger` — parent reveals children in sequence (delays ≤ 450ms).
 - `.mask .row > span` — masked line reveal for quotes and big statements.
 - `.h-line > span` — load-time masked line reveal for headlines.
@@ -71,7 +72,7 @@ line-height ~ `.86`. One line per span; an `<em>` adds the serif accent.
 
 ## Dark scene canvases
 
-The `.sticky-scene__stage` from `css/site.css` provides the dark canvas, the
+The `.sticky-scene__stage` from the base stylesheet provides the dark canvas, the
 32px grid, and the decorative bottom-right circle. Inside, follow the stage
 conventions:
 
@@ -95,7 +96,7 @@ conventions:
     article.step[data-step]             card: generated STEP k / n + 1 short ¶
 ```
 
-- The scene module `js/scene.js` wraps each `.step` in a `.step-card`
+- The scene runtime (inlined by the scaffold) wraps each `.step` in a `.step-card`
   (injecting a `.step-progress` rail and conventional label) and toggles
   `.is-active`; it sets
   `data-active-step` and fills the `[data-readout]`.
@@ -123,28 +124,28 @@ then-text, reverses on scroll up).
 
 ## Responsive
 
-Shared breakpoints (in `css/site.css`): 850px collapses nav links/status,
+House breakpoints (in the base stylesheet): 850px collapses nav links/status,
 stacks grids, shrinks `post-nav` to one column; the landing page stacks its
 hero and card grids at 1050px.
 
 Scenes on narrow screens follow the same rule as the page grids: they
 **reframe, they don't shrink**. Sticky stages keep their track but use `svh`
 and centered compositions; full-bleed SVG stages declare a tighter mobile
-`viewBox` via `data-vb-narrow` (swapped by `js/site.js` below 850px) and get
+`viewBox` via `data-vb-narrow` (swapped by the inlined runtime below 850px) and get
 mobile font bumps in the page's media query (≥ 8px rendered). Step cards go
 full-width with generous padding. See `references/SCROLLYTELLING.md` and
 `blog/template.html` for working examples.
 
 ## Reduced motion
 
-A global `@media (prefers-reduced-motion: reduce)` block in `css/site.css`
-collapses all animation to near-instant, forces reveals visible, and restores
-document flow for sticky scenes (stage static, steps stacked, all text
-visible). Do not weaken or override it. It is the reason pages stay usable for
-every reader.
+A global `@media (prefers-reduced-motion: reduce)` block in each page's base
+styles collapses all animation to near-instant, forces reveals visible, and
+restores document flow for sticky scenes (stage static, steps stacked, all
+text visible). Do not weaken or override it. It is the reason pages stay
+usable for every reader.
 
 ## Legacy figure system
 
 `about.html` keeps the older `.fig` frame (fig-head, fig-body, engine
-PAUSE/REPLAY controls). The styles remain in `css/site.css` and the engine in
-`js/site.js`. Blog posts never use it. See `references/FILE-MAP.md`.
+PAUSE/REPLAY controls) on the landing system (`css/site.css` / `js/site.js`).
+Blog posts never use it. See `references/FILE-MAP.md`.
