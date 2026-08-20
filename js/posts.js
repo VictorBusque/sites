@@ -19,6 +19,15 @@
    first. The idea queue lives in docs/ideas.md. The array body is strict
    JSON so the checker can parse it directly. */
 window.VB_POSTS = [
+       {
+        "slug": "blog/digi-costes.html",
+        "no": "05",
+        "title": "Por qué DIGI puede ser tan barata en España",
+        "date": "2026-08",
+        "topic": "Telecom · Infrastructure",
+        "tags": ["DIGI", "Telefonía", "Fibra"],
+        "deck": "Por qué DIGI ofrece fibra y móvil baratos en España: red propia en zonas densas, capacidad compartida y acuerdos mayoristas que reducen el coste por línea."
+    },
     {
         "slug": "blog/gnss.html",
         "no": "04",
