@@ -49,11 +49,11 @@ window.VB_POSTS = [
     {
         "slug": "blog/apollo-to-phone.html",
         "no": "06",
-        "title": "Apollo and iPhone: Two Scales of Computing",
+        "title": "Apollo in Your Pocket: AGC vs iPhone",
         "date": "2026-08",
         "topic": "Computing · Space",
         "tags": ["Apollo", "iPhone", "Computing"],
-        "deck": "Compare the Apollo Guidance Computer and iPhone 17 Pro Max on two scales: physical size, and the memory and specialized engines behind modern computing."
+        "deck": "See the Apollo Guidance Computer and the iPhone measured scale by scale — ~300× smaller, ~3 million× the memory — with no invented power score."
     },
     {
         "slug": "blog/digi-costes.html",
