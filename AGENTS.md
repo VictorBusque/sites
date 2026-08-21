@@ -41,15 +41,23 @@ article is its own small website.
 - Post manifest (the only landing↔post binding): `js/posts.js`.
   Do not add post data to `index.html`; topics and tags remain free-form.
 - New-idea queue: `docs/ideas.md`.
+- Topic pipeline: `topics/<topic>/context.md` holds the research for one
+  prospective article; `topics/<topic>/narrative.md` is its approved
+  story-and-build brief. Topic material is private working material, never a
+  landing-page data source or public URL. New pages flow from context →
+  narrative → standalone post.
 - Post scaffold: `blog/not-ready/template.html` — a complete standalone
   article with a working base stylesheet, runtime, and scene catalog inlined.
 
 ## Required guidance
 
-Use `.agents/skills/create-a-blog-entry/SKILL.md` for any post, landing-page,
-or shared-system change. Use `.agents/skills/seo/SKILL.md` for every public
-page change that may affect search or social metadata. Keep those instructions
-and their references accurate when changing a shared contract.
+Use `.agents/skills/create-a-narrative/SKILL.md` to turn a topic's
+`context.md` into its `narrative.md` build brief. Use
+`.agents/skills/create-a-blog-entry/SKILL.md` plus the `scrollytelling` skill
+to turn a ready narrative into a post, and for any post, landing-page, or
+shared-system change. Use `.agents/skills/seo/SKILL.md` for every public page
+change that may affect search or social metadata. Keep these instructions and
+their references accurate when changing a shared contract.
 
 ## Craft contract (applies to every article, standalone or not)
 
@@ -71,8 +79,8 @@ and their references accurate when changing a shared contract.
 
 After a content or contract change, run the relevant checks. The post checker
 verifies the manifest binding, public metadata, sitemap, required shared
-reading indicator, standalone-ness (no `../css/` or `../js/` links), and the
-sticky-scene honesty rules:
+reading indicator, standalone-ness (no shared `../css/` or `../js/` assets
+except the required reading indicator), and the sticky-scene honesty rules:
 
 ```sh
 python3 scripts/check_posts.py

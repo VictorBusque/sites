@@ -19,13 +19,22 @@
    first. The idea queue lives in docs/ideas.md. The array body is strict
    JSON so the checker can parse it directly. */
 window.VB_POSTS = [
-       {
+    {
+        "slug": "blog/apollo-to-phone.html",
+        "no": "06",
+        "title": "Apollo and iPhone: Two Scales of Computing",
+        "date": "2026-08",
+        "topic": "Computing · Space",
+        "tags": ["Apollo", "iPhone", "Computing"],
+        "deck": "Compare the Apollo Guidance Computer and iPhone 17 Pro Max on two scales: physical size, and the memory and specialized engines behind modern computing."
+    },
+    {
         "slug": "blog/digi-costes.html",
         "no": "05",
         "title": "Por qué DIGI puede ser tan barata en España",
         "date": "2026-08",
-        "topic": "Telecom · Infrastructure",
-        "tags": ["DIGI", "Telefonía", "Fibra"],
+        "topic": "Redes · Economía",
+        "tags": ["DIGI", "Fibra", "XGS-PON", "España"],
         "deck": "Por qué DIGI ofrece fibra y móvil baratos en España: red propia en zonas densas, capacidad compartida y acuerdos mayoristas que reducen el coste por línea."
     },
     {
