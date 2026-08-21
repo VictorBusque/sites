@@ -4,7 +4,11 @@
    - Online → serve the current version from the network (network-first),
      and refresh the cached copy while doing it. Every HTML page, the
      post manifest, and every same-origin asset follows this rule, so a
-     new article appears the moment the reader is online.
+     new article appears the moment the reader is online. The network
+     fetch always bypasses the browser HTTP cache (GitHub Pages serves
+     everything with Cache-Control: max-age=600; without this the worker
+     would serve bodies up to ten minutes old and every revisit would
+     extend that window).
    - Offline or slow network → serve the last known copy from the cache.
      If the network stalls past NETWORK_TIMEOUT_MS with a copy available,
      the copy wins the race; a fresh result, if it ever lands, still
@@ -119,7 +123,11 @@ async function networkFirst(request, cacheKey) {
   const cache = await caches.open(CACHE);
   const cached = await cache.match(cacheKey, { ignoreSearch: true });
 
-  const network = fetch(request).then(async (response) => {
+  /* cache: 'no-store' — the HTTP cache must never stand in for the
+     network here, or GitHub Pages' 10-minute max-age would freeze the
+     site on its cached copy. Freshness is decided by the race below,
+     not by stale browser-cache entries. */
+  const network = fetch(request, { cache: 'no-store' }).then(async (response) => {
     if (response && response.redirected) {
       /* Followed a redirect (GitHub Pages maps /x.html to /x): serve the
          final body as a clean response and cache it under its final URL,

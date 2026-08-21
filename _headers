@@ -1,0 +1,7 @@
+# Cloudflare Pages headers.
+# The service worker must never be served from the browser's HTTP cache:
+# a stale sw.js would stall the whole update flow. `no-cache` forces a
+# network revalidation on every update check. (GitHub Pages — the other
+# host — ignores this file and just serves it as a static document.)
+/sw.js
+  Cache-Control: no-cache

@@ -2361,7 +2361,11 @@
        the last known copy when not. See /sw.js. */
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
-        navigator.serviceWorker.register('/sw.js').catch(function () {});
+        /* updateViaCache 'none': never let GitHub Pages' 10-minute HTTP
+           cache serve a stale /sw.js during the update check — the
+           script is revalidated against the network on every open. */
+        navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+          .catch(function () {});
       });
     }
   </script>
