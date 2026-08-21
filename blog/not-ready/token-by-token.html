@@ -943,40 +943,6 @@ html.vb-motion-paused *::after {
     margin: 6vh 0;
 }
 
-/* ── Post navigation ────────────────────────────────────── */
-.post-nav {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    border-top: 1px solid var(--line);
-    margin-top: 12vh;
-}
-.post-nav a {
-    padding: 44px 4vw;
-    position: relative;
-}
-.post-nav a + a {
-    border-left: 1px solid var(--line);
-    text-align: right;
-}
-.post-nav .dir {
-    font: 10px "DM Mono";
-    letter-spacing: .18em;
-    text-transform: uppercase;
-    color: #777;
-}
-.post-nav .t {
-    font-family: "Unbounded", sans-serif;
-    font-weight: 500;
-    font-size: clamp(18px, 2.4vw, 26px);
-    letter-spacing: -.03em;
-    margin-top: 12px;
-    display: block;
-    transition: color var(--t-fast) var(--ease-snap);
-}
-.post-nav a:hover .t {
-    color: var(--blue);
-}
-
 /* ── Footer ─────────────────────────────────────────────── */
 footer {
     padding: 6vw 4vw 3vw;
@@ -2089,6 +2055,7 @@ footer::after {
         }
     </style>
     <link rel="stylesheet" href="../../css/post-progress.css">
+    <link rel="stylesheet" href="../../css/post-nav.css">
 </head>
 
 <body data-vb-progress-start="#d8ff5b" data-vb-progress-mid="#6d9cff" data-vb-progress-end="#ff8460">
@@ -3162,6 +3129,7 @@ footer::after {
 
 </script>
     <script src="../../js/post-progress.js" defer></script>
+    <script src="../../js/post-nav.js" defer></script>
 </body>
 
 </html>

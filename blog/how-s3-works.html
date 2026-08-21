@@ -47,6 +47,7 @@
 
   <script>document.documentElement.className = 'js';</script>
   <link rel="stylesheet" href="../css/post-progress.css">
+  <link rel="stylesheet" href="../css/post-nav.css">
   <style>
     /* ══════════════════════════════════════════════════════════════════
        HOW ONE S3 UPLOAD EARNS ELEVEN NINES
@@ -1621,10 +1622,6 @@
         <h2 id="end-title">Durability is a <em>race</em> between failure and repair, won by design.</h2>
         <p>Eleven nines is not a property of any disk, rack, or building. It is a loop: split every object into shards, spread them across at least three Availability Zones, acknowledge only when redundancy is real, and repair losses faster than the world causes them.</p>
         <p>The same loop tells you what S3 is not: not a local disk, and not a backup against your own <span class="mono">DELETE</span>. Meet any storage system and ask: where is the metadata, how is the data spread, when does it say done, and what repairs it?</p>
-        <div class="post-links" role="navigation" aria-label="Article navigation">
-          <a href="/"><small>Notebook</small><b>← All curiosities</b></a>
-          <a href="write-ahead-log.html"><small>Previous curiosity</small><b>How WAL saves a $100 transfer →</b></a>
-        </div>
         <footer class="footer"><span>AMAZON S3 · VISUAL EDITION</span><a href="/">engineering.victorbusque.com</a></footer>
       </div>
     </section>
@@ -1789,5 +1786,6 @@
     })();
   </script>
   <script src="../js/post-progress.js" defer></script>
+  <script src="../js/post-nav.js" defer></script>
 </body>
 </html>

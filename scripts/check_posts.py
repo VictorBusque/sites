@@ -5,10 +5,13 @@ manifest) consistent with the published posts in blog/.
 
 Site architecture: one landing page (index.html) bound to standalone
 articles through metadata. Every article is a self-contained HTML file —
-its own styles, document, and scene logic. Posts share only the required
-reading indicator (/css/post-progress.css + /js/post-progress.js); no article
-links the landing's shared files (css/site.css, js/site.js, js/scene.js,
-js/vb.js).
+its own styles, document, and scene logic. Posts share only two required
+chrome components: the reading indicator (/css/post-progress.css +
+/js/post-progress.js) and the post navigator (/css/post-nav.css +
+/js/post-nav.js — a discreet top-center pager: home link plus prev/next
+arrows, derived from the manifest at runtime); no article links the landing's
+shared files
+(css/site.css, js/site.js, js/scene.js, js/vb.js).
 
 Checks, for every .html file at the top level of blog/ (files parked in
 blog/not-ready/ are WIP and invisible to this checker):
@@ -16,8 +19,9 @@ blog/not-ready/ are WIP and invisible to this checker):
     the post's own <title> / meta description
   * it carries a BlogPosting JSON-LD block, a canonical URL, and the
     OG/Twitter card basics
-  * it loads the one shared top-edge reading indicator and has no persistent
-    navigation or masthead chrome
+  * it loads the two shared chrome components (top-edge reading indicator
+    + post navigator) and has no hand-rolled persistent navigation or
+    masthead chrome
   * it is otherwise standalone: no links to ../css/ or ../js/ assets —
     styles and scene scripts are owned by the page
   * it is a semantic document: <main>
@@ -105,22 +109,30 @@ def post_structure_errors(path, slug):
     if not re.search(r"<main\b[^>]*>", text) or "</main>" not in text:
         errors.append(f"'{slug}': article content needs a semantic <main>")
 
-    # The reading indicator is the one shared article component. Its palette
-    # stays local to the article through data-vb-progress-* attributes.
+    # The reading indicator and post navigator are the two shared article
+    # components. The indicator's palette stays local to the article through
+    # data-vb-progress-* attributes; the navigator derives prev/next and the
+    # home link from js/posts.js at runtime (nothing to maintain per post).
     if not re.search(r'<link\s+rel="stylesheet"\s+href="\.\./css/post-progress\.css"\s*/?>', text):
         errors.append(f"'{slug}': missing the shared ../css/post-progress.css reading indicator")
     if not re.search(r'<script\s+src="\.\./js/post-progress\.js"\s+defer\s*></script>', text):
         errors.append(f"'{slug}': missing the shared ../js/post-progress.js reading indicator")
     if not re.search(r'<body\b[^>]*\bdata-vb-progress-start="[^"]+"[^>]*\bdata-vb-progress-mid="[^"]+"[^>]*\bdata-vb-progress-end="[^"]+"', text):
         errors.append(f"'{slug}': set data-vb-progress-start, data-vb-progress-mid, and data-vb-progress-end on <body>")
+    if not re.search(r'<link\s+rel="stylesheet"\s+href="\.\./css/post-nav\.css"\s*/?>', text):
+        errors.append(f"'{slug}': missing the shared ../css/post-nav.css navigator")
+    if not re.search(r'<script\s+src="\.\./js/post-nav\.js"\s+defer\s*></script>', text):
+        errors.append(f"'{slug}': missing the shared ../js/post-nav.js navigator")
 
-    # Standalone contract: never link the landing system. The shared reading
-    # indicator above is deliberately the only exception. Strip script/style
+    # Standalone contract: never link the landing system. The two shared
+    # components above are deliberately the only exception. Strip script/style
     # bodies first — an inlined runtime may mention old file names in comments.
     stripped = re.sub(r"<script\b.*?</script>|<style\b.*?</style>", "", text, flags=re.S)
     stripped = re.sub(
         r'<link\s+rel="stylesheet"\s+href="\.\./css/post-progress\.css"\s*/?>|'
-        r'<script\s+src="\.\./js/post-progress\.js"\s+defer\s*></script>',
+        r'<script\s+src="\.\./js/post-progress\.js"\s+defer\s*></script>|'
+        r'<link\s+rel="stylesheet"\s+href="\.\./css/post-nav\.css"\s*/?>|'
+        r'<script\s+src="\.\./js/post-nav\.js"\s+defer\s*></script>',
         "",
         stripped,
     )
@@ -132,7 +144,7 @@ def post_structure_errors(path, slug):
     if not re.search(r'<style\b', text):
         errors.append(f"'{slug}': an article owns at least a base <style> block")
     if re.search(r'<nav\b', stripped, re.I):
-        errors.append(f"'{slug}': posts use the hub for navigation — remove persistent <nav> chrome")
+        errors.append(f"'{slug}': prev/next navigation comes from the shared post-nav component — remove hand-rolled <nav> chrome")
     if re.search(r'<(?:header|div)\b[^>]*\bclass="[^"]*\b(?:masthead|topbar|header)\b[^"]*"', stripped, re.I):
         errors.append(f"'{slug}': remove persistent masthead/topbar chrome; keep only the shared reading indicator")
 

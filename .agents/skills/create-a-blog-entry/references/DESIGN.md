@@ -56,7 +56,9 @@ line-height ~ `.86`. One line per span; an `<em>` adds the serif accent.
   border) holds the takeaway; `.aside` (DM Mono, muted) holds provenance.
 - **Scenes:** full-width, breaking the prose column. Sticky scenes are the
   workhorse — see below.
-- **Post nav:** two-column `post-nav` at the bottom, previous / next post.
+- **Post nav:** the shared top-center pager — the home link flanked by
+  previous/next arrows (neighbor titles appear as hover tooltips), rendered
+  from `js/posts.js` by `js/post-nav.js`; no hand-rolled neighbor links.
 - **Footer (embedded):** ink background, huge `footer-big` masked reveal,
   small mono `foot` line. Rendered by the engine from `[data-vb-footer]` —
   change the label on the mount, never the markup.
@@ -125,7 +127,7 @@ then-text, reverses on scroll up).
 ## Responsive
 
 House breakpoints (in the base stylesheet): 850px collapses nav links/status,
-stacks grids, shrinks `post-nav` to one column; the landing page stacks its
+stacks grids; the landing page stacks its
 hero and card grids at 1050px.
 
 Scenes on narrow screens follow the same rule as the page grids: they

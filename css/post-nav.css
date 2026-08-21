@@ -1,0 +1,138 @@
+/* Shared article chrome — a discreet top-center pager: the home link
+   flanked by previous/next arrows. Companion to post-progress.css; loaded
+   the same way and derived from the manifest by post-nav.js.
+
+   All three pieces share one pill language (dark translucent surface,
+   mono microtype) so the cluster reads as a single quiet chrome row just
+   under the reading bar. Neighbor titles appear as tooltips on hover and
+   focus; the arrows themselves stay tiny. */
+
+.vb-post-chrome {
+    position: fixed;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2147483000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vb-post-chrome a {
+    color: #f4f1e8;
+    text-decoration: none;
+    font: 500 10px/1 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    opacity: .8;
+    border: 1px solid rgba(244, 241, 232, .34);
+    background: rgba(14, 14, 12, .74);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    transition: opacity .18s ease, border-color .18s ease;
+}
+
+.vb-post-chrome a:hover,
+.vb-post-chrome a:focus-visible {
+    opacity: 1;
+    border-color: rgba(244, 241, 232, .62);
+}
+
+.vb-post-chrome a:focus-visible {
+    outline: 2px solid #f4f1e8;
+    outline-offset: 2px;
+}
+
+/* ── Home pill ───────────────────────────────────────────── */
+
+.vb-post-home {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 13px;
+    border-radius: 999px;
+}
+
+.vb-post-home i {
+    font-style: normal;
+    transition: transform .18s ease;
+}
+
+.vb-post-home:hover i,
+.vb-post-home:focus-visible i {
+    transform: translateX(-2px);
+}
+
+/* ── Previous / next arrows ──────────────────────────────── */
+
+.vb-post-arrow {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 31px;
+    height: 31px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 13px;
+    letter-spacing: 0;
+}
+
+.vb-post-arrow b {
+    font-weight: 400;
+    line-height: 1;
+}
+
+/* Neighbor title — a quiet tooltip that grows inward, so it can never
+   clip the viewport edge. */
+.vb-post-arrow::after {
+    content: attr(data-title);
+    position: absolute;
+    top: calc(100% + 9px);
+    padding: 6px 9px;
+    border-radius: 3px;
+    background: rgba(14, 14, 12, .9);
+    border: 1px solid rgba(244, 241, 232, .22);
+    white-space: nowrap;
+    max-width: min(46vw, 300px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 9px;
+    letter-spacing: .12em;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-2px);
+    transition: opacity .18s ease, transform .18s ease;
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    pointer-events: none;
+}
+
+.vb-post-arrow--prev::after {
+    left: 0;
+}
+
+.vb-post-arrow--next::after {
+    right: 0;
+}
+
+.vb-post-arrow:hover::after,
+.vb-post-arrow:focus-visible::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vb-post-chrome a,
+    .vb-post-home i,
+    .vb-post-arrow::after {
+        transition: none;
+    }
+}
+
+@media print {
+    .vb-post-chrome {
+        display: none;
+    }
+}

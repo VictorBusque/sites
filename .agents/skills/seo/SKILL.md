@@ -130,8 +130,9 @@ block is theirs alone:
 
 ## Internal linking
 
-- Every post links its neighbors via `post-nav`; when shipping a post,
-  update the prev/next links of adjacent posts.
+- Every post links its neighbors through the shared `post-nav` component,
+  which reads `js/posts.js` at runtime — shipping a post updates every
+  article's prev/next automatically; never hand-write neighbor links.
 - The landing `js/posts.js` shelf is the hub: deck text doubles as the
   SERP-snippet voice of the site. No entry without a file, no file
   without an entry (create-a-blog-entry rule). The manifest is the only

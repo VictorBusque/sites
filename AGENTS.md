@@ -13,17 +13,25 @@ slow, visual explanation.
   manifest. `about.html` shares that system.
 - **The spokes:** each article at `blog/<slug>.html` is a **standalone,
   one-of-a-kind HTML file**. It owns its styles, document, and scene logic;
-  no article links `../css/` or `../js/` assets. The sole shared post chrome
-  is the required top-edge reading indicator: `../css/post-progress.css` +
-  `../js/post-progress.js` (or `../../` from `blog/not-ready/`), with
-  per-post gradient parameters on `<body>`.
-  Articles have no site navigation bar, masthead, or persistent post rail.
-  Every other visual decision is free to diverge.
+  no article links other `../css/` or `../js/` assets. The shared post chrome
+  is exactly two components: the required top-edge reading indicator
+  (`../css/post-progress.css` + `../js/post-progress.js`, with per-post
+  gradient parameters on `<body>`) and the post navigator
+  (`../css/post-nav.css` + `../js/post-nav.js` — a discreet top-center pager:
+  the home link to `../index.html`, flanked by previous/next arrows with the
+  neighbor titles as hover tooltips, all derived from the
+  manifest at runtime; per-post wording via `data-vb-nav-*` attributes on
+  `<body>`). Use `../../` paths for both while parked in `blog/not-ready/`.
+  Articles have no other site navigation bar, masthead, or persistent post
+  rail. Every other visual decision is free to diverge.
 - **The binding:** articles are bound to the landing only through metadata —
   one object per post in `js/posts.js` (`window.VB_POSTS`). The landing reads
   the manifest and links each article; the article's own `<title>`,
   meta description, canonical, OG/Twitter cards, and `BlogPosting` JSON-LD
-  must agree with its manifest row.
+  must agree with its manifest row. The post navigator reads the same
+  manifest at runtime to render each article's home link and neighbors —
+  the one runtime dependency between spoke and hub, and the reason prev/next
+  links never need hand maintenance.
 
 In short: the landing is the only page built from shared components; every
 article is its own small website.
@@ -34,7 +42,8 @@ article is its own small website.
   `js/vb.js` — landing/about chrome only).
 - Published posts: `blog/<slug>.html` (top level), each owns its document and
   scene code; every one loads the shared relative `../css/post-progress.css`
-  and `../js/post-progress.js` reading indicator.
+  and `../js/post-progress.js` reading indicator plus the `../css/post-nav.css`
+  and `../js/post-nav.js` navigator.
 - Parked works in progress: `blog/not-ready/` — redesigns waiting to ship.
   They are never in `js/posts.js`, never rendered on the shelf, absent from
   `sitemap.xml`, and disallowed in `robots.txt`.
@@ -71,16 +80,18 @@ their references accurate when changing a shared contract.
   conclusion.
 - The template's inlined runtime (`VBScene`, `window.VB`) is a proven starting
   point, not a requirement — an article may replace any of it, but it must
-  keep the honest-document behavior above. The shared reading indicator is
-  the exception: keep the relative `../css/post-progress.css` and
-  `../js/post-progress.js` references.
+  keep the honest-document behavior above. The shared reading indicator and
+  post navigator are the exception: keep the relative `../css/post-progress.css`,
+  `../js/post-progress.js`, `../css/post-nav.css`, and `../js/post-nav.js`
+  references.
 
 ## Quality gates
 
 After a content or contract change, run the relevant checks. The post checker
-verifies the manifest binding, public metadata, sitemap, required shared
-reading indicator, standalone-ness (no shared `../css/` or `../js/` assets
-except the required reading indicator), and the sticky-scene honesty rules:
+verifies the manifest binding, public metadata, sitemap, the required shared
+reading indicator and post navigator, standalone-ness (no shared `../css/`
+or `../js/` assets except those two components), and the sticky-scene honesty
+rules:
 
 ```sh
 python3 scripts/check_posts.py

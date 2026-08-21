@@ -53,7 +53,7 @@ window.VB_POSTS = [
         "date": "2026-08",
         "topic": "Computing · Space",
         "tags": ["Apollo", "iPhone", "Computing"],
-        "deck": "See the Apollo Guidance Computer and the iPhone measured scale by scale — ~300× smaller, ~3 million× the memory — with no invented power score."
+        "deck": "The Apollo Guidance Computer and your phone, measured scale by scale — size, mass, memory, time. Every ratio computed, none invented. Measured, not scored."
     },
     {
         "slug": "blog/digi-costes.html",

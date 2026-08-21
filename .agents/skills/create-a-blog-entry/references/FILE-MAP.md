@@ -58,7 +58,7 @@ sites/
 | `js/posts.js` | Add/update manifest rows when posts ship | Invent rows without files, or stash post data anywhere else |
 | `topics/<topic>/context.md` | Record research, sources, source dates, facts, caveats, and open questions for one prospective article | Serve it publicly, treat it as the post’s copy, or use it as landing data |
 | `topics/<topic>/narrative.md` | Make the approved story, evidence, scene, visual, accessibility, implementation, and publishing brief from its context | Invent facts outside its linked context, substitute it for the public article, or leave design decisions as vague decoration |
-| `blog/<slug>.html` | Everything — the whole file is the article's own: styles, scripts, chrome, prose, scenes | Link landing/shared assets; the sole exception is the required `../css/post-progress.css` + `../js/post-progress.js` indicator (or `../../` while parked) |
+| `blog/<slug>.html` | Everything — the whole file is the article's own: styles, scripts, chrome, prose, scenes | Link landing/shared assets; the sole exceptions are the required `../css/post-progress.css` + `../js/post-progress.js` indicator and `../css/post-nav.css` + `../js/post-nav.js` navigator (or `../../` while parked) |
 | `blog/not-ready/` | Park WIP redesigns here while reworking them; move back to `blog/` + add the manifest row when done | Render, list, or crawl parked files — they are invisible to the shelf, sitemap, and robots |
 | `blog/not-ready/template.html` | Keep it current as the standalone scaffold + catalog | Remove scene kinds or layout pieces it documents |
 | `about.html` | Fix bugs in its inline figure logic | Convert it to scrollytelling — it intentionally keeps the legacy figure system |
@@ -101,10 +101,12 @@ sites/
 
 - Everything the article needs is inlined: at least one `<style>` block, all
   scripts, the nav/footer markup or runtime, scene wiring, helpers. The only
-  permitted shared references are the required reading indicator:
-  `../css/post-progress.css` + `../js/post-progress.js` (or `../../` from
-  `blog/not-ready/`). No other `<link>`/`<script>` may reference shared
-  `../css/` or `../js/` assets.
+  permitted shared references are the two chrome components: the required
+  reading indicator (`../css/post-progress.css` + `../js/post-progress.js`)
+  and the post navigator (`../css/post-nav.css` + `../js/post-nav.js`, which
+  reads `js/posts.js` at runtime for the home link and neighbors) — or
+  `../../` paths from `blog/not-ready/`. No other `<link>`/`<script>` may
+  reference shared `../css/` or `../js/` assets.
 - Allowed external references: root-relative static assets (`/img/…`,
   `/site.webmanifest`), the Google Fonts stylesheet, absolute `https://`
   metadata URLs (og:image, canonical).

@@ -70,7 +70,9 @@ landing's own system (`css/site.css`, `js/site.js`, `js/scene.js`,
 `js/vb.js`) and rendering its shelf from `js/posts.js` (`window.VB_POSTS`).
 Each `blog/<slug>.html` is a spoke: a standalone page that inlines
 everything it needs and links no shared `../css/` or `../js/` asset **except
-the required reading indicator**. The only contract between an article and the
+the two shared chrome components: the required reading indicator and the
+post navigator** (prev/next + home, derived from the manifest at runtime).
+The only contract between an article and the
 landing is metadata: the manifest
 row plus the article's own `<title>`, description, canonical, OG/Twitter
 cards, and `BlogPosting` JSON-LD, which must all agree. Articles are
@@ -191,8 +193,10 @@ stylesheet and runtime inlined. It is kept current; always copy from it.
 ### 3. Build the post from the narrative
 
 Replace in order: `<title>` and meta → hero (`crumb`, `h1`, `dek`,
-`post-meta`) → acts (prose sections + scenes) → `post-nav` links → footer
-label. Update the `status` in the nav mount (e.g. `POST 03 / WAITING`).
+`post-meta`) → acts (prose sections + scenes) → footer
+label. (No prev/next links to write: the shared post-nav component renders
+them from the manifest.) Update the `status` in the nav mount (e.g. `POST 03 /
+WAITING`).
 
 Map the narrative one-to-one while building:
 
@@ -211,10 +215,15 @@ Map the narrative one-to-one while building:
   illustrative model must say so; a verified figure must retain its scope and
   qualification. Never make the stage look more precise than its source.
 
-The shared reading indicator is the sole shared post asset. Keep the template’s
-relative `../../css/post-progress.css` + `../../js/post-progress.js` while the
-file is parked, and change both to `../css/post-progress.css` +
-`../js/post-progress.js` when it moves to top-level `blog/`.
+The shared reading indicator and post navigator are the two shared post
+assets — everything else a post needs is inlined. Keep the template's
+relative `../../css/post-progress.css` + `../../js/post-progress.js` and
+`../../css/post-nav.css` + `../../js/post-nav.js` while the
+file is parked, and change all to the `../css/…` + `../js/…` forms
+when it moves to top-level `blog/`. The navigator derives the home link and
+neighbors from `js/posts.js` on its own — never hand-write prev/next links —
+and its wording can be localized through `data-vb-nav-*` attributes on
+`<body>`.
 
 Pieces of the scaffold that must survive the copy **exactly** (they are the
 progressive-enhancement and binding contract):
@@ -229,7 +238,7 @@ progressive-enhancement and binding contract):
   site + scene runtime blocks (matching the original defer semantics)
 - The full SEO block (see the seo skill): canonical, OG/Twitter cards,
   `BlogPosting` JSON-LD
-- `post-hero`, `post-prose`, `post-nav` structure — unless the article's
+- `post-hero`, `post-prose` structure — unless the article's
   one-of-a-kind design deliberately replaces them
 
 Everything else — theme, palette, stage design, fonts, scene mechanics — is
@@ -308,9 +317,9 @@ It fails unless every top-level file in `blog/` has a matching `js/posts.js`
 entry whose `title`/`deck` match the post's own `<title>` and meta
 description; every manifest entry points at a real file carrying a
 `BlogPosting` JSON-LD block, a canonical, and OG/Twitter cards; every post is
-standalone (no shared `../css/` or `../js/` links except the required
-reading indicator, and at least one `<style>` block); the sticky-scene honesty
-rules hold; the required reading indicator is
+standalone (no shared `../css/` or `../js/` links except the reading
+indicator and post navigator, and at least one `<style>` block); the
+sticky-scene honesty rules hold; both shared components are
 present; and the sitemap lists exactly the published posts. Parked
 `blog/not-ready/` drafts are invisible to it; unlisted top-level drafts must
 be `noindex`.
@@ -402,8 +411,8 @@ Full reference: [references/MOTION.md](references/MOTION.md).
 - [ ] Storyboarded (acts + per-section question/payoff) before coding
 - [ ] Copied `blog/not-ready/template.html`; landing files untouched
 - [ ] `<html class="js">` gate present in `<head>`; no shared `../css/` or
-      `../js/` links except the required reading indicator — the post is
-      otherwise standalone
+      `../js/` links except the reading indicator and post navigator — the
+      post is otherwise standalone
 - [ ] Document-first: the page reads as a complete article with JS disabled
       and with reduced motion (stage + stacked steps, all text visible)
 - [ ] Every `sticky-scene` honors the honesty contract: `[data-step]`
