@@ -10,6 +10,9 @@
      the copy wins the race; a fresh result, if it ever lands, still
      updates the cache for the next visit.
    - Never seen before and offline → the offline page for navigations.
+   - Redirected responses (GitHub Pages maps /x.html → /x as 308) are
+     never cached or served as-is: the final body is re-wrapped clean and
+     stored under both its final and its requested URL.
 
    The full published library (every post in js/posts.js) is copied into
    the cache in the background: once at activation, then at most once
@@ -20,7 +23,7 @@
    broken states); ordinary content updates never need it because
    network-first refreshes entries as readers arrive. */
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'vb-notes-' + VERSION;
 const NETWORK_TIMEOUT_MS = 4000;
 const LIBRARY_SYNC_MS = 24 * 60 * 60 * 1000;
@@ -54,10 +57,8 @@ const SHELL = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
-    const cache = await caches.open(CACHE);
-    await Promise.all(SHELL.map(async (url) => {
-      try { await cache.add(url); } catch (err) { /* keep the rest */ }
-    }));
+    await Promise.all(SHELL.map((url) =>
+      cachePage(url).catch((err) => { /* keep the rest */ })));
     await self.skipWaiting();
   })());
 });
@@ -118,7 +119,21 @@ async function networkFirst(request, cacheKey) {
   const cache = await caches.open(CACHE);
   const cached = await cache.match(cacheKey, { ignoreSearch: true });
 
-  const network = fetch(request).then((response) => {
+  const network = fetch(request).then(async (response) => {
+    if (response && response.redirected) {
+      /* Followed a redirect (GitHub Pages maps /x.html to /x): serve the
+         final body as a clean response and cache it under its final URL,
+         with a copy under the requested one so either form works offline. */
+      const clean = await cleanResponse(response);
+      if (response.ok) {
+        const finalKey = new URL(response.url).pathname;
+        await cache.put(finalKey, clean.clone());
+        if (finalKey !== cacheKey) await cache.put(cacheKey, clean.clone());
+      } else if (cached) {
+        throw new Error('network returned ' + response.status);
+      }
+      return clean;
+    }
     if (response && response.ok) {
       cache.put(cacheKey, response.clone());
     } else if (cached && response) {
@@ -144,6 +159,36 @@ async function cacheFirst(request) {
     cache.put(request, response.clone());
   }
   return response;
+}
+
+/* A redirected 200 (GitHub Pages sends /x.html → /x as 308) carries the
+   redirect chain with it: caching it pins that chain, serving it makes
+   the response URL disagree with the request. Re-wrap the final body in
+   a fresh Response — no redirect history, same bytes. */
+async function cleanResponse(response) {
+  const headers = new Headers();
+  const type = response.headers.get('content-type');
+  if (type) headers.set('content-type', type);
+  const body = await response.blob();
+  return new Response(body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: headers
+  });
+}
+
+/* Fetch a page and cache it under both its final and requested URLs. */
+async function cachePage(path) {
+  const response = await fetch(path, { cache: 'no-store' });
+  if (!response || !response.ok) return;
+  const clean = await cleanResponse(response);
+  const cache = await caches.open(CACHE);
+  await cache.put(new URL(response.url).pathname, clean.clone());
+  const wanted = new URL(path, self.location.origin).pathname;
+  if (wanted !== new URL(response.url).pathname) {
+    await cache.put(wanted, clean.clone());
+  }
+  return clean;
 }
 
 /* ── Library sync ──────────────────────────────────────────────────────
@@ -175,8 +220,10 @@ async function syncLibrary() {
     await Promise.all(posts
       .filter((post) => post.slug && !post.status)
       .map(async (post) => {
-        if (await cache.match('/' + post.slug)) return;
-        try { await cache.add('/' + post.slug); } catch (err) { /* next time */ }
+        const path = '/' + post.slug;
+        if (await cache.match(path)) return;
+        if (await cache.match(path.replace(/\.html$/, ''))) return;
+        try { await cachePage(path); } catch (err) { /* next time */ }
       }));
     await cache.put(SYNC_MARKER, new Response(String(Date.now())));
   } catch (err) { /* offline or busy — the next navigation retries */ }
