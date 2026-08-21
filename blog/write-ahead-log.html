@@ -1,0 +1,844 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>How WAL Saves a $100 Transfer — Víctor Busqué</title>
+  <meta name="description" content="Follow one $100 transfer through memory, a durable write-ahead log, a sudden crash, recovery, and the checkpoint that lets data catch up.">
+  <meta name="author" content="Víctor Busqué">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://engineering.victorbusque.com/blog/write-ahead-log-v2.html">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#122329">
+
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Víctor Busqué — Curiosities">
+  <meta property="og:title" content="How WAL Saves a $100 Transfer — Víctor Busqué">
+  <meta property="og:description" content="Follow one $100 transfer through memory, a durable write-ahead log, a sudden crash, recovery, and the checkpoint that lets data catch up.">
+  <meta property="og:url" content="https://engineering.victorbusque.com/blog/write-ahead-log-v2.html">
+  <meta property="og:image" content="https://engineering.victorbusque.com/img/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="en_US">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How WAL Saves a $100 Transfer — Víctor Busqué">
+  <meta name="twitter:description" content="Follow one $100 transfer through memory, a durable write-ahead log, a sudden crash, recovery, and the checkpoint that lets data catch up.">
+  <meta name="twitter:image" content="https://engineering.victorbusque.com/img/og.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "How WAL Saves a $100 Transfer",
+    "description": "Follow one $100 transfer through memory, a durable write-ahead log, a sudden crash, recovery, and the checkpoint that lets data catch up.",
+    "author": {"@type": "Person", "name": "Víctor Busqué", "url": "https://engineering.victorbusque.com/"},
+    "publisher": {"@type": "Person", "name": "Víctor Busqué"},
+    "image": "https://engineering.victorbusque.com/img/og.png",
+    "url": "https://engineering.victorbusque.com/blog/write-ahead-log-v2.html",
+    "mainEntityOfPage": "https://engineering.victorbusque.com/blog/write-ahead-log-v2.html",
+    "inLanguage": "en",
+    "keywords": ["write-ahead log", "WAL", "database durability", "crash recovery"],
+    "articleSection": "Databases"
+  }
+  </script>
+
+  <script>document.documentElement.className = 'js';</script>
+  <link rel="stylesheet" href="../css/post-progress.css">
+  <style>
+    :root {
+      --night: #122329;
+      --night-2: #1a3037;
+      --night-3: #25424a;
+      --cream: #f6efdc;
+      --cream-2: #eee2c8;
+      --ink: #1d292a;
+      --muted: #6d7772;
+      --rule: #9aa39b;
+      --blue: #72b7df;
+      --blue-deep: #2f7198;
+      --gold: #f1b940;
+      --gold-deep: #97691e;
+      --green: #87d19b;
+      --green-deep: #3e7f58;
+      --red: #ec6d5c;
+      --page: #bcc7c4;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --serif: Iowan Old Style, Charter, "Times New Roman", serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --ease-out: cubic-bezier(.16, 1, .3, 1);
+      --ease-in: cubic-bezier(.55, 0, .85, .36);
+      --ease-swift: cubic-bezier(.4, 0, .2, 1);
+      --slow: 820ms;
+      --medium: 440ms;
+      --fast: 180ms;
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--night); scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      overflow-x: hidden;
+      background: var(--cream);
+      color: var(--ink);
+      font: 20px/1.55 var(--serif);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    body[data-vb-progress-start] {
+      --vb-progress-start: #72b7df;
+      --vb-progress-mid: #f1b940;
+      --vb-progress-end: #87d19b;
+    }
+    ::selection { background: var(--gold); color: var(--night); }
+    a { color: inherit; text-underline-offset: .22em; }
+    button { font: inherit; }
+    :focus-visible { outline: 3px solid var(--gold); outline-offset: 4px; }
+
+    .skip {
+      position: fixed;
+      z-index: 100;
+      top: 1rem;
+      left: 1rem;
+      transform: translateY(-180%);
+      padding: .7rem 1rem;
+      background: var(--gold);
+      color: var(--night);
+      font: 700 11px var(--mono);
+      transition: transform var(--fast) var(--ease-out);
+    }
+    .skip:focus { transform: none; }
+
+    .kicker, .meta, .scene-no, .scene-readout, .step-label, .caption,
+    .tiny, .account-label, .status-pill, .callout-label, .journey-label,
+    .post-links small, .footer { font-family: var(--mono); }
+    .kicker, .meta, .scene-no, .scene-readout, .step-label, .account-label,
+    .status-pill, .callout-label, .journey-label, .post-links small {
+      text-transform: uppercase;
+      letter-spacing: .1em;
+    }
+
+    /* ── Opening frame ───────────────────────────────────────────── */
+    .hero {
+      min-height: 100svh;
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      align-items: end;
+      padding: clamp(1.3rem, 5vw, 5rem) max(1.3rem, calc((100vw - 1180px) / 2));
+      background:
+        radial-gradient(circle at 72% 22%, #31555e 0, transparent 31rem),
+        var(--night);
+      color: var(--cream);
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(#ffffff08 1px, transparent 1px),
+        linear-gradient(90deg, #ffffff08 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, #000, transparent 90%);
+    }
+    .hero-copy { position: relative; z-index: 3; max-width: 900px; }
+    .kicker { margin: 0 0 1.25rem; color: var(--green); font-size: 10px; }
+    .hero h1 {
+      max-width: 830px;
+      margin: 0;
+      font: 650 clamp(3.9rem, 10vw, 9rem)/.85 var(--sans);
+      letter-spacing: -.09em;
+    }
+    .hero h1 em { color: var(--gold); font-family: var(--serif); font-weight: 400; }
+    .dek { max-width: 650px; margin: 1.7rem 0 1.2rem; font-size: clamp(1.15rem, 2vw, 1.5rem); line-height: 1.42; }
+    .meta { margin: 0; color: #abc0bb; font-size: 10px; }
+
+    .hero-journey {
+      position: absolute;
+      z-index: 2;
+      top: clamp(2rem, 6vw, 5rem);
+      right: max(1.3rem, calc((100vw - 1180px) / 2));
+      width: min(39vw, 455px);
+      height: min(43svh, 350px);
+      border: 1px solid #ffffff30;
+      background: #122329c9;
+      padding: 1rem;
+    }
+    .journey-label { display: flex; justify-content: space-between; color: #91aaa6; font-size: 9px; }
+    .hero-route { position: absolute; left: 1rem; right: 1rem; top: 52%; height: 1px; background: #ffffff32; }
+    .hero-route::before, .hero-route::after { content: ""; position: absolute; top: -4px; width: 9px; height: 9px; border-radius: 50%; background: var(--blue); }
+    .hero-route::before { left: 0; }
+    .hero-route::after { right: 0; background: var(--green); }
+    .hero-money {
+      position: absolute;
+      z-index: 2;
+      left: 42%;
+      top: 50%;
+      width: 112px;
+      height: 112px;
+      translate: -50% -50%;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--gold);
+      border-radius: 50%;
+      background: #4b3a18;
+      color: var(--gold);
+      box-shadow: 0 0 0 12px #f1b94015;
+      font: 700 27px var(--sans);
+      letter-spacing: -.06em;
+    }
+    .hero-gate { position: absolute; top: 27%; bottom: 22%; left: 62%; width: 2px; background: var(--gold); }
+    .hero-gate::before { content: "WAIT"; position: absolute; top: 50%; left: 50%; translate: -50% -50%; rotate: -90deg; padding: .35rem .5rem; background: var(--night); color: var(--gold); font: 9px var(--mono); }
+    .hero-endpoints { position: absolute; inset: auto 1rem 1rem; display: flex; justify-content: space-between; color: #9ab0ac; font: 9px var(--mono); }
+    .hero-endpoints b { display: block; margin-top: .2rem; color: var(--cream); font-size: 13px; }
+
+    /* ── Prose beats ─────────────────────────────────────────────── */
+    .prose {
+      width: min(700px, calc(100% - 2.6rem));
+      margin: auto;
+      padding: clamp(4.5rem, 10vw, 8rem) 0;
+    }
+    .prose h2, .breather h2, .compare h2, .ending h2 {
+      margin: 0 0 1.35rem;
+      font: 650 clamp(2.5rem, 6vw, 5.3rem)/.94 var(--sans);
+      letter-spacing: -.075em;
+    }
+    .prose p { margin: 0 0 1.15rem; }
+    .lead { font-size: 1.2rem; }
+    .simple-rule {
+      margin-top: 2.2rem;
+      padding: 1.2rem 0 1.2rem 1.2rem;
+      border-left: 4px solid var(--green-deep);
+      color: #294849;
+      font-size: 1.2rem;
+    }
+    .simple-rule strong { font-family: var(--sans); }
+    .three-places { margin: 2.8rem 0 0; display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--rule); }
+    .three-places div { padding: 1rem; border-right: 1px solid var(--rule); }
+    .three-places div:last-child { border: 0; }
+    .three-places dt { margin: 0 0 .45rem; font: 700 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+    .three-places dd { margin: 0; color: #536462; font: 14px/1.45 var(--sans); }
+
+    /* ── Sticky scene contract ───────────────────────────────────── */
+    .sticky-scene { position: relative; background: var(--night); color: var(--cream); }
+    .scene-title {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    .sticky-scene__stage {
+      position: relative;
+      min-height: 72svh;
+      overflow: hidden;
+      display: grid;
+      align-items: center;
+      padding: clamp(1rem, 3vw, 2.4rem);
+    }
+    .sticky-scene__stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(#ffffff08 1px, transparent 1px),
+        linear-gradient(90deg, #ffffff08 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, #000, transparent 96%);
+    }
+    .stage-inner { position: relative; z-index: 1; width: min(1160px, 100%); margin: auto; }
+    .scene-head { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 1rem; margin-bottom: clamp(1.2rem, 3vw, 2.5rem); padding-bottom: .85rem; border-bottom: 1px solid #42565b; }
+    .scene-no { color: var(--gold); font-size: 10px; }
+    .scene-name { color: #d9e1dc; font: 600 13px var(--sans); }
+    .scene-readout { color: #809894; font-size: 9px; }
+    .sticky-scene__steps { position: relative; z-index: 4; width: min(660px, calc(100% - 2.4rem)); margin: auto; padding: 1.2rem 0 4rem; }
+    .step { margin: 0 0 1rem; }
+    .step-card { padding: 1.05rem 1.2rem; border: 1px solid #aab6ae; border-left: 4px solid var(--blue); background: #faf4e4; color: var(--ink); box-shadow: 0 18px 50px #0004; }
+    .step:nth-child(2) .step-card { border-left-color: var(--gold); }
+    .step:nth-child(3) .step-card { border-left-color: var(--green); }
+    .step p { margin: 0; }
+    .step-label { display: block; margin-bottom: .5rem; color: #5d716f; font-size: 9px; }
+    .caption { position: relative; z-index: 4; width: min(680px, calc(100% - 2.4rem)); margin: auto; padding: 0 0 2rem; color: #9cb0ab; font: 12px/1.5 var(--sans); }
+    .caption b { color: var(--cream); }
+
+    .js .sticky-scene__stage { position: sticky; top: 0; height: 100svh; min-height: 0; }
+    .js .sticky-scene__steps { width: auto; max-width: none; margin-top: -100svh; padding: 0; pointer-events: none; }
+    .js .step { min-height: 100svh; margin: 0; padding: 5rem max(1.2rem, calc((100vw - 1180px) / 2)); display: flex; align-items: center; justify-content: flex-end; }
+    .js .step-card { width: min(410px, 37vw); opacity: .12; transform: translateY(18px) scale(.985); pointer-events: auto; transition: opacity var(--slow) var(--ease-out), transform var(--slow) var(--ease-out); }
+    .js .step.is-active .step-card { opacity: 1; transform: none; }
+    .js .caption { position: absolute; left: 0; right: 0; bottom: .75rem; padding: 0; pointer-events: none; }
+
+    /* ── Scene 1: volatile balances ──────────────────────────────── */
+    .memory-board { position: relative; width: min(920px, 100%); margin: auto; display: grid; grid-template-columns: 1fr 150px 1fr; align-items: center; gap: clamp(.8rem, 3vw, 2rem); transition: opacity var(--medium), filter var(--medium); }
+    .memory-board::before { content: "LIVE MEMORY · POWERED"; position: absolute; left: 0; top: -1.5rem; color: var(--blue); font: 9px var(--mono); letter-spacing: .08em; }
+    .account { min-height: 280px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; padding: clamp(1rem, 2.5vw, 1.5rem); border: 1px solid #4b6267; background: #172c32e8; }
+    .account::after { content: ""; position: absolute; inset: auto 0 0; height: 5px; background: var(--blue); transform: scaleX(.65); transform-origin: left; transition: transform var(--slow) var(--ease-out), background var(--medium); }
+    .account.ben::after { transform-origin: right; transform: scaleX(.35); }
+    .account-top { display: flex; justify-content: space-between; color: #8ca09d; font: 9px var(--mono); }
+    .account h3 { margin: .45rem 0 0; font: 600 clamp(1.7rem, 4vw, 2.8rem)/1 var(--sans); letter-spacing: -.06em; }
+    .amount { position: relative; min-height: 1em; color: var(--blue); font: 650 clamp(4rem, 9vw, 7rem)/.85 var(--sans); letter-spacing: -.1em; }
+    .amount span { display: block; transition: opacity var(--medium), transform var(--slow) var(--ease-out); }
+    .amount .after { position: absolute; inset: 0; opacity: 0; transform: translateY(20%); }
+    .account-foot { padding-top: .7rem; border-top: 1px solid #40575b; color: #8fa29f; font: 10px var(--mono); }
+    .transfer-token { position: relative; display: grid; justify-items: center; gap: .8rem; }
+    .coin { width: 106px; height: 106px; display: grid; place-items: center; border: 2px solid var(--gold); border-radius: 50%; background: #4a3818; color: var(--gold); box-shadow: 0 0 0 10px #f1b94010; font: 700 23px var(--sans); transition: transform var(--slow) var(--ease-out), opacity var(--medium), box-shadow var(--medium); }
+    .coin-note { color: var(--gold); text-align: center; font: 9px/1.4 var(--mono); }
+    .memory[data-active-step="2"] .amount .before,
+    .memory[data-active-step="3"] .amount .before { opacity: 0; transform: translateY(-20%); }
+    .memory[data-active-step="2"] .amount .after,
+    .memory[data-active-step="3"] .amount .after { opacity: 1; transform: none; }
+    .memory[data-active-step="2"] .account.alice::after,
+    .memory[data-active-step="3"] .account.alice::after { transform: scaleX(.5); }
+    .memory[data-active-step="2"] .account.ben::after,
+    .memory[data-active-step="3"] .account.ben::after { transform: scaleX(.5); background: var(--green); }
+    .memory[data-active-step="1"] .coin { transform: translateX(-35%); }
+    .memory[data-active-step="2"] .coin { transform: translateX(35%); box-shadow: 0 0 0 18px #f1b9400b; }
+    .memory[data-active-step="3"] .amount .before { opacity: 1; transform: none; }
+    .memory[data-active-step="3"] .amount .after { opacity: 0; transform: translateY(20%); }
+    .memory[data-active-step="3"] .account.alice::after { transform: scaleX(.65); }
+    .memory[data-active-step="3"] .account.ben::after { transform: scaleX(.35); background: var(--blue); }
+    .memory[data-active-step="3"] .memory-board { opacity: .22; filter: grayscale(1); }
+    .memory[data-active-step="3"] .coin { opacity: 0; transform: translateX(35%) scale(.7); }
+    .power-cut { position: absolute; z-index: 3; inset: 42% auto auto 50%; translate: -50% -50%; padding: .8rem 1rem; border: 1px solid var(--red); background: var(--night); color: var(--red); opacity: 0; transform: scale(.9); font: 700 11px var(--mono); letter-spacing: .1em; transition: opacity var(--fast), transform var(--medium) var(--ease-out); }
+    .memory[data-active-step="3"] .power-cut { opacity: 1; transform: none; }
+
+    /* ── Bridge: make the core intuition land ───────────────────── */
+    .breather { min-height: 78svh; display: grid; place-items: center; padding: clamp(4rem, 9vw, 8rem) 1.3rem; background: var(--cream-2); text-align: center; }
+    .breather-inner { width: min(880px, 100%); }
+    .breather h2 { margin-inline: auto; max-width: 850px; }
+    .breather h2 em { color: var(--green-deep); font-family: var(--serif); font-weight: 400; }
+    .breather p { max-width: 620px; margin: 1.2rem auto 0; }
+    .mini-order { margin: 3rem auto 0; width: min(720px, 100%); display: grid; grid-template-columns: 1fr 54px 1fr 54px 1fr; align-items: center; }
+    .mini-order div { min-height: 100px; display: grid; place-items: center; padding: .8rem; border: 1px solid var(--rule); background: var(--cream); font: 600 15px/1.25 var(--sans); }
+    .mini-order span { color: var(--gold-deep); font: 28px var(--sans); }
+    .mini-order small { display: block; margin-top: .4rem; color: var(--muted); font: 9px var(--mono); }
+
+    /* ── Scene 2: record, harden, reply ─────────────────────────── */
+    .promise-machine { width: min(930px, 100%); margin: auto; display: grid; grid-template-columns: 1.15fr 100px .85fr; gap: 1rem; align-items: stretch; }
+    .log-book, .durable-box { min-height: 330px; position: relative; padding: 1.1rem; border: 1px solid #4b6065; background: #172c32e8; }
+    .machine-head { display: flex; justify-content: space-between; color: #8ba19d; font: 9px var(--mono); }
+    .log-lines { margin-top: 2rem; display: grid; gap: .6rem; }
+    .log-line { display: flex; justify-content: space-between; gap: 1rem; padding: .75rem; border-left: 3px solid var(--gold); background: #213940; color: #b8c9c4; opacity: .2; transform: translateY(10px); font: 10px var(--mono); transition: opacity var(--medium), transform var(--slow) var(--ease-out), color var(--medium), border-color var(--medium); }
+    .log-line.commit-line { border-color: var(--green); }
+    .promise[data-active-step="1"] .log-line,
+    .promise[data-active-step="2"] .log-line,
+    .promise[data-active-step="3"] .log-line { opacity: 1; transform: none; }
+    .promise[data-active-step="1"] .commit-line { opacity: .25; }
+    .durability-bridge { position: relative; display: grid; place-items: center; }
+    .durability-bridge::before { content: ""; width: 100%; height: 2px; background: var(--gold); transform: scaleX(.08); transform-origin: left; transition: transform var(--slow) var(--ease-out), background var(--medium); }
+    .durability-bridge::after { content: "MAKE DURABLE →"; position: absolute; top: calc(50% - 2rem); color: var(--gold); white-space: nowrap; font: 8px var(--mono); }
+    .promise[data-active-step="2"] .durability-bridge::before,
+    .promise[data-active-step="3"] .durability-bridge::before { transform: scaleX(1); background: var(--green); }
+    .promise[data-active-step="2"] .durability-bridge::after,
+    .promise[data-active-step="3"] .durability-bridge::after { color: var(--green); content: "DURABLE ✓"; }
+    .durable-box { display: grid; align-content: space-between; }
+    .safe-state { color: var(--gold); font: 9px var(--mono); transition: color var(--medium); }
+    .safe-state strong { display: block; margin: .65rem 0; color: var(--cream); font: 650 clamp(2.5rem, 5vw, 4rem)/.88 var(--sans); letter-spacing: -.075em; }
+    .safe-state .kept { display: none; }
+    .promise[data-active-step="2"] .safe-state,
+    .promise[data-active-step="3"] .safe-state { color: var(--green); }
+    .promise[data-active-step="2"] .safe-state .waiting,
+    .promise[data-active-step="3"] .safe-state .waiting { display: none; }
+    .promise[data-active-step="2"] .safe-state .kept,
+    .promise[data-active-step="3"] .safe-state .kept { display: block; }
+    .reply { padding: .8rem; border: 1px solid #53686d; color: #819591; opacity: .25; font: 9px var(--mono); transform: translateY(10px); transition: opacity var(--medium), transform var(--slow) var(--ease-out), border-color var(--medium), color var(--medium), background var(--medium); }
+    .reply b { display: block; margin-top: .3rem; color: var(--cream); font: 600 18px var(--sans); }
+    .promise[data-active-step="3"] .reply { opacity: 1; transform: none; border-color: var(--green); color: var(--green); background: #87d19b0d; }
+    .old-page-note { position: absolute; left: 1.1rem; right: 1.1rem; bottom: 1rem; padding-top: .7rem; border-top: 1px solid #42575c; color: var(--page); font: 9px var(--mono); }
+
+    /* ── Scene 3: crash laboratory ──────────────────────────────── */
+    .crash-lab { width: min(930px, 100%); margin: auto; display: grid; grid-template-columns: 1fr 285px; gap: clamp(1rem, 4vw, 3rem); }
+    .survivors { position: relative; min-height: 335px; padding: 1.1rem; border: 1px solid #4b6065; display: grid; align-content: center; gap: .7rem; }
+    .crash-badge { position: absolute; right: 1rem; top: 1rem; color: var(--red); font: 700 9px var(--mono); letter-spacing: .1em; }
+    .survivor { display: grid; grid-template-columns: 145px 1fr; gap: .7rem; padding: .8rem; border: 1px solid currentColor; color: var(--page); font: 9px/1.4 var(--mono); transition: opacity var(--medium), transform var(--slow) var(--ease-in), color var(--medium); }
+    .survivor span:last-child { text-align: right; }
+    .survivor.ram { color: var(--blue); opacity: .16; transform: translateY(8px); text-decoration: line-through; }
+    .survivor.wal { color: var(--green); }
+    .crash[data-case="1"] .survivor.wal { opacity: .2; color: var(--page); }
+    .crash[data-case="3"] .survivor.page { color: var(--green); }
+    .recovery-arrow { position: absolute; left: 50%; top: 67%; translate: -50% -50%; color: var(--gold); opacity: 0; font: 700 10px var(--mono); transition: opacity var(--medium), transform var(--slow) var(--ease-out); transform: translateY(-8px); }
+    .crash[data-case="2"] .recovery-arrow { opacity: 1; transform: none; }
+    .outcomes { min-height: 335px; padding: 1.15rem; border: 1px solid #4b6065; display: grid; align-content: center; }
+    .outcome { display: block; color: #9eb1ad; font: 9px/1.5 var(--mono); }
+    .outcome + .outcome { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #42575b; }
+    .outcome b { display: block; margin: .65rem 0; color: var(--cream); font: 650 clamp(3rem, 6vw, 5rem)/.84 var(--sans); letter-spacing: -.1em; }
+    .outcome strong { display: block; color: var(--green); font-size: 11px; }
+    .js .outcome { display: none; }
+    .js .crash[data-case="1"] .outcome-1,
+    .js .crash[data-case="2"] .outcome-2,
+    .js .crash[data-case="3"] .outcome-3 { display: block; margin: 0; padding: 0; border: 0; }
+    .crash-controls { margin: 1rem 0 0; padding: 0; border: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
+    .crash-controls legend { width: 100%; margin-bottom: .45rem; color: #5f7471; font: 9px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+    .crash-controls button { min-height: 44px; padding: .55rem .35rem; border: 1px solid #8b9b96; background: transparent; color: var(--ink); cursor: pointer; font: 9px/1.25 var(--mono); transition: background var(--fast), color var(--fast), transform var(--fast); }
+    .crash-controls button:hover, .crash-controls button[aria-pressed="true"] { border-color: var(--red); background: var(--red); color: #251816; }
+    .crash-controls button:active { transform: scale(.96); }
+
+    /* ── Scene 4: checkpoint catch-up ───────────────────────────── */
+    .catchup-stage { width: min(940px, 100%); margin: auto; display: grid; grid-template-columns: 1fr 110px 1fr; align-items: center; gap: 1rem; }
+    .history-stack, .account-book { min-height: 320px; position: relative; padding: 1.1rem; border: 1px solid #4b6065; background: #172c32e8; display: flex; flex-direction: column; justify-content: space-between; }
+    .history-cards { display: grid; gap: .4rem; margin-top: 1.3rem; }
+    .history-card { padding: .62rem; border: 1px solid var(--green); color: var(--green); font: 9px var(--mono); transition: opacity var(--medium), transform var(--slow) var(--ease-out); }
+    .checkpoint-arrow { position: relative; height: 3px; background: var(--gold); transform: scaleX(.12); transform-origin: left; transition: transform var(--slow) var(--ease-out), background var(--medium); }
+    .checkpoint-arrow::before { content: "CHECKPOINT"; position: absolute; left: 50%; top: -1.6rem; translate: -50%; color: var(--gold); font: 8px var(--mono); }
+    .checkpoint-arrow::after { content: "→"; position: absolute; right: -3px; top: -25px; color: var(--gold); font: 34px var(--sans); }
+    .book-balance { color: var(--page); font: 650 clamp(3.6rem, 8vw, 6.5rem)/.86 var(--sans); letter-spacing: -.1em; transition: color var(--medium); }
+    .book-balance span { display: block; }
+    .book-balance .caught { display: none; color: var(--green); }
+    .book-note { color: #91a5a1; font: 9px/1.45 var(--mono); }
+    .checkpoint[data-active-step="2"] .checkpoint-arrow,
+    .checkpoint[data-active-step="3"] .checkpoint-arrow { transform: scaleX(1); background: var(--green); }
+    .checkpoint[data-active-step="2"] .checkpoint-arrow::before,
+    .checkpoint[data-active-step="3"] .checkpoint-arrow::before,
+    .checkpoint[data-active-step="2"] .checkpoint-arrow::after,
+    .checkpoint[data-active-step="3"] .checkpoint-arrow::after { color: var(--green); }
+    .checkpoint[data-active-step="2"] .book-balance .old,
+    .checkpoint[data-active-step="3"] .book-balance .old { display: none; }
+    .checkpoint[data-active-step="2"] .book-balance .caught,
+    .checkpoint[data-active-step="3"] .book-balance .caught { display: block; }
+    .checkpoint[data-active-step="3"] .history-card { opacity: .16; transform: translateX(-8px); }
+    .reusable { opacity: 0; color: var(--green); font: 9px var(--mono); transition: opacity var(--medium); }
+    .checkpoint[data-active-step="3"] .reusable { opacity: 1; }
+
+    /* ── Visual comparison and finish ───────────────────────────── */
+    .compare { padding: clamp(5rem, 11vw, 9rem) 1.3rem; background: var(--cream-2); }
+    .compare-inner { width: min(1060px, 100%); margin: auto; }
+    .compare-intro { max-width: 710px; }
+    .two-paths { margin-top: 3rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1px; border: 1px solid var(--rule); background: var(--rule); }
+    .path { min-height: 370px; padding: clamp(1.1rem, 3vw, 2rem); background: var(--cream); display: flex; flex-direction: column; }
+    .path-kicker { color: var(--muted); font: 9px var(--mono); letter-spacing: .09em; text-transform: uppercase; }
+    .path h3 { margin: .7rem 0 1rem; font: 650 clamp(1.8rem, 4vw, 3.1rem)/.96 var(--sans); letter-spacing: -.065em; }
+    .path p { margin: 0; max-width: 430px; font-size: 17px; }
+    .path-diagram { margin-top: auto; padding-top: 2rem; display: grid; grid-template-columns: 1fr 45px 1fr; align-items: center; }
+    .path-node { min-height: 78px; display: grid; place-items: center; padding: .7rem; border: 1px solid var(--rule); text-align: center; color: #536664; font: 9px/1.35 var(--mono); }
+    .path-node b { display: block; margin-top: .25rem; color: var(--ink); font: 600 14px var(--sans); }
+    .path-arrow { text-align: center; color: var(--gold-deep); font: 24px var(--sans); }
+    .path.wal-path { background: #e4eddf; }
+    .path.wal-path .path-node:first-child { border-color: var(--green-deep); color: var(--green-deep); }
+    .compare-note { max-width: 720px; margin: 1.2rem 0 0; color: #526663; font: 14px/1.5 var(--sans); }
+
+    .ending { padding: clamp(5rem, 11vw, 9rem) 1.3rem; background: var(--cream); }
+    .ending-inner { width: min(1050px, 100%); margin: auto; }
+    .ending h2 { max-width: 930px; }
+    .ending h2 em { color: var(--green-deep); font-family: var(--serif); font-weight: 400; }
+    .ending-lead { max-width: 690px; font-size: 1.2rem; }
+    .takeaway { margin: 3rem 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; border: 1px solid var(--rule); background: var(--rule); }
+    .takeaway div { min-height: 180px; padding: 1.25rem; background: var(--cream); }
+    .takeaway b { display: block; margin-bottom: 1rem; color: var(--green-deep); font: 10px var(--mono); letter-spacing: .09em; }
+    .takeaway span { font: 650 clamp(1.2rem, 2.4vw, 1.7rem)/1.12 var(--sans); letter-spacing: -.04em; }
+    .scope-note { max-width: 720px; padding-left: 1rem; border-left: 3px solid var(--gold); color: #596a67; font: 14px/1.55 var(--sans); }
+    .post-links { margin-top: 5rem; display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+    .post-links a { padding: 1.2rem; text-decoration: none; font: 600 16px/1.35 var(--sans); transition: background var(--fast); }
+    .post-links a:last-child { text-align: right; border-left: 1px solid var(--rule); }
+    .post-links a:hover { background: var(--cream-2); }
+    .post-links small { display: block; margin-bottom: .35rem; color: var(--muted); font-size: 9px; }
+    .footer { display: flex; justify-content: space-between; gap: 1rem; margin-top: 3rem; color: #697875; font-size: 10px; }
+
+    @media (max-width: 900px) {
+      .hero-journey { width: 46vw; opacity: .72; }
+      .scene-head { grid-template-columns: auto 1fr; }
+      .scene-readout { grid-column: 1 / -1; }
+      .js .sticky-scene__stage { padding-bottom: min(44svh, var(--card-reserve, 35svh)); }
+      .js .sticky-scene__steps { pointer-events: none; }
+      .js .step { align-items: flex-end; padding: 0 1rem max(1rem, env(safe-area-inset-bottom)); }
+      .js .step-card { width: min(680px, 100%); max-height: 42svh; overflow-y: auto; border-radius: 18px 18px 5px 5px; }
+      .caption { display: none; }
+      .stage-inner { width: min(720px, 100%); }
+      .memory-board { grid-template-columns: 1fr 105px 1fr; }
+      .account { min-height: 220px; }
+      .coin { width: 78px; height: 78px; font-size: 18px; }
+      .promise-machine { grid-template-columns: 1fr 70px .75fr; }
+      .log-book, .durable-box { min-height: 270px; }
+      .crash-lab { grid-template-columns: 1fr 215px; gap: .8rem; }
+      .survivors, .outcomes { min-height: 270px; }
+      .catchup-stage { grid-template-columns: 1fr 75px 1fr; }
+      .history-stack, .account-book { min-height: 260px; }
+    }
+
+    @media (max-width: 620px) {
+      body { font-size: 18px; }
+      .hero-copy { padding-top: 43svh; }
+      .hero h1 { font-size: clamp(3.5rem, 17vw, 5.7rem); }
+      .hero-journey { top: 1.4rem; left: 1.3rem; right: 1.3rem; width: auto; height: 34svh; opacity: .86; }
+      .hero-money { width: 80px; height: 80px; font-size: 19px; }
+      .hero-gate { left: 66%; }
+      .three-places { grid-template-columns: 1fr; }
+      .three-places div { border-right: 0; border-bottom: 1px solid var(--rule); }
+      .mini-order { grid-template-columns: 1fr; gap: .45rem; }
+      .mini-order span { rotate: 90deg; line-height: .7; }
+      .memory-board { grid-template-columns: 1fr 64px 1fr; gap: .4rem; }
+      .account { min-height: 190px; padding: .7rem; }
+      .account-top { display: block; }
+      .account-top span:last-child { display: none; }
+      .account h3 { font-size: 1.25rem; }
+      .amount { font-size: clamp(2.8rem, 14vw, 4rem); }
+      .account-foot { font-size: 7px; }
+      .coin { width: 56px; height: 56px; font-size: 13px; }
+      .coin-note { font-size: 7px; }
+      .promise-machine { grid-template-columns: 1fr; gap: .55rem; }
+      .log-book { min-height: 190px; }
+      .durability-bridge { min-height: 40px; }
+      .durability-bridge::before { width: 3px; height: 100%; transform: scaleY(.08); transform-origin: top; }
+      .promise[data-active-step="2"] .durability-bridge::before,
+      .promise[data-active-step="3"] .durability-bridge::before { transform: scaleY(1); }
+      .durability-bridge::after { top: 50%; left: calc(50% + 1rem); translate: 0 -50%; }
+      .durable-box { min-height: 120px; grid-template-columns: 1fr 1fr; gap: .6rem; }
+      .safe-state strong { font-size: 2rem; }
+      .old-page-note { position: static; }
+      .crash-lab { grid-template-columns: 1fr; }
+      .survivors { min-height: 190px; }
+      .outcomes { min-height: 115px; }
+      .survivor { grid-template-columns: 98px 1fr; padding: .55rem; font-size: 7px; }
+      .outcome b { font-size: 2.7rem; }
+      .catchup-stage { grid-template-columns: 1fr; }
+      .history-stack, .account-book { min-height: 175px; }
+      .checkpoint-arrow { width: 3px; height: 45px; margin: auto; transform: scaleY(.12); transform-origin: top; }
+      .checkpoint[data-active-step="2"] .checkpoint-arrow,
+      .checkpoint[data-active-step="3"] .checkpoint-arrow { transform: scaleY(1); }
+      .checkpoint-arrow::before { top: 50%; left: 1rem; translate: 0 -50%; }
+      .checkpoint-arrow::after { right: -15px; top: 26px; rotate: 90deg; }
+      .history-cards { grid-template-columns: repeat(3, 1fr); }
+      .history-card { font-size: 7px; padding: .45rem; }
+      .two-paths, .takeaway { grid-template-columns: 1fr; }
+      .post-links { grid-template-columns: 1fr; }
+      .post-links a:last-child { text-align: left; border-left: 0; border-top: 1px solid var(--rule); }
+      .footer { display: block; }
+      .footer a { display: block; margin-top: .8rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+      .js .sticky-scene__stage { position: relative; top: auto; height: auto; min-height: 58svh; padding-bottom: 2rem; }
+      .js .sticky-scene__steps { width: min(680px, calc(100% - 2.4rem)); margin: 0 auto; padding: 1rem 0 3rem; pointer-events: auto; }
+      .js .step { min-height: 0; margin: 0 0 1rem; padding: 0; display: block; }
+      .js .step-card { width: 100%; max-height: none; opacity: 1; transform: none; border-radius: 0; }
+      .caption { display: block; position: relative !important; bottom: auto !important; padding-bottom: 2rem; }
+      .memory .amount .before { opacity: 0; }
+      .memory .amount .after { opacity: 1; transform: none; }
+      .memory .coin { opacity: 1; transform: none; }
+      .memory .memory-board { opacity: 1; filter: none; }
+      .memory .power-cut { display: none; }
+      .promise .log-line { opacity: 1; transform: none; }
+      .promise .durability-bridge::before { transform: scaleX(1); background: var(--green); }
+      .promise .durability-bridge::after { color: var(--green); content: "DURABLE ✓"; }
+      .promise .safe-state { color: var(--green); }
+      .promise .safe-state .waiting { display: none; }
+      .promise .safe-state .kept { display: block; }
+      .promise .reply { opacity: 1; transform: none; border-color: var(--green); color: var(--green); background: #87d19b0d; }
+      .js .crash .outcome { display: block; }
+      .js .crash .outcome + .outcome { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #42575b; }
+      .crash-controls { display: none; }
+      .checkpoint .checkpoint-arrow { transform: scaleX(1); background: var(--green); }
+      .checkpoint .book-balance .old { display: none; }
+      .checkpoint .book-balance .caught { display: block; }
+    }
+  </style>
+</head>
+<body data-vb-progress-start="#72b7df" data-vb-progress-mid="#f1b940" data-vb-progress-end="#87d19b">
+  <a class="skip" href="#article">Skip to article</a>
+
+  <header class="hero">
+    <div class="hero-journey" aria-hidden="true">
+      <div class="journey-label"><span>ILLUSTRATIVE TRANSFER</span><span>tx-42</span></div>
+      <div class="hero-route"></div>
+      <div class="hero-money">$100</div>
+      <div class="hero-gate"></div>
+      <div class="hero-endpoints"><span>ALICE<b>$500</b></span><span>BEN<b>$200</b></span></div>
+    </div>
+    <div class="hero-copy">
+      <p class="kicker">A visual story about database durability</p>
+      <h1>The <em>$100</em> that survives the dark.</h1>
+      <p class="dek">Alice sends Ben $100. The balances change in an instant—but the database waits before saying “done.” Here is what it is waiting for.</p>
+      <p class="meta">AN ILLUSTRATIVE TRANSFER · 4 VISUAL ACTS · NO DATABASE DEGREE REQUIRED</p>
+    </div>
+  </header>
+
+  <main id="article">
+    <section class="prose" aria-labelledby="opening-title">
+      <p class="kicker" style="color:var(--green-deep)">The question</p>
+      <h2 id="opening-title">Changed is not the same as safe.</h2>
+      <p class="lead">A running database keeps the balances it is working on in memory. It can turn Alice’s $500 into $400 and Ben’s $200 into $300 almost immediately.</p>
+      <p>But memory needs power. If the machine goes dark, those new balances can disappear with it.</p>
+      <p class="simple-rule"><strong>Before the database says “committed,” it needs a durable way to recreate the transfer.</strong> That durable record is the write-ahead log, or WAL.</p>
+      <dl class="three-places">
+        <div><dt style="color:var(--blue-deep)">Memory</dt><dd>Where the new balances become visible first.</dd></div>
+        <div><dt style="color:var(--gold-deep)">The WAL</dt><dd>Where the transfer becomes recoverable.</dd></div>
+        <div><dt style="color:var(--muted)">Account pages</dt><dd>Where the long-term balances catch up later.</dd></div>
+      </dl>
+    </section>
+
+    <section class="sticky-scene memory" data-scene data-active-step="1" aria-labelledby="memory-title">
+      <h2 class="scene-title" id="memory-title">First, the balances change in memory</h2>
+      <div class="sticky-scene__stage" aria-hidden="true">
+        <div class="stage-inner">
+          <div class="scene-head">
+            <span class="scene-no">ACT 01</span>
+            <span class="scene-name">Fast is not yet safe</span>
+            <span class="scene-readout" data-readout>STEP 1 / 3</span>
+          </div>
+          <div class="memory-board">
+            <article class="account alice">
+              <div><div class="account-top"><span>ALICE</span><span>LIVE MEMORY</span></div><h3>Balance</h3></div>
+              <div class="amount"><span class="before">500</span><span class="after">400</span></div>
+              <div class="account-foot">$500 − $100</div>
+            </article>
+            <div class="transfer-token"><div class="coin">$100</div><span class="coin-note">ONE LOGICAL<br>TRANSFER</span></div>
+            <article class="account ben">
+              <div><div class="account-top"><span>BEN</span><span>LIVE MEMORY</span></div><h3>Balance</h3></div>
+              <div class="amount"><span class="before">200</span><span class="after">300</span></div>
+              <div class="account-foot">$200 + $100</div>
+            </article>
+          </div>
+          <div class="power-cut">POWER LOST · MEMORY GONE</div>
+        </div>
+      </div>
+      <div class="sticky-scene__steps">
+        <article class="step" data-step="1"><div class="step-card"><p><span class="step-label">01 · before</span>Alice has $500. Ben has $200. The $100 transfer has not begun.</p></div></article>
+        <article class="step" data-step="2"><div class="step-card"><p><span class="step-label">02 · live</span>The running database subtracts $100 from Alice and adds it to Ben. In memory, the answer is already $400 and $300.</p></div></article>
+        <article class="step" data-step="3"><div class="step-card"><p><span class="step-label">03 · fragile</span>Pull the power now and those live balances vanish. A visible change is not yet a durable promise.</p></div></article>
+      </div>
+      <p class="caption"><b>What to watch</b> The money moves and the balances change, but the whole board is still labelled “live memory.” Nothing durable has recorded the outcome yet.</p>
+    </section>
+
+    <section class="breather" aria-labelledby="rule-title">
+      <div class="breather-inner">
+        <p class="kicker" style="color:var(--green-deep)">The one rule</p>
+        <h2 id="rule-title">Keep a durable note <em>before</em> making the promise.</h2>
+        <p>WAL does not make memory permanent. It writes enough ordered information somewhere durable so the database can rebuild what memory knew.</p>
+        <div class="mini-order" aria-label="The order is change memory, make the write-ahead log durable, then acknowledge the commit">
+          <div>Change memory<small>fast · volatile</small></div><span aria-hidden="true">→</span>
+          <div>Make WAL durable<small>recoverable</small></div><span aria-hidden="true">→</span>
+          <div>Say committed<small>promise allowed</small></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sticky-scene promise" data-scene data-active-step="1" aria-labelledby="promise-title">
+      <h2 class="scene-title" id="promise-title">The WAL crosses the promise boundary</h2>
+      <div class="sticky-scene__stage" aria-hidden="true">
+        <div class="stage-inner">
+          <div class="scene-head">
+            <span class="scene-no">ACT 02</span>
+            <span class="scene-name">Record, make durable, reply</span>
+            <span class="scene-readout" data-readout>STEP 1 / 3</span>
+          </div>
+          <div class="promise-machine">
+            <div class="log-book">
+              <div class="machine-head"><span>WRITE-AHEAD LOG</span><span>ORDERED ↓</span></div>
+              <div class="log-lines">
+                <div class="log-line"><span>debit Alice $100</span><span>01</span></div>
+                <div class="log-line"><span>credit Ben $100</span><span>02</span></div>
+                <div class="log-line commit-line"><span>transfer complete</span><span>03</span></div>
+              </div>
+            </div>
+            <div class="durability-bridge"></div>
+            <div class="durable-box">
+              <div class="safe-state"><span>DURABLE STORAGE</span><strong class="waiting">not yet</strong><strong class="kept">kept</strong><span class="waiting">records still waiting</span><span class="kept">transfer can be recovered</span></div>
+              <div class="reply">CLIENT RESPONSE<b>COMMITTED</b></div>
+              <div class="old-page-note">ACCOUNT PAGE MAY STILL SAY<br>ALICE 500 · BEN 200</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sticky-scene__steps">
+        <article class="step" data-step="1"><div class="step-card"><p><span class="step-label">01 · describe the transfer</span>The WAL gets an ordered record: debit Alice, credit Ben, then mark the transfer complete. At this point the records may still be buffered.</p></div></article>
+        <article class="step" data-step="2"><div class="step-card"><p><span class="step-label">02 · make the record durable</span>The database asks the storage system to preserve the WAL through the completion record. Now a restart can recover the transfer.</p></div></article>
+        <article class="step" data-step="3"><div class="step-card"><p><span class="step-label">03 · make the promise</span>Only now may the database reply “committed”—even if the main account page still contains the old balances.</p></div></article>
+      </div>
+      <p class="caption"><b>What to watch</b> The acknowledgement appears only after the WAL turns green. “Write ahead” means the durable log must get ahead of the account page—not necessarily ahead of the in-memory change.</p>
+    </section>
+
+    <section class="prose" aria-labelledby="crash-intro-title">
+      <p class="kicker" style="color:var(--green-deep)">Now remove the machine</p>
+      <h2 id="crash-intro-title">A crash turns the log into instructions.</h2>
+      <p class="lead">After power loss, the database does not trust the vanished memory. It looks at what survived: the durable WAL and the account page.</p>
+      <p>The answer follows from those two pieces of evidence. There is no guesswork.</p>
+    </section>
+
+    <section class="sticky-scene crash" data-scene data-active-step="1" data-case="1" aria-labelledby="crash-title">
+      <h2 class="scene-title" id="crash-title">Crash at three different moments</h2>
+      <div class="sticky-scene__stage" aria-hidden="true">
+        <div class="stage-inner">
+          <div class="scene-head">
+            <span class="scene-no">ACT 03</span>
+            <span class="scene-name">What survives gets the final word</span>
+            <span class="scene-readout" data-readout>STEP 1 / 3</span>
+          </div>
+          <div class="crash-lab">
+            <div class="survivors">
+              <span class="crash-badge">POWER LOST</span>
+              <div class="survivor ram"><span>LIVE MEMORY</span><span>Alice 400 · Ben 300</span></div>
+              <div class="survivor wal"><span>DURABLE WAL</span><span data-crash-wal>no complete transfer</span></div>
+              <div class="survivor page"><span>ACCOUNT PAGE</span><span data-crash-page>Alice 500 · Ben 200</span></div>
+              <div class="recovery-arrow">REPLAY $100 TRANSFER ↓</div>
+            </div>
+            <div class="outcomes">
+              <div class="outcome outcome-1">CRASH BEFORE WAL IS DURABLE<b>500 / 200</b><strong>NO PROMISE WAS MADE</strong>Restart keeps the old balances.</div>
+              <div class="outcome outcome-2">CRASH AFTER COMMIT<b>400 / 300</b><strong>WAL REPLAYS THE TRANSFER</strong>The promised result returns.</div>
+              <div class="outcome outcome-3">CRASH AFTER CATCH-UP<b>400 / 300</b><strong>PAGE ALREADY HAS IT</strong>No replay is needed for this change.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sticky-scene__steps">
+        <article class="step" data-step="1"><div class="step-card"><p><span class="step-label">01 · crash too early</span>The WAL never durably recorded a completed transfer, so no success was promised. Restart keeps Alice at $500 and Ben at $200.</p></div></article>
+        <article class="step" data-step="2"><div class="step-card"><p><span class="step-label">02 · crash after commit</span>The new balances vanish from memory, but the durable WAL survives. Recovery replays the $100 transfer and restores $400 and $300.</p><fieldset class="crash-controls"><legend>Inspect a crash point</legend><button type="button" data-case-button="1" aria-pressed="false">Too early</button><button type="button" data-case-button="2" aria-pressed="true">After commit</button><button type="button" data-case-button="3" aria-pressed="false">After catch-up</button></fieldset></div></article>
+        <article class="step" data-step="3"><div class="step-card"><p><span class="step-label">03 · crash after catch-up</span>The account page already says $400 and $300. Recovery sees that this transfer is already represented and does not add it twice.</p></div></article>
+      </div>
+      <p class="caption"><b>What to watch</b> Blue memory disappears in every case. Before commit there is no durable promise; after commit the green WAL can recreate what the grey account page is missing.</p>
+    </section>
+
+    <section class="sticky-scene checkpoint" data-scene data-active-step="1" aria-labelledby="checkpoint-title">
+      <h2 class="scene-title" id="checkpoint-title">A checkpoint lets the account pages catch up</h2>
+      <div class="sticky-scene__stage" aria-hidden="true">
+        <div class="stage-inner">
+          <div class="scene-head">
+            <span class="scene-no">ACT 04</span>
+            <span class="scene-name">Commit now, catch up later</span>
+            <span class="scene-readout" data-readout>STEP 1 / 3</span>
+          </div>
+          <div class="catchup-stage">
+            <div class="history-stack">
+              <div class="machine-head"><span>DURABLE WAL</span><span>AHEAD</span></div>
+              <div class="history-cards"><div class="history-card">DEBIT ALICE $100</div><div class="history-card">CREDIT BEN $100</div><div class="history-card">TRANSFER COMPLETE</div></div>
+              <span class="reusable">OLDER LOG SPACE CAN NOW BE REUSED</span>
+            </div>
+            <div class="checkpoint-arrow"></div>
+            <div class="account-book">
+              <div class="machine-head"><span>ACCOUNT PAGE</span><span>LONG-TERM STATE</span></div>
+              <div class="book-balance"><span class="old">500<br>200</span><span class="caught">400<br>300</span></div>
+              <div class="book-note"><span class="old">STILL BEHIND</span><span class="caught">NOW IN STEP WITH THE TRANSFER</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sticky-scene__steps">
+        <article class="step" data-step="1"><div class="step-card"><p><span class="step-label">01 · the log leads</span>The transfer is already committed because its durable history can recover it. The account page is allowed to remain behind.</p></div></article>
+        <article class="step" data-step="2"><div class="step-card"><p><span class="step-label">02 · checkpoint</span>Later, a checkpoint writes outstanding durable work into the main pages. Alice becomes $400 and Ben becomes $300 there too.</p></div></article>
+        <article class="step" data-step="3"><div class="step-card"><p><span class="step-label">03 · less recovery work</span>Once long-term state has caught up, recovery can begin later in the history and older log space may eventually be reused.</p></div></article>
+      </div>
+      <p class="caption"><b>What to watch</b> The checkpoint moves the account page, not the original promise. Commit made the transfer recoverable earlier; checkpoint reduces how much history a restart must revisit.</p>
+    </section>
+
+    <section class="compare" aria-labelledby="compare-title">
+      <div class="compare-inner">
+        <div class="compare-intro">
+          <p class="kicker" style="color:var(--green-deep)">Why bother?</p>
+          <h2 id="compare-title">The short durable path comes first.</h2>
+          <p>Without this separation, every commit would need to wait for all of its changed data pages to be forced into place. WAL lets the database first preserve a compact, ordered recovery record; pages can be written later and in batches.</p>
+        </div>
+        <div class="two-paths">
+          <article class="path">
+            <span class="path-kicker">Force pages first</span>
+            <h3>Make every destination current before replying.</h3>
+            <p>The promise waits for the changed account pages themselves.</p>
+            <div class="path-diagram" aria-hidden="true"><div class="path-node">MANY CHANGED PAGES<b>write all</b></div><div class="path-arrow">→</div><div class="path-node">CLIENT<b>committed</b></div></div>
+          </article>
+          <article class="path wal-path">
+            <span class="path-kicker">Write ahead</span>
+            <h3>Preserve the route, then let pages follow.</h3>
+            <p>The promise waits for ordered durable history. Checkpoint work can happen afterward.</p>
+            <div class="path-diagram" aria-hidden="true"><div class="path-node">DURABLE WAL<b>short ordered path</b></div><div class="path-arrow">→</div><div class="path-node">CLIENT NOW<br>PAGES LATER<b>committed</b></div></div>
+          </article>
+        </div>
+        <p class="compare-note">Sequential log writes and shared flushes are typically cheaper than forcing every changed page for every commit, though the exact performance depends on the database, workload, and storage.</p>
+      </div>
+    </section>
+
+    <section class="ending" aria-labelledby="ending-title">
+      <div class="ending-inner">
+        <p class="kicker" style="color:var(--green-deep)">The whole idea</p>
+        <h2 id="ending-title">A commit means <em>“I can recover it.”</em></h2>
+        <p class="ending-lead">It does not necessarily mean every account page is already current. It means the database has crossed a durability boundary: enough ordered evidence survives to keep the promise after a crash.</p>
+        <div class="takeaway">
+          <div><b>01 · MEMORY</b><span>Changes the working state quickly.</span></div>
+          <div><b>02 · WAL</b><span>Makes the promised result recoverable.</span></div>
+          <div><b>03 · CHECKPOINT</b><span>Lets long-term pages catch up later.</span></div>
+        </div>
+        <p class="scope-note">This is a deliberately small, illustrative model. Real databases differ in record formats, buffering, recovery algorithms, and durability settings. The ordering idea remains: durable evidence must exist before a successful commit is acknowledged.</p>
+
+        <div class="post-links" role="navigation" aria-label="Article navigation">
+          <a href="/"><small>Notebook</small>← All curiosities</a>
+          <a href="write-ahead-log.html"><small>Technical version</small>Write-ahead logging in more detail →</a>
+        </div>
+        <footer class="footer"><span>WRITE-AHEAD LOGGING · VISUAL EDITION</span><a href="/">engineering.victorbusque.com</a></footer>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const root = document.documentElement;
+      const scenes = [...document.querySelectorAll('[data-scene]')];
+      const transfer = Object.freeze({ aliceBefore: 500, benBefore: 200, amount: 100 });
+      const result = Object.freeze({ aliceAfter: transfer.aliceBefore - transfer.amount, benAfter: transfer.benBefore + transfer.amount });
+
+      function setCrashCase(scene, value) {
+        const crashCase = String(value);
+        scene.dataset.case = crashCase;
+        scene.querySelectorAll('[data-case-button]').forEach((button) => {
+          button.setAttribute('aria-pressed', String(button.dataset.caseButton === crashCase));
+        });
+        const wal = scene.querySelector('[data-crash-wal]');
+        const page = scene.querySelector('[data-crash-page]');
+        if (wal) wal.textContent = crashCase === '1' ? 'no complete durable transfer' : 'complete $100 transfer';
+        if (page) page.textContent = crashCase === '3'
+          ? `Alice ${result.aliceAfter} · Ben ${result.benAfter}`
+          : `Alice ${transfer.aliceBefore} · Ben ${transfer.benBefore}`;
+      }
+
+      function activate(scene, step) {
+        const number = String(step.dataset.step);
+        const steps = [...scene.querySelectorAll('.step[data-step]')];
+        scene.dataset.activeStep = number;
+        steps.forEach((item) => item.classList.toggle('is-active', item === step));
+        const readout = scene.querySelector('[data-readout]');
+        if (readout) readout.textContent = `STEP ${number} / ${steps.length}`;
+        if (scene.classList.contains('crash')) setCrashCase(scene, number);
+      }
+
+      function measureCards() {
+        scenes.forEach((scene) => {
+          const cards = [...scene.querySelectorAll('.step-card')];
+          const tallest = Math.max(0, ...cards.map((card) => card.getBoundingClientRect().height));
+          scene.style.setProperty('--card-reserve', `${Math.ceil(tallest + 30)}px`);
+        });
+      }
+
+      if (!('IntersectionObserver' in window)) {
+        root.className = 'no-js';
+        return;
+      }
+
+      scenes.forEach((scene) => {
+        const steps = [...scene.querySelectorAll('.step[data-step]')];
+        if (!steps.length) return;
+        activate(scene, steps[0]);
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) activate(scene, entry.target);
+          });
+        }, { rootMargin: '-42% 0px -42% 0px', threshold: 0 });
+        steps.forEach((step) => observer.observe(step));
+      });
+
+      document.querySelectorAll('[data-case-button]').forEach((button) => {
+        const choose = () => setCrashCase(button.closest('.crash'), button.dataset.caseButton);
+        button.addEventListener('click', choose);
+        button.addEventListener('focus', choose);
+      });
+
+      measureCards();
+      window.addEventListener('resize', measureCards, { passive: true });
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(measureCards);
+    })();
+  </script>
+  <script src="../js/post-progress.js" defer></script>
+</body>
+</html>

@@ -20,6 +20,15 @@
    JSON so the checker can parse it directly. */
 window.VB_POSTS = [
     {
+        "slug": "blog/write-ahead-log.html",
+        "no": "08",
+        "title": "Write-Ahead Logging and Durable Commits",
+        "date": "2026-08",
+        "topic": "Databases · Systems",
+        "tags": ["WAL", "Databases", "Durability", "Systems"],
+        "deck": "Follow a $100 transfer through memory, a write-ahead log, crash recovery, and a checkpoint to see exactly what makes a database commit durable."
+    },
+    {
         "slug": "blog/git-github-at-scale.html",
         "no": "07",
         "title": "How Git and GitHub Work at Scale",
@@ -29,7 +38,7 @@ window.VB_POSTS = [
         "deck": "See exactly what a Git push sends: new file contents, a folder listing, a commit, and a branch update request—then see where GitHub fits in."
     },
     {
-        "slug": "blog/apollo-to-phone.html", 
+        "slug": "blog/apollo-to-phone.html",
         "no": "06",
         "title": "Apollo and iPhone: Two Scales of Computing",
         "date": "2026-08",

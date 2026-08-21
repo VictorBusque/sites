@@ -6,8 +6,8 @@
 - [x] How does Starlink work?
 - [ ] How does AWS S3 work?
 - [ ] How does an OS work?
-- [ ] How Git and Github works?
+- [x] How Git and Github works?
 - [ ] How can WhatsApp scale to civilization level?
 - [ ] How do Streaming Platforms at scale work?
 - [ ] How does LLM serving work?
-- [ ] How does WAL (Write-Ahead log) work?
+- [x] How does WAL (Write-Ahead log) work?
