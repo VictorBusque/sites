@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+
+  <title>Page Not Found (404) — Víctor Busqué</title>
+
+  <meta name="description"
+    content="This page isn't part of the notebook. Every published investigation is on the shelf.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#f5f2e9">
+
+  <!-- Served by GitHub Pages at whatever URL failed, so every path below is
+       root-relative. Never switch these to relative hrefs. -->
+
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap"
+    rel="stylesheet">
+
+  <!-- No /css/site.css link: this page is served at arbitrary URLs and
+       previewed from disk, so it inlines the landing skeleton below and
+       owns its styles — same subset offline.html carries. -->
+
+  <style>
+    /* Inlined subset of the hub skeleton (css/site.css) — tokens, base,
+       header, eyebrow, footer, reduced motion — followed by the page's
+       own hero, mirroring index.html. */
+
+
+    /* ─────────────────────────────────────────────
+       TOKENS
+    ───────────────────────────────────────────── */
+
+    :root {
+      --paper: #f5f2e9;
+      --ink: #151612;
+      --muted: #777970;
+      --line: #d9d6cc;
+
+      --acid: #b9df3d;
+
+      --sans: "Inter", system-ui, sans-serif;
+      --serif: "Instrument Serif", Georgia, serif;
+      --mono: "DM Mono", ui-monospace, monospace;
+
+      --ease: cubic-bezier(.16, 1, .3, 1);
+    }
+
+
+    /* ─────────────────────────────────────────────
+       BASE
+    ───────────────────────────────────────────── */
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: var(--paper);
+      color: var(--ink);
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      overflow-x: hidden;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    ::selection {
+      background: var(--ink);
+      color: var(--acid);
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--ink);
+      outline-offset: 4px;
+    }
+
+    .skip {
+      position: fixed;
+      z-index: 100;
+      top: 12px;
+      left: 12px;
+      padding: 10px 13px;
+      border-radius: 999px;
+      background: var(--acid);
+      color: var(--ink);
+      font: 9px var(--mono);
+      transform: translateY(-150%);
+    }
+
+    .skip:focus {
+      transform: none;
+    }
+
+
+    /* ─────────────────────────────────────────────
+       HEADER
+    ───────────────────────────────────────────── */
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      padding:
+        max(17px, env(safe-area-inset-top)) 18px 17px;
+
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: -.045em;
+    }
+
+    .brand-mark {
+      position: relative;
+
+      width: 22px;
+      height: 22px;
+
+      border: 1px solid var(--ink);
+      border-radius: 50%;
+    }
+
+    .brand-mark::before {
+      position: absolute;
+
+      width: 6px;
+      height: 6px;
+
+      top: 7px;
+      left: 7px;
+
+      content: "";
+
+      border-radius: 50%;
+
+      background: var(--ink);
+    }
+
+    .nav {
+      display: flex;
+      gap: 16px;
+
+      color: var(--muted);
+
+      font: 8px var(--mono);
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+
+    /* ─────────────────────────────────────────────
+       EYEBROW
+    ───────────────────────────────────────────── */
+
+    .eyebrow {
+      position: relative;
+      z-index: 1;
+
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      margin: 0 0 22px;
+
+      color: var(--muted);
+
+      font: 8px var(--mono);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      width: 16px;
+      height: 1px;
+
+      content: "";
+
+      background: var(--ink);
+    }
+
+
+    /* ─────────────────────────────────────────────
+       FOOTER
+    ───────────────────────────────────────────── */
+
+    footer {
+      padding:
+        65px 18px max(25px, env(safe-area-inset-bottom));
+
+      border-top: 1px solid var(--line);
+    }
+
+    .footer-meta {
+      margin-top: 65px;
+
+      color: var(--muted);
+
+      font: 8px/1.8 var(--mono);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .footer-meta a {
+      color: var(--ink);
+
+      border-bottom: 1px solid var(--line);
+    }
+
+
+    /* ─────────────────────────────────────────────
+       REDUCED MOTION
+    ───────────────────────────────────────────── */
+
+    @media (prefers-reduced-motion: reduce) {
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }
+
+    }
+
+
+    /* ─────────────────────────────────────────────
+       HERO (page-specific)
+    ───────────────────────────────────────────── */
+
+    .hero {
+      position: relative;
+
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+
+      min-height: calc(100svh - 62px);
+
+      padding: 64px 18px 80px;
+
+      overflow: hidden;
+    }
+
+    .hero h1 {
+      max-width: 570px;
+
+      margin: 0;
+
+      font-size: clamp(54px, 16vw, 88px);
+      line-height: .84;
+
+      font-weight: 700;
+      letter-spacing: -.09em;
+    }
+
+    .hero h1 em {
+      font-family: var(--serif);
+      font-size: 1.13em;
+      font-weight: 400;
+      letter-spacing: -.05em;
+    }
+
+    .hero-copy {
+      max-width: 390px;
+
+      margin: 29px 0 0;
+
+      color: var(--muted);
+
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .hero-copy strong {
+      color: var(--ink);
+      font-weight: 500;
+    }
+
+    .requested {
+      margin: 34px 0 0;
+
+      color: var(--muted);
+
+      font: 8px var(--mono);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .requested span {
+      color: var(--ink);
+
+      overflow-wrap: anywhere;
+    }
+
+    .shelf-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+
+      width: fit-content;
+
+      margin-top: 40px;
+      padding: 5px 5px 5px 13px;
+
+      border-radius: 999px;
+
+      background: var(--ink);
+
+      color: var(--paper);
+
+      font: 8px var(--mono);
+      letter-spacing: .04em;
+      text-transform: uppercase;
+
+      transition:
+        transform .3s var(--ease),
+        background .3s ease;
+    }
+
+    .shelf-link:hover {
+      transform: translateY(-2px);
+    }
+
+    .shelf-icon {
+      display: grid;
+
+      width: 25px;
+      height: 25px;
+
+      place-items: center;
+
+      border-radius: 50%;
+
+      background: var(--paper);
+
+      color: var(--ink);
+
+      font-size: 12px;
+
+      transition:
+        transform .3s var(--ease),
+        background .3s ease;
+    }
+
+    .shelf-link:hover .shelf-icon {
+      transform: rotate(15deg);
+      background: var(--acid);
+    }
+
+
+    /* ─────────────────────────────────────────────
+       HERO DECOR
+    ───────────────────────────────────────────── */
+
+    .hero-visual {
+      position: absolute;
+
+      top: -40px;
+      right: -120px;
+
+      width: min(78vw, 620px);
+      height: 62%;
+
+      opacity: .5;
+
+      pointer-events: none;
+    }
+
+    .hero-visual svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .orbit {
+      fill: none;
+
+      stroke: var(--ink);
+
+      stroke-width: 1;
+
+      stroke-dasharray: 3 8;
+
+      opacity: .18;
+    }
+
+    .path {
+      fill: none;
+
+      stroke: var(--acid);
+
+      stroke-width: 2;
+
+      stroke-linecap: round;
+
+      stroke-dasharray: 650;
+      stroke-dashoffset: 650;
+
+      animation: draw-path 1.4s var(--ease) forwards;
+    }
+
+    .dot {
+      fill: var(--acid);
+
+      filter: drop-shadow(0 0 9px rgba(185, 223, 61, .55));
+
+      animation: dot-pulse 2.8s ease-in-out infinite;
+    }
+
+    .pulse {
+      fill: none;
+
+      stroke: var(--acid);
+
+      stroke-width: 1;
+
+      opacity: .3;
+
+      transform-box: fill-box;
+      transform-origin: center;
+
+      animation: pulse-ring 3s ease-out infinite;
+    }
+
+    @keyframes draw-path {
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    @keyframes dot-pulse {
+
+      0%,
+      100% {
+        opacity: .45;
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+
+    @keyframes pulse-ring {
+      from {
+        transform: scale(.65);
+        opacity: .35;
+      }
+
+      to {
+        transform: scale(1.35);
+        opacity: 0;
+      }
+    }
+
+    .ghost {
+      position: absolute;
+
+      right: -14px;
+      bottom: -46px;
+
+      color: rgba(185, 223, 61, .14);
+
+      font-size: clamp(180px, 42vw, 340px);
+      line-height: .8;
+
+      font-weight: 700;
+
+      letter-spacing: -.13em;
+
+      user-select: none;
+      pointer-events: none;
+    }
+
+
+    /* ─────────────────────────────────────────────
+       ENTRANCE
+    ───────────────────────────────────────────── */
+
+    .rise {
+      animation: rise .8s var(--ease) both;
+    }
+
+    .rise-2 {
+      animation: rise .8s var(--ease) .12s both;
+    }
+
+    .rise-3 {
+      animation: rise .8s var(--ease) .24s both;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+
+    /* ─────────────────────────────────────────────
+       FOOTER TITLE (page-specific)
+    ───────────────────────────────────────────── */
+
+    .footer-title {
+      max-width: 500px;
+
+      margin: 0;
+
+      font-size: clamp(50px, 15vw, 88px);
+      line-height: .83;
+
+      font-weight: 700;
+
+      letter-spacing: -.09em;
+    }
+
+    .footer-title em {
+      font-family: var(--serif);
+      font-weight: 400;
+    }
+
+
+    /* ─────────────────────────────────────────────
+       DESKTOP ENHANCEMENT
+    ───────────────────────────────────────────── */
+
+    @media (min-width: 760px) {
+
+      .header,
+      .hero,
+      footer {
+        padding-left: 6vw;
+        padding-right: 6vw;
+      }
+
+      .hero {
+        min-height: calc(100svh - 71px);
+      }
+
+      .hero h1 {
+        font-size: clamp(75px, 10vw, 130px);
+      }
+
+      .hero-visual {
+        top: -60px;
+        right: -160px;
+
+        width: 46vw;
+        height: 70%;
+      }
+
+    }
+  </style>
+</head>
+
+
+<body>
+
+  <a class="skip" href="#main">
+    Skip to content
+  </a>
+
+
+  <header class="header">
+
+    <a class="brand" href="/index.html">
+      <span class="brand-mark" aria-hidden="true"></span>
+      Víctor Busqué
+    </a>
+
+    <nav class="nav" aria-label="Primary navigation">
+      <a href="/index.html#collection">Notes</a>
+      <a href="/about.html">About</a>
+    </nav>
+
+  </header>
+
+
+  <main id="main">
+
+    <section class="hero">
+
+      <div class="hero-visual" aria-hidden="true">
+        <svg viewBox="0 0 1300 660" preserveAspectRatio="xMidYMid slice">
+          <circle class="pulse" cx="620" cy="290" r="80" />
+          <circle class="pulse" cx="620" cy="290" r="150" />
+
+          <path class="orbit" d="M30 390 C230 40 450 550 690 280 S1040 100 1280 350" />
+          <path class="orbit" d="M100 100 C350 450 500 80 870 430" />
+
+          <path class="path" d="M180 470 C350 320 470 400 620 290 S850 190 1030 250" />
+
+          <circle class="dot" cx="180" cy="470" r="7" />
+          <circle class="dot" cx="620" cy="290" r="10" />
+          <circle class="dot" cx="1030" cy="250" r="7" />
+        </svg>
+      </div>
+
+      <p class="ghost" aria-hidden="true">404</p>
+
+      <p class="eyebrow rise">
+        Error 404 / Page not found
+      </p>
+
+      <h1 class="rise-2">
+        This page is<br>
+        <em>blank.</em>
+      </h1>
+
+      <p class="hero-copy rise-3">
+        The URL you followed isn't part of the notebook.
+        It may have moved, or it never existed.
+        <strong>Every published investigation is on the shelf.</strong>
+      </p>
+
+      <p class="requested" id="requested" hidden>
+        Requested:
+        <span id="reqPath"></span>
+      </p>
+
+      <a class="shelf-link rise-3" href="index.html">
+        Back to the shelf
+
+        <span class="shelf-icon" aria-hidden="true">
+          ↗
+        </span>
+      </a>
+
+    </section>
+
+  </main>
+
+
+  <footer>
+
+    <p class="footer-title">
+      Still<br>
+      <em>curious?</em>
+    </p>
+
+    <div class="footer-meta">
+      © <span id="year"></span> Víctor Busqué
+      <br>
+      <a href="about.html">
+        About this notebook ↗
+      </a>
+    </div>
+
+  </footer>
+
+
+  <script>
+    (function () {
+      "use strict";
+
+      document.getElementById("year").textContent =
+        new Date().getFullYear();
+
+      /* Show which URL failed — computed, never guessed, and hidden
+         entirely when scripting is off. */
+      var row = document.getElementById("requested");
+
+      var path =
+        window.location.pathname +
+        window.location.search;
+
+      if (path && path !== "/") {
+        document.getElementById("reqPath").textContent = path;
+        row.hidden = false;
+      }
+    })();
+  </script>
+
+</body>
+
+</html>

@@ -3900,6 +3900,15 @@
         }
     </script>
 
+  <script>
+    /* Offline library: load the notebook fresh when online, fall back to
+       the last known copy when not. See /sw.js. */
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').catch(function () {});
+      });
+    }
+  </script>
 </body>
 
 </html>
