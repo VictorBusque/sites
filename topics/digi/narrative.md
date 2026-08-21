@@ -4,18 +4,19 @@ status: ready-for-build
 language: es
 source_context: topics/digi/context.md
 created: 2026-08-20
-updated: 2026-08-20
+updated: 2026-08-21
 intended_slug: digi-costes
 ---
 
 # Una tarifa barata empieza en el mapa
 
 > **Build brief status:** reconstructed from the shipped article
-> `blog/digi-costes.html` and its research context. It documents the page’s
-> intended story and implementation contract so future revisions stay
-> evidence-led. Research contains conflicting and future-dated reporting;
-> do not add those figures to the public article until they are independently
-> re-verified at the time of an edit.
+> `blog/digi-costes.html` and its research context, then revised after the
+> 2026-08-21 scene rebuild: the three animated stages were upgraded from
+> decorative fades to mechanism-performing diagrams (cost-division meter,
+> turn-taking cycle, traffic rerouting). Research contains conflicting and
+> future-dated reporting; do not add those figures to the public article
+> until they are independently re-verified at the time of an edit.
 
 ## 1. Story contract
 
@@ -116,10 +117,14 @@ After:  Low prices can follow from lower unit costs in selected places, while
 - **Placement:** Act 2; follows the own-versus-wholesale explanation; hands
   off the idea of shared capacity.
 - **Pattern:** `sticky-scene` with a decorative SVG/CSS-style network stage.
-- **Primary visual anchor:** The OLT in the center of six homes.
+- **Primary visual anchor:** The OLT in the center of six homes, plus a
+  “coste fijo” share meter under the field that visibly divides as homes
+  connect (1/1 → 1/3 → 1/6).
 - **Analogy or explanatory device:** A shared distribution point rather than a
-  private cable for every home. Mapping: homes connect through common central
-  equipment; limit: the picture does not portray a full physical fibre plant.
+  private cable for every home, made quantitative by the dividing strip.
+  Mapping: homes connect through common central equipment and the strip shows
+  each line’s share of that fixed cost; limit: the picture does not portray a
+  full physical fibre plant, and the shares are ratios, not euro amounts.
 - **On-page prose:**
   - Heading: “No es la misma fibra en todas partes.”
   - Step 1: A single installation cannot alone justify central equipment and
@@ -135,17 +140,17 @@ After:  Low prices can follow from lower unit costs in selected places, while
   the text equivalent.
 - **State model:**
 
-  | State / step | Stage state                     | Trigger                | Visible evidence    | Meaning                                       |
-  | ------------ | ------------------------------- | ---------------------- | ------------------- | --------------------------------------------- |
-  | 1            | One home highlighted, lines dim | `data-active-step="1"` | “1 hogar / 1 ruta”  | Initial fixed cost is visible before sharing. |
-  | 2            | All lines brighten              | step 2                 | “6 hogares / 1 OLT” | One access point serves more than one line.   |
-  | 3            | All homes gain active treatment | step 3                 | “6 altas cercanas”  | Density is the relevant deployment condition. |
-  | 4            | OLT and field resolve           | step 4                 | “coste fijo / 6”    | Cost is spread conceptually, not measured.    |
+  | State / step | Stage state                     | Trigger                | Visible evidence            | Meaning                                       |
+  | ------------ | ------------------------------- | ---------------------- | --------------------------- | --------------------------------------------- |
+  | 1            | One home highlighted, its drop orange, lines dim; meter shows a single full cell | `data-active-step="1"` | “reparto 1/1 del coste fijo” | Initial fixed cost is visible before sharing. |
+  | 2            | Three homes connected; meter divides into thirds | step 2                 | “reparto 1/3 por línea”     | One access point serves more than one line.   |
+  | 3            | All six homes and drops active; six cells | step 3 | “reparto 1/6 por línea”     | Density is the relevant deployment condition. |
+  | 4            | OLT halo and emphasis; meter stays at 1/6 | step 4                 | “baja el coste medio, no a cero” | Cost is spread conceptually, not measured.    |
 
-- **Motion choreography:** ENTER a stable sparse field → HOLD one home →
-  TRANSFORM by brightening shared routes → RESOLVE with the OLT emphasis →
-  EXIT to the capacity scene. Transitions clarify relationships; no ambient
-  movement is needed.
+- **Motion choreography:** ENTER a stable sparse field → HOLD one home with
+  the meter at 1/1 → TRANSFORM by connecting homes while the meter divides →
+  RESOLVE with the OLT emphasis → EXIT to the capacity scene. The meter’s
+  flex-grow transition is the primary action; connections are secondary.
 - **Data / computation:** Six homes are illustrative; never present them as a
   real OLT split or customer count. E1/E2 support the general mechanism.
 - **Interaction:** None; scroll activates discrete states.
@@ -166,10 +171,12 @@ After:  Low prices can follow from lower unit costs in selected places, while
   explanation.
 - **Pattern:** `sticky-scene` plus a static arithmetic section.
 - **Primary visual anchor:** “PUERTO XGS-PON · 10 Gb/s” above a field of 32
-  abstract subscriber marks.
-- **Analogy or explanatory device:** Turns on a shared resource. Mapping: the
-  OLT schedules transmission; limit: the moving beam does not model real
-  packet timing or measured load.
+  abstract subscriber marks that light in staggered turn-taking sequence.
+- **Analogy or explanatory device:** Turns on a shared resource, performed:
+  each square pulses once per 3.2 s cycle with a 0.1 s stagger, so roughly six
+  transmit at any instant. Mapping: the OLT schedules transmission; limit:
+  the cycle is an illustrative schema, not real packet timing or measured
+  load — the in-stage note says so.
 - **On-page prose:**
   - Heading: “Diez gigabits no son un cable por casa.”
   - Steps: one shared port; 32 shown for legibility / up to 64 cited; OLT
@@ -182,15 +189,16 @@ After:  Low prices can follow from lower unit costs in selected places, while
 
   | State / step | Stage state                                 | Trigger | Visible evidence                  | Meaning                                                    |
   | ------------ | ------------------------------------------- | ------- | --------------------------------- | ---------------------------------------------------------- |
-  | 1            | One subscriber emphasized                   | step 1  | “un cliente”                      | A port is a shared access resource.                        |
-  | 2            | First 16 / visible field becomes active     | step 2  | “modelo: 32 de hasta 64”          | The scene deliberately shows a partial model.              |
-  | 3            | All marks settle active                     | step 3  | “el puerto decide el turno”       | Scheduling, not simultaneous dedication, is the mechanism. |
-  | 4            | Some marks and beam shift to pressure color | step 4  | “puertos y transporte por etapas” | Capacity is reinforced in stages.                          |
+  | 1            | First subscriber active, rest dim           | step 1  | “1 cliente en el puerto”           | A port is a shared access resource.                        |
+  | 2            | All 32 marks at connected-idle              | step 2  | “modelo: 32 de hasta 64”           | The scene deliberately shows a partial model.              |
+  | 3            | Staggered turn cycle: ~6 marks lit at a time | step 3 | “solo algunos transmiten a la vez” | Scheduling, not simultaneous dedication, is the mechanism. |
+  | 4            | Every mark and the port shift to pressure orange | step 4 | “puertos y uplink por etapas” | Peak demand; capacity is reinforced in stages.             |
 
 - **Motion choreography:** ENTER port → HOLD single line → TRANSFORM into
-  a field of lines → RESOLVE with coordinated state → EXIT under an explicit
-  static calculation. The beam is illustrative only and stops under reduced
-  motion.
+  a field of lines → RESOLVE with the staggered turn cycle → EXIT under an
+  explicit static calculation. The beam is illustrative ambient support and
+  stops under reduced motion; the turn cycle pauses to a static snapshot
+  (every sixth mark lit).
 - **Data / computation:** E2 and E3. `#share` must be generated by
   `(10000 / 64).toFixed(2) + ' Mb/s'`; do not hard-code a divergent value.
 - **Interaction:** None.
@@ -237,12 +245,15 @@ After:  Low prices can follow from lower unit costs in selected places, while
   nationwide partner access disappears instantly.
 - **Placement:** Act 6; follows fixed-network map; hands off the conclusion.
 - **Pattern:** `sticky-scene` with two abstract towers and a phone.
-- **Primary visual anchor:** Partner coverage tower on the left, own node on
-  the right, and an orange handoff route.
-- **Analogy or explanatory device:** Layered coverage. Mapping: national
-  roaming/RAN sharing supplies broad reach while own nodes grow in selected
-  zones; limit: two towers do not depict real spectrum, coverage radii, or
-  traffic volumes.
+- **Primary visual anchor:** Inline SVG: partner tower left, own node right
+  inside a dashed “zona densa”, six phones on the ground, and service lines
+  that visibly reroute from partner to own node.
+- **Analogy or explanatory device:** Layered coverage shown as rerouting
+  traffic. Mapping: national roaming/RAN sharing supplies broad reach while
+  own nodes grow in selected zones — at the switch step the urban lines fade
+  off the partner tower and draw (dashed, marching) onto the own node; limit:
+  the diagram does not depict real spectrum, coverage radii, or traffic
+  volumes, and rural lines always stay on the partner network.
 - **On-page prose:** broad coverage first; own spectrum/nodes where demand
   supports them; hybrid network; migration from variable wholesale use toward
   local capacity by zone.
@@ -252,14 +263,17 @@ After:  Low prices can follow from lower unit costs in selected places, while
 
   | State / step | Stage state                                 | Trigger | Visible evidence        | Meaning                                       |
   | ------------ | ------------------------------------------- | ------- | ----------------------- | --------------------------------------------- |
-  | 1            | Partner tower visible; own node muted       | step 1  | “cobertura alquilada”   | Reach exists before a complete own build.     |
-  | 2            | Own node appears                            | step 2  | “nodo propio”           | Local capacity can be introduced.             |
-  | 3            | Orange handoff appears                      | step 3  | “roaming + RAN sharing” | The system is hybrid.                         |
-  | 4            | Partner tower de-emphasizes, not disappears | step 4  | “migración gradual”     | Cost dependence may change by zone over time. |
+  | 1            | All six phones served by the partner tower; own node muted | step 1 | “todas las líneas vía red asociada” | Reach exists before a complete own build. |
+  | 2            | Own node lights up with its ring            | step 2  | “capacidad propia donde hay demanda” | Local capacity can be introduced.       |
+  | 3            | Urban lines reroute to the own node (orange, dashed); partner lines to those phones fade | step 3 | “zona densa por red propia” | The system is hybrid.               |
+  | 4            | Own lines settle mint; partner tower dims but stays; rural lines unchanged | step 4 | “el resto sigue en la asociada” | Cost dependence may change by zone over time. |
 
-- **Motion choreography:** ENTER partner coverage → HOLD → TRANSFORM by
-  revealing own node/handoff → RESOLVE as hybrid composition. The partner
-  tower must remain visible to avoid a false all-or-nothing story.
+- **Motion choreography:** ENTER partner coverage with all lines blue →
+  HOLD → TRANSFORM by lighting the own node and rerouting the dense-zone
+  lines (drawn dashes marching toward the node) → RESOLVE as a hybrid
+  composition with the partner tower still visible. Initial dimming of the
+  own node is scoped behind the page’s `js` gate so the no-JS document shows
+  the final hybrid picture.
 - **Data / computation:** E5/E6. No throughput, percentage, coverage, or
   traffic volume displayed.
 - **Interaction:** None.
