@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>How Git and GitHub Work at Scale — Víctor Busqué</title>
+  <meta name="description" content="See exactly what a Git push sends: new file contents, a folder listing, a commit, and a branch update request—then see where GitHub fits in.">
+  <meta name="author" content="Víctor Busqué">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://engineering.victorbusque.com/blog/git-github-at-scale.html">
+  <meta name="theme-color" content="#20211e">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Víctor Busqué — Curiosities">
+  <meta property="og:title" content="How Git and GitHub Work at Scale — Víctor Busqué">
+  <meta property="og:description" content="See exactly what a Git push sends: new file contents, a folder listing, a commit, and a branch update request—then see where GitHub fits in.">
+  <meta property="og:url" content="https://engineering.victorbusque.com/blog/git-github-at-scale.html">
+  <meta property="og:image" content="https://engineering.victorbusque.com/img/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How Git and GitHub Work at Scale — Víctor Busqué">
+  <meta name="twitter:description" content="See exactly what a Git push sends: new file contents, a folder listing, a commit, and a branch update request—then see where GitHub fits in.">
+  <meta name="twitter:image" content="https://engineering.victorbusque.com/img/og.png">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"BlogPosting","headline":"How Git and GitHub Work at Scale","description":"See exactly what a Git push sends: new file contents, a folder listing, a commit, and a branch update request—then see where GitHub fits in.","datePublished":"2026-08","author":{"@type":"Person","name":"Víctor Busqué","url":"https://engineering.victorbusque.com/"},"url":"https://engineering.victorbusque.com/blog/git-github-at-scale.html","mainEntityOfPage":"https://engineering.victorbusque.com/blog/git-github-at-scale.html","inLanguage":"en","keywords":["Git","GitHub","version control","commits","developer tools"],"articleSection":"Systems · Developer tools"}
+  </script>
+  <script>document.documentElement.classList.add('js');</script>
+  <style>
+    :root { --paper:#f4f0e8; --paper-2:#e7dfd1; --ink:#20211e; --muted:#686960; --line:#292a26; --rust:#a64830; --blue:#2855a7; --moss:#527158; --stage:#20211e; --stage-text:#eeeadf; --stage-muted:#aaa99f; --ease:cubic-bezier(.2,.75,.2,1); }
+    * { box-sizing:border-box; } html { scroll-behavior:smooth; } body { margin:0; color:var(--ink); background:var(--paper); font:20px/1.56 Georgia, 'Times New Roman', serif; text-rendering:optimizeLegibility; overflow-x:hidden; }
+    body::before { content:""; position:fixed; z-index:-1; inset:0; pointer-events:none; opacity:.3; background-image:linear-gradient(rgba(32,33,30,.025) 1px, transparent 1px),linear-gradient(90deg,rgba(32,33,30,.018) 1px,transparent 1px); background-size:100% 8px,72px 100%; }
+    a { color:inherit; text-decoration-color:var(--rust); text-underline-offset:3px; } a:hover { color:var(--rust); } :focus-visible { outline:3px solid var(--blue); outline-offset:4px; }
+    .skip { position:fixed; z-index:100; top:10px; left:12px; padding:.55rem .75rem; background:var(--ink); color:var(--paper); font:12px ui-monospace,monospace; transform:translateY(-150%); transition:transform .2s var(--ease); }.skip:focus { transform:none; }
+    .shell { width:min(1120px,calc(100% - 40px)); margin:auto; }.prose { width:min(690px,100%); margin:auto; }.eyebrow,.label,.step-n,.post-meta,.fig-caption b,th,dt { font:11px/1.35 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; letter-spacing:.09em; text-transform:uppercase; }.eyebrow { color:var(--rust); }.prose h2 { max-width:15ch; margin:0 0 .55em; font:700 clamp(2rem,5vw,4.1rem)/.97 Arial,Helvetica,sans-serif; letter-spacing:-.065em; }.sec-no { display:block; margin-bottom:1rem; color:var(--rust); font:11px ui-monospace,monospace; letter-spacing:.1em; }.prose p { margin:0 0 1.15em; }.lead { font-size:clamp(1.4rem,2.8vw,2.05rem); line-height:1.34; }.term { font-weight:bold; }.term em { color:var(--rust); font-style:normal; }.code,code { padding:.08em .25em; background:rgba(32,33,30,.08); font:.82em ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .hero { min-height:92svh; display:grid; align-content:end; padding:clamp(90px,15vh,180px) 0 10vh; border-bottom:1px solid var(--line); }.hero-grid { display:grid; grid-template-columns:minmax(0,1fr) 245px; gap:3rem; align-items:end; }.hero h1 { max-width:10ch; margin:.25em 0; font:700 clamp(3.7rem,10vw,10rem)/.83 Arial,Helvetica,sans-serif; letter-spacing:-.09em; }.dek { max-width:44rem; margin:1.4rem 0 0; font-size:clamp(1.25rem,2.4vw,1.65rem); line-height:1.35; }.margin-note { padding:1.2rem; border-top:2px solid var(--rust); font-size:15px; line-height:1.35; }.margin-note b { display:block; margin-bottom:.45rem; font:11px ui-monospace,monospace; letter-spacing:.08em; text-transform:uppercase; }.post-meta { margin:2.5rem 0 0; color:var(--muted); }
+    .intro { padding:12vh 0; }.model { margin:2rem 0; padding:1.2rem 1.35rem; border:1px solid var(--line); background:#f8f5ef; }.model p { margin:.35rem 0 0; font-size:17px; }.callout { margin:2.3rem 0; padding:1.2rem 1.35rem; border-left:4px solid var(--rust); background:rgba(166,72,48,.08); }.callout b { font-family:Arial,Helvetica,sans-serif; }
+    /* universal scene layout */ .scene { position:relative; min-height:210svh; background:var(--stage); color:var(--stage-text); }.scene-stage { position:relative; min-height:540px; display:grid; place-items:center; overflow:hidden; background:radial-gradient(circle at 82% 18%,rgba(166,72,48,.16),transparent 25%),var(--stage); }.js .scene-stage { position:sticky; top:0; height:100svh; min-height:0; }.scene-stage::before { content:""; position:absolute; inset:0; pointer-events:none; background-image:linear-gradient(rgba(238,234,223,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(238,234,223,.06) 1px,transparent 1px); background-size:36px 36px; }.scene-head { position:absolute; z-index:2; top:clamp(22px,4vw,48px); left:max(20px,calc((100vw - 1120px)/2)); right:20px; display:flex; justify-content:space-between; gap:1rem; color:var(--stage-muted); }.scene-head b { color:var(--stage-text); font-weight:400; }.scene-steps { position:relative; z-index:3; width:min(1120px,calc(100% - 40px)); margin:0 auto; padding:1rem 0 2rem; pointer-events:none; }.js .scene-steps { margin:-100svh auto 0; padding:18vh 0 16vh; }.step { display:flex; align-items:center; width:min(455px,100%); min-height:72svh; }.step:nth-child(even) { margin-left:auto; }.step-card { padding:1.2rem 1.3rem 1.35rem; color:var(--ink); background:rgba(244,240,232,.98); border:1px solid var(--ink); box-shadow:8px 8px 0 rgba(244,240,232,.16); pointer-events:auto; }.step-card h2 { margin:.35rem 0 .45rem; font:700 clamp(1.8rem,3.5vw,3rem)/.98 Arial,Helvetica,sans-serif; letter-spacing:-.055em; }.step-card p { margin:.5rem 0 0; font-size:18px; line-height:1.43; }.step-n { color:var(--rust); }.fig-caption { position:relative; z-index:4; width:min(1120px,calc(100% - 40px)); margin:-9rem auto 0; padding:1rem 0 3rem; color:var(--stage-muted); font-size:14px; line-height:1.42; }.fig-caption b { color:var(--stage-text); }
+    /* S01: literal folder listing */ .tree-stage { position:relative; z-index:1; width:min(1010px,90vw); display:grid; grid-template-columns:1.05fr .95fr; gap:clamp(22px,5vw,75px); align-items:center; font-family:Arial,Helvetica,sans-serif; }.listing { padding:18px; border:1px solid #85837a; background:#292a26; }.listing h3,.contents h3 { margin:0 0 1rem; color:var(--stage-text); font:11px ui-monospace,monospace; letter-spacing:.08em; text-transform:uppercase; }.listing-note { margin:-.4rem 0 1rem; color:var(--stage-muted); font:14px Georgia,serif; }.tree-row { display:grid; grid-template-columns:1fr auto; gap:1rem; align-items:center; padding:12px 8px; border-top:1px solid #55564f; color:#c8c6bc; font:14px ui-monospace,monospace; transition:opacity .35s var(--ease),background .35s var(--ease); }.tree-row strong { color:#f7a692; font-weight:400; }.contents { display:grid; gap:10px; }.record { padding:13px; border:1px solid #75746d; background:#292a26; color:#c8c6bc; font:14px/1.35 ui-monospace,monospace; transition:opacity .35s var(--ease),transform .35s var(--ease); }.record b { display:block; margin-bottom:6px; color:var(--stage-text); font:11px Arial,Helvetica,sans-serif; letter-spacing:.07em; text-transform:uppercase; }.record.new { border-color:#f4a38f; color:#ffc4b6; }.record.muted { opacity:.5; }.tree-link { color:#f4a38f; }.tree-name { position:absolute; top:-1.8rem; left:0; color:#f4a38f; opacity:0; transform:translateY(8px); font:11px ui-monospace,monospace; letter-spacing:.08em; text-transform:uppercase; transition:all .35s var(--ease); }.scene[data-active-step="1"] .listing { opacity:.35; }.scene[data-active-step="1"] .record.muted { opacity:.2; }.scene[data-active-step="2"] .listing,.scene[data-active-step="3"] .listing,.scene[data-active-step="4"] .listing { opacity:1; }.scene[data-active-step="3"] .tree-row:first-of-type { background:rgba(166,72,48,.2); }.scene[data-active-step="4"] .tree-name { opacity:1; transform:none; }
+    /* S02: commit and branch */ .commit-stage { position:relative; z-index:1; width:min(900px,90vw); min-height:480px; font-family:Arial,Helvetica,sans-serif; }.commit-card,.old-commit,.root-map { position:absolute; padding:16px; border:1px solid #85837a; background:#292a26; }.commit-card { top:7%; left:50%; width:260px; color:#ffc4b6; border-color:#f4a38f; transform:translateX(-50%) translateY(14px); opacity:.35; transition:all .4s var(--ease); }.commit-card b,.old-commit b,.root-map b { display:block; margin-bottom:8px; color:var(--stage-text); font:11px ui-monospace,monospace; letter-spacing:.08em; text-transform:uppercase; }.commit-card p,.old-commit p,.root-map p { margin:0; font:14px/1.4 Georgia,serif; }.root-map { bottom:7%; left:8%; width:270px; color:#d1cfc4; }.root-map ul { padding:0; margin:8px 0 0; list-style:none; font:13px/1.55 ui-monospace,monospace; }.root-map li:first-child { color:#ffc4b6; }.old-commit { right:7%; bottom:14%; width:205px; color:#aaa99f; }.arrow-line { position:absolute; height:1px; background:#f4a38f; transform-origin:left; opacity:.2; transition:all .4s var(--ease); }.to-map { top:33%; left:42%; width:30%; transform:rotate(125deg); }.to-old { top:31%; left:57%; width:26%; transform:rotate(47deg); }.main-label { position:absolute; top:4%; left:14%; padding:8px 12px; color:#dbe6ff; border:1px solid #7ba3ef; font:12px ui-monospace,monospace; opacity:.2; transition:all .4s var(--ease); }.bookmark-line { position:absolute; top:14%; left:24%; width:28%; height:1px; background:#7ba3ef; transform:rotate(25deg); opacity:.15; transition:all .4s var(--ease); }.scene[data-active-step="2"] .commit-card,.scene[data-active-step="3"] .commit-card,.scene[data-active-step="4"] .commit-card { opacity:1; transform:translateX(-50%); }.scene[data-active-step="2"] .to-map,.scene[data-active-step="3"] .to-map,.scene[data-active-step="4"] .to-map { opacity:1; }.scene[data-active-step="3"] .to-old,.scene[data-active-step="4"] .to-old { opacity:1; }.scene[data-active-step="4"] .main-label,.scene[data-active-step="4"] .bookmark-line { opacity:1; }.scene[data-active-step="4"] .main-label { transform:translateX(35vw); }.scene[data-active-step="4"] .bookmark-line { left:49%; width:10%; transform:rotate(72deg); }
+    /* S03: packfile */ .pack-stage { position:relative; z-index:1; width:min(1040px,90vw); min-height:500px; display:grid; grid-template-columns:1fr 1fr; gap:clamp(60px,14vw,180px); align-items:center; font-family:Arial,Helvetica,sans-serif; }.shelf { min-height:285px; padding:18px; border:1px solid #85837a; background:#292a26; }.shelf h3 { margin:0 0 .4rem; font:11px ui-monospace,monospace; letter-spacing:.08em; text-transform:uppercase; }.shelf > p { margin:0 0 1rem; color:var(--stage-muted); font:14px Georgia,serif; }.shelf-card { margin:.55rem 0; padding:10px; border:1px solid #686860; color:#c8c6bc; font:13px/1.35 ui-monospace,monospace; }.shelf-card.new { color:#ffc4b6; border-color:#f4a38f; }.remote .shelf-card.new { opacity:.12; transition:opacity .35s var(--ease); }.parcel { position:absolute; z-index:3; top:27%; left:calc(50% - 140px); width:280px; padding:15px; border:2px solid #f4a38f; color:#ffc4b6; background:#20211e; opacity:.15; transform:translateY(20px); transition:all .45s var(--ease); }.parcel h3 { margin:0 0 .65rem; font:11px ui-monospace,monospace; letter-spacing:.08em; text-transform:uppercase; }.parcel ul { padding-left:1.15rem; margin:.45rem 0 0; font:13px/1.38 Georgia,serif; }.parcel .count { position:absolute; top:-1.9rem; left:0; color:#f4a38f; font:11px ui-monospace,monospace; white-space:nowrap; }.branch-request { position:absolute; z-index:2; right:4%; bottom:3%; padding:8px; border:1px dashed #719175; color:#b4d0b8; opacity:.12; font:11px ui-monospace,monospace; transition:opacity .35s var(--ease); }.scene[data-active-step="2"] .parcel,.scene[data-active-step="3"] .parcel,.scene[data-active-step="4"] .parcel { opacity:1; transform:none; }.scene[data-active-step="4"] .parcel { transform:translateX(calc(50vw - 150px)); }.scene[data-active-step="4"] .remote .shelf-card.new,.scene[data-active-step="4"] .branch-request { opacity:1; }
+    /* S04: host responsibilities */ .host-stage { position:relative; z-index:1; width:min(1040px,90vw); display:grid; grid-template-columns:repeat(3,1fr); gap:16px; font-family:Arial,Helvetica,sans-serif; }.host-shelf { min-height:370px; padding:20px; border:1px solid #85837a; background:#292a26; color:#c8c6bc; opacity:.25; transform:translateY(15px); transition:all .4s var(--ease); }.host-shelf h3 { margin:0 0 1rem; color:var(--stage-text); font:11px ui-monospace,monospace; letter-spacing:.08em; text-transform:uppercase; }.host-shelf p { margin:1rem 0 0; font:15px/1.4 Georgia,serif; }.host-item { display:block; margin:.6rem 0; padding:.65rem; border:1px solid #6e6d65; font:12px ui-monospace,monospace; }.host-shelf.team .host-item { color:#dbe6ff; border-color:#7ba3ef; }.host-shelf.lfs .host-item { color:#b4d0b8; border-color:#719175; }.host-shelf .pr-link { display:block; margin:.5rem 0; color:#dbe6ff; font:12px ui-monospace,monospace; opacity:.4; }.host-scope { grid-column:1/-1; margin:0; color:var(--stage-muted); font:13px/1.4 Georgia,serif; }.scene[data-active-step="1"] .host-shelf.history,.scene[data-active-step="2"] .host-shelf.history,.scene[data-active-step="2"] .host-shelf.team,.scene[data-active-step="3"] .host-shelf.history,.scene[data-active-step="3"] .host-shelf.team,.scene[data-active-step="4"] .host-shelf { opacity:1; transform:none; }.scene[data-active-step="3"] .pr-link { opacity:1; }
+    .comparison { padding:14vh 0; }.comparison table { width:100%; margin-top:3rem; border-collapse:collapse; font-size:18px; }.comparison th,.comparison td { padding:1.15rem .65rem; border-top:1px solid var(--line); text-align:left; vertical-align:top; }.comparison th { color:var(--muted); }.comparison td:first-child { width:22%; color:var(--rust); font:12px ui-monospace,monospace; letter-spacing:.06em; text-transform:uppercase; }.mini-glossary { display:grid; grid-template-columns:150px 1fr; gap:.75rem 1.4rem; margin-top:3rem; padding:1.35rem; background:#f8f5ef; border:1px solid var(--line); }.mini-glossary dd,.mini-glossary dt { margin:0; }.mini-glossary dd { font-size:17px; }.closing { padding:18vh 0 10vh; border-top:1px solid var(--line); }.closing h2 { max-width:11ch; margin:0; font:700 clamp(3rem,8vw,7.5rem)/.86 Arial,Helvetica,sans-serif; letter-spacing:-.085em; }.closing .prose { margin:3rem 0 0; }.sources { margin-top:5rem; padding-top:2rem; border-top:1px solid var(--line); color:var(--muted); font-size:15px; }.sources ul { margin:1rem 0 0; padding:0; list-style:none; font:12px/1.65 ui-monospace,monospace; }.sources li { margin:.55rem 0; }.foot { padding:2rem 0 3rem; color:var(--muted); border-top:1px solid var(--line); font:11px ui-monospace,monospace; }
+    @media (max-width:700px) { body { font-size:18px; }.shell { width:min(100% - 28px,1120px); }.hero { min-height:86svh; }.hero-grid { grid-template-columns:1fr; gap:2rem; }.hero h1 { font-size:clamp(3.3rem,16.7vw,5.3rem); }.scene { min-height:auto; padding-bottom:2rem; }.scene-stage { position:relative; height:62svh; min-height:450px; }.scene-steps,.js .scene-steps { width:min(100% - 28px,1120px); margin:0 auto; padding:1rem 0; }.step { width:100%; min-height:auto; margin:0 0 1rem!important; }.step-card { box-shadow:4px 4px 0 rgba(32,33,30,.15); }.fig-caption { width:min(100% - 28px,1120px); margin:0 auto; padding:1rem 0 0; }.tree-stage { grid-template-columns:1fr; gap:16px; width:min(100% - 28px,600px); }.tree-name { top:-1.6rem; }.commit-stage { min-height:430px; }.root-map { left:4%; bottom:5%; width:43%; }.old-commit { right:3%; bottom:10%; width:38%; }.commit-card { width:230px; }.scene[data-active-step="4"] .main-label { transform:translateX(46vw); }.scene[data-active-step="4"] .bookmark-line { left:47%; width:12%; }.pack-stage { min-height:420px; gap:18px; width:min(100% - 28px,600px); }.shelf { min-height:260px; padding:11px; }.shelf-card { font-size:10px; }.parcel { left:calc(50% - 103px); width:206px; padding:10px; }.parcel ul { font-size:11px; }.scene[data-active-step="4"] .parcel { transform:translateX(calc(47vw - 110px)); }.host-stage { grid-template-columns:1fr; gap:8px; width:min(100% - 28px,600px); }.host-shelf { min-height:0; padding:14px; }.host-scope { grid-column:auto; }.comparison table,.comparison tbody,.comparison tr,.comparison th,.comparison td { display:block; }.comparison thead { display:none; }.comparison tr { padding:1rem 0; border-top:1px solid var(--line); }.comparison td { width:auto!important; padding:.25rem 0; border:0; }.comparison td:first-child { margin-bottom:.3rem; }.mini-glossary { grid-template-columns:1fr; gap:.25rem; }.closing { padding-top:13vh; } }
+    @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; }.scene-stage { position:relative; }.scene-steps { margin:0!important; padding:1rem 0!important; }.step { min-height:auto; }.scene [class] { transition:none!important; animation:none!important; }.scene .listing,.scene .record,.scene .commit-card,.scene .to-map,.scene .to-old,.scene .main-label,.scene .bookmark-line,.scene .parcel,.scene .remote .shelf-card.new,.scene .branch-request,.scene .host-shelf,.scene .pr-link,.scene .tree-name { opacity:1!important; transform:none!important; } }
+  </style>
+  <style>
+    /* Commit diagram: SVG keeps every relationship on a deliberate,
+       non-overlapping path. The prose beside it remains the explanation. */
+    .commit-diagram { position:relative; z-index:1; width:min(920px,90vw); height:auto; overflow:visible; font-family:Arial,Helvetica,sans-serif; }
+    .commit-diagram .card { fill:#292a26; stroke:#85837a; stroke-width:1.5; }
+    .commit-diagram .new-card { stroke:#f4a38f; }
+    .commit-diagram .branch-card { fill:#20211e; stroke:#7ba3ef; }
+    .commit-diagram .link { fill:none; stroke:#f4a38f; stroke-width:2; marker-end:url(#commit-arrow); }
+    .commit-diagram .branch-link { stroke:#7ba3ef; marker-end:url(#branch-arrow); }
+    .commit-diagram .card-title { fill:#eeeadf; font:700 13px ui-monospace,SFMono-Regular,monospace; letter-spacing:1.1px; }
+    .commit-diagram .card-copy { fill:#d1cfc4; font:16px Georgia,serif; }
+    .commit-diagram .new-copy { fill:#ffc4b6; }
+    .commit-diagram .line-label { fill:#aaa99f; font:12px ui-monospace,SFMono-Regular,monospace; letter-spacing:.5px; }
+    .commit-diagram .root-tree,.commit-diagram .new-commit,.commit-diagram .previous-commit,.commit-diagram .commit-link,.commit-diagram .previous-link,.commit-diagram .branch,.commit-diagram .branch-link { transition:opacity .35s var(--ease); }
+    .commit-diagram .new-commit,.commit-diagram .previous-commit,.commit-diagram .commit-link,.commit-diagram .previous-link,.commit-diagram .branch,.commit-diagram .branch-link { opacity:.18; }
+    .scene[data-active-step="2"] .commit-diagram .new-commit,.scene[data-active-step="2"] .commit-diagram .commit-link,.scene[data-active-step="3"] .commit-diagram .new-commit,.scene[data-active-step="3"] .commit-diagram .commit-link,.scene[data-active-step="3"] .commit-diagram .previous-commit,.scene[data-active-step="3"] .commit-diagram .previous-link,.scene[data-active-step="4"] .commit-diagram .new-commit,.scene[data-active-step="4"] .commit-diagram .commit-link,.scene[data-active-step="4"] .commit-diagram .previous-commit,.scene[data-active-step="4"] .commit-diagram .previous-link,.scene[data-active-step="4"] .commit-diagram .branch,.scene[data-active-step="4"] .commit-diagram .branch-link { opacity:1; }
+    @media (max-width:700px) { .commit-diagram { width:min(650px,95vw); } .commit-diagram .card-copy { font-size:18px; } .commit-diagram .line-label { font-size:13px; } }
+    @media (prefers-reduced-motion:reduce) { .commit-diagram .new-commit,.commit-diagram .previous-commit,.commit-diagram .commit-link,.commit-diagram .previous-link,.commit-diagram .branch,.commit-diagram .branch-link { opacity:1!important; } }
+  </style>
+  <link rel="stylesheet" href="../css/post-progress.css">
+</head>
+<body data-vb-progress-start="#a64830" data-vb-progress-mid="#2855a7" data-vb-progress-end="#527158">
+  <a class="skip" href="#article">Skip to article</a>
+  <main id="article">
+    <header class="hero shell">
+      <div class="hero-grid">
+        <div>
+          <p class="eyebrow">A beginner’s guide</p>
+          <h1>What actually travels in a <code>git push</code>?</h1>
+          <p class="dek">Git does not zip up the folder on your laptop. Open one tiny push and the pieces become visible: saved file contents, a folder listing, a commit, and a request to move a branch label.</p>
+        </div>
+        <aside class="margin-note"><b>One bounded example</b>One changed file. A remote that already has the previous version. The diagrams show the pieces in plain language, not GitHub’s servers.</aside>
+      </div>
+      <p class="post-meta">August 2026 · 9 min · 4 diagrams</p>
+    </header>
+
+    <section class="intro prose" aria-labelledby="start-title">
+      <p class="eyebrow">01 · Start with one edit</p>
+      <h2 id="start-title"><span class="sec-no">THE EXAMPLE</span>One file changes. The project does not start over.</h2>
+      <p class="lead">Imagine a tiny project with three entries: <code>hello.txt</code>, <code>README.md</code>, and a <code>src/</code> folder. You change only one line: <code>hello</code> becomes <code>hello, Git</code>.</p>
+      <p>The folder on your computer is still where you edit. <code>git add hello.txt</code> puts the version you chose into a selected list for the next save. Git calls that selected list the <span class="term">index</span>.</p>
+      <div class="model"><span class="label">Illustrative example</span><p><code>hello.txt</code>: <code>hello</code> → <code>hello, Git</code><br><code>README.md</code>: unchanged · <code>src/</code>: unchanged</p></div>
+      <aside class="callout"><b>Keep three places apart:</b> the files you are editing, the selected list for the next save, and the saved version created by <code>git commit</code>. A push comes later.</aside>
+    </section>
+
+    <section class="scene" data-scene="tree" data-active-step="4" aria-labelledby="tree-title">
+      <div class="scene-stage" aria-hidden="true">
+        <div class="scene-head label"><span>Act 02</span><b>Names and contents</b><span>Illustrative example</span></div>
+        <div class="tree-stage">
+          <div class="listing"><span class="tree-name">Git calls this saved folder listing a tree</span><h3>Root folder listing</h3><p class="listing-note">A map of the names in this project folder</p><div class="tree-row"><strong>hello.txt</strong><span class="tree-link">→ new contents</span></div><div class="tree-row"><span>README.md</span><span>→ unchanged contents</span></div><div class="tree-row"><span>src/</span><span>→ unchanged subfolder</span></div></div>
+          <div class="contents"><h3>Saved records the listing points to</h3><div class="record new"><b>New contents of hello.txt</b><code>hello, Git</code></div><div class="record muted"><b>README contents</b>unchanged record already used before</div><div class="record muted"><b>src/ folder listing</b>unchanged subfolder record already used before</div></div>
+        </div>
+      </div>
+      <div class="scene-steps">
+        <article class="step" data-step="1"><div class="step-card"><span class="step-n">Step 1 / 4</span><h2 id="tree-title">Git keeps the words and the filename separately.</h2><p>The new words <code>hello, Git</code> are saved as one record. Git calls a saved file’s contents a <b>blob</b>. A blob contains the contents, but it does not contain the name <code>hello.txt</code>.</p></div></article>
+        <article class="step" data-step="2"><div class="step-card"><span class="step-n">Step 2 / 4</span><p>So something else must say where those words belong. Git saves a folder listing: a map with rows for <code>hello.txt</code>, <code>README.md</code>, and <code>src/</code>.</p></div></article>
+        <article class="step" data-step="3"><div class="step-card"><span class="step-n">Step 3 / 4</span><p>The <code>hello.txt</code> row points to the new saved contents. The unchanged rows can keep pointing to the records the old version already used.</p></div></article>
+        <article class="step" data-step="4"><div class="step-card"><span class="step-n">Step 4 / 4</span><p>Git calls this saved folder listing a <b>tree</b>. A tree maps names to saved file contents, or to another tree when the name is a subfolder.</p></div></article>
+      </div>
+      <p class="fig-caption"><b>What to watch</b> Read the left card as a folder map: names on the left, saved contents or subfolders on the right. The simplified table is illustrative; the relationship is how Git represents folders.</p>
+    </section>
+
+    <section class="scene" data-scene="commit" data-active-step="4" aria-labelledby="commit-title">
+      <div class="scene-stage" aria-hidden="true">
+        <div class="scene-head label"><span>Act 03</span><b>Save the map as a version</b><span>The branch is a label</span></div>
+        <svg class="commit-diagram" viewBox="0 0 900 510" aria-hidden="true">
+          <defs>
+            <marker id="commit-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#f4a38f" /></marker>
+            <marker id="branch-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#7ba3ef" /></marker>
+          </defs>
+          <g class="branch"><rect class="card branch-card" x="55" y="78" width="145" height="52" rx="0" /><text class="card-title" x="78" y="110">main</text><text class="line-label" x="55" y="58">BRANCH LABEL</text></g>
+          <path class="link branch-link" d="M 200 104 H 315" />
+          <g class="new-commit"><rect class="card new-card" x="315" y="55" width="270" height="132" rx="0" /><text class="card-title" x="338" y="86">NEW SAVED VERSION</text><text class="line-label" x="338" y="107">COMMIT</text><text class="card-copy new-copy" x="338" y="137">project map: root listing</text><text class="card-copy new-copy" x="338" y="162">previous version: earlier commit</text></g>
+          <path class="link commit-link" d="M 385 187 L 250 302" /><text class="line-label" x="232" y="238">points to project map</text>
+          <path class="link previous-link" d="M 515 187 L 680 302" /><text class="line-label" x="586" y="238">points to earlier version</text>
+          <g class="root-tree"><rect class="card" x="58" y="302" width="270" height="151" rx="0" /><text class="card-title" x="80" y="334">ROOT FOLDER LISTING</text><text class="line-label" x="80" y="355">TREE</text><text class="card-copy new-copy" x="80" y="386">hello.txt → new contents</text><text class="card-copy" x="80" y="412">README.md → unchanged contents</text><text class="card-copy" x="80" y="438">src/ → unchanged subfolder</text></g>
+          <g class="previous-commit"><rect class="card" x="598" y="302" width="245" height="121" rx="0" /><text class="card-title" x="620" y="334">EARLIER SAVED VERSION</text><text class="line-label" x="620" y="355">COMMIT</text><text class="card-copy" x="620" y="388">the project before</text><text class="card-copy" x="620" y="410">hello.txt changed</text></g>
+        </svg>
+      </div>
+      <div class="scene-steps">
+        <article class="step" data-step="1"><div class="step-card"><span class="step-n">Step 1 / 4</span><h2 id="commit-title">A commit saves one complete project version.</h2><p>The root folder listing now describes this project version: new <code>hello.txt</code>, unchanged <code>README.md</code>, and unchanged <code>src/</code>.</p></div></article>
+        <article class="step" data-step="2"><div class="step-card"><span class="step-n">Step 2 / 4</span><p>A <b>commit</b> points to that root folder listing. It does not carry a physical folder inside it; it points to the map that describes the folder.</p></div></article>
+        <article class="step" data-step="3"><div class="step-card"><span class="step-n">Step 3 / 4</span><p>The commit also points to the earlier commit. That one link is how this project version becomes part of a history of versions.</p></div></article>
+        <article class="step" data-step="4"><div class="step-card"><span class="step-n">Step 4 / 4</span><p><code>main</code> is a readable label, called a <b>ref</b>, that now points to the new commit. The label moves. Both saved versions remain.</p></div></article>
+      </div>
+      <p class="fig-caption"><b>What to watch</b> The commit points to the folder map and the version before it. The blue <code>main</code> bookmark points to the commit; it does not carry project files.</p>
+    </section>
+
+    <section class="scene" data-scene="pack" data-active-step="4" aria-labelledby="pack-title">
+      <div class="scene-stage" aria-hidden="true">
+        <div class="scene-head label"><span>Act 04</span><b>The pieces that travel</b><span>3 in this example</span></div>
+        <div class="pack-stage">
+          <div class="shelf"><h3>Your Git history</h3><p>Has old version and the three new records.</p><div class="shelf-card">earlier saved version</div><div class="shelf-card">unchanged README contents</div><div class="shelf-card">unchanged src/ folder listing</div><div class="shelf-card new">new contents of hello.txt</div><div class="shelf-card new">new root folder listing</div><div class="shelf-card new">new commit</div></div>
+          <div class="shelf remote"><h3>Remote Git history</h3><p>Already has old version and unchanged records.</p><div class="shelf-card">earlier saved version</div><div class="shelf-card">unchanged README contents</div><div class="shelf-card">unchanged src/ folder listing</div><div class="shelf-card new">new contents of hello.txt</div><div class="shelf-card new">new root folder listing</div><div class="shelf-card new">new commit</div><span class="branch-request">request accepted: main → new commit</span></div>
+          <div class="parcel"><span class="count">Illustrative: <b data-pack-count>3</b> records</span><h3>Git packfile · a compact parcel</h3><ul data-parcel-list><li>new contents of hello.txt</li><li>new root folder listing</li><li>new commit</li></ul></div>
+        </div>
+      </div>
+      <div class="scene-steps">
+        <article class="step" data-step="1"><div class="step-card"><span class="step-n">Step 1 / 4</span><h2 id="pack-title">This is what the example push sends.</h2><p>The remote already has the earlier version plus the unchanged README and <code>src/</code> records. In this example, Git does not need to send those again.</p></div></article>
+        <article class="step" data-step="2"><div class="step-card"><span class="step-n">Step 2 / 4</span><p>Git gathers records for transfer in a compact bundle called a <b>packfile</b>. Think of it as a parcel with a contents list, not a literal cardboard box.</p></div></article>
+        <article class="step" data-step="3"><div class="step-card"><span class="step-n">Step 3 / 4</span><p>Here the parcel contains three new pieces: the changed file contents, the new root folder listing that names those contents, and the new commit that saves the listing.</p></div></article>
+        <article class="step" data-step="4"><div class="step-card"><span class="step-n">Step 4 / 4</span><p>After receiving those records, the remote can accept the request to move <code>main</code> to the new commit. The host’s rules decide whether it accepts that request.</p></div></article>
+      </div>
+      <p class="fig-caption"><b>What to watch</b> The parcel names every piece it carries. Three is correct only for this stated example: one root-level file changed and the remote already had everything else.</p>
+    </section>
+
+    <section class="intro prose" aria-labelledby="correction-title">
+      <p class="eyebrow">05 · Why this is not “only diffs”</p>
+      <h2 id="correction-title"><span class="sec-no">ONE USEFUL CORRECTION</span>Git saves a version map, then can compare maps later.</h2>
+      <p>The commit above points to a complete root folder listing. That listing reaches every file in the project, including unchanged ones. Git can reuse the saved records that did not change, so a new version is not a fresh copy of every file.</p>
+      <p>When you ask for <code>git diff</code>, Git compares two saved versions and shows the difference. The difference is useful output; it is not the only way Git understands the project.</p>
+    </section>
+
+    <section class="scene" data-scene="host" data-active-step="4" aria-labelledby="host-title">
+      <div class="scene-stage" aria-hidden="true">
+        <div class="scene-head label"><span>Act 05</span><b>The service around Git</b><span>Responsibility map, not server map</span></div>
+        <div class="host-stage">
+          <div class="host-shelf history"><h3>Git history</h3><span class="host-item">saved file contents</span><span class="host-item">folder listings</span><span class="host-item">commits</span><span class="host-item">branch labels</span><p>What a host can keep in a bare repository: repository data, without a checked-out project folder.</p></div>
+          <div class="host-shelf team"><h3>Team work</h3><span class="host-item">access rules</span><span class="host-item">pull request</span><span class="host-item">review notes</span><span class="pr-link">pull request → discusses commits</span><p>Features that help people decide what to share, review, and merge.</p></div>
+          <div class="host-shelf lfs"><h3>Optional large files</h3><span class="host-item">pointer in Git</span><span class="host-item">large file through LFS</span><p>Git LFS can keep a pointer in Git while selected large payloads live in its separate storage system.</p></div>
+          <p class="host-scope">This diagram classifies responsibilities. Historical public writing describes ordinary Git repositories replicated at the application layer; it makes no claim about GitHub’s current server count, location, or write process.</p>
+        </div>
+      </div>
+      <div class="scene-steps">
+        <article class="step" data-step="1"><div class="step-card"><span class="step-n">Step 1 / 4</span><h2 id="host-title">GitHub adds a service around Git history.</h2><p>A host can keep Git’s saved contents, folder listings, commits, and branch labels in a <b>bare repository</b>: repository data without a checked-out project folder.</p></div></article>
+        <article class="step" data-step="2"><div class="step-card"><span class="step-n">Step 2 / 4</span><p>The host also adds access rules and team tools: pull requests, issues, and reviews. Those features help people work with Git history; they are not replacements for it.</p></div></article>
+        <article class="step" data-step="3"><div class="step-card"><span class="step-n">Step 3 / 4</span><p>A pull request points people at commits to discuss. The discussion and review notes are not themselves a blob, folder listing, or commit.</p></div></article>
+        <article class="step" data-step="4"><div class="step-card"><span class="step-n">Step 4 / 4</span><p>Git LFS is optional. For a selected large file, Git stores a pointer while LFS stores and retrieves the file’s payload.</p></div></article>
+      </div>
+      <p class="fig-caption"><b>What to watch</b> Git history, team tools, and optional LFS have separate jobs. The shelves are not a physical diagram of GitHub’s infrastructure.</p>
+    </section>
+
+    <section class="comparison shell" aria-labelledby="compare-title">
+      <div class="prose"><p class="eyebrow">06 · A compact glossary</p><h2 id="compare-title"><span class="sec-no">KEEP THE JOBS APART</span>Three terms that become simpler once the pieces are visible.</h2></div>
+      <dl class="mini-glossary"><dt>Blob</dt><dd>Saved file contents. It holds the words <code>hello, Git</code>, but not the name <code>hello.txt</code>.</dd><dt>Tree</dt><dd>Git’s saved folder listing. It maps <code>hello.txt</code> to those contents and maps the other folder names too.</dd><dt>Commit</dt><dd>A saved project version. It points to the root tree and to the previous commit.</dd><dt>Branch</dt><dd>A readable label such as <code>main</code> that points to a commit.</dd></dl>
+      <table><thead><tr><th>Thing</th><th>Its job</th><th>What it is not</th></tr></thead><tbody><tr><td>Git push</td><td>Transfers records the remote needs, then proposes branch updates.</td><td>A zip upload of your current working folder.</td></tr><tr><td>Git history</td><td>Keeps file contents, folder listings, and commits connected.</td><td>A pull-request conversation or permission rule.</td></tr><tr><td>Pull request</td><td>Gives a team a place to discuss commits and decide what to merge.</td><td>A commit or a separate copy of all project files.</td></tr></tbody></table>
+    </section>
+
+    <section class="closing shell" aria-labelledby="end-title">
+      <p class="eyebrow">07 · The answer</p>
+      <h2 id="end-title">A push sends the pieces that describe the new version.</h2>
+      <div class="prose"><p>In this example, the remote already has the old version. So Git sends three new records: the new words in <code>hello.txt</code>, the new folder listing that names those words, and the commit that saves that listing. Then it asks to move <code>main</code> to that commit.</p><p>GitHub can host this same history and add pull requests, reviews, and access rules around it. Once you can picture the contents, folder listing, commit, and branch label as separate pieces, a <code>git push</code> stops looking like a mysterious folder upload.</p></div>
+      <aside class="sources"><span class="label">Sources and scope</span><p>Git’s official documentation supports the saved-content, folder-listing, commit, and packfile model. GitHub’s historical DGit/Spokes writing is context for application-level replication only, not a description of current private infrastructure.</p><ul><li><a href="https://git-scm.com/book/en/v2/Git-Internals-Git-Objects">Git Book — Git Objects</a></li><li><a href="https://git-scm.com/book/en/v2/Git-Internals-Packfiles">Git Book — Packfiles</a></li><li><a href="https://github.blog/open-source/git/gits-database-internals-i-packed-object-store/">GitHub Blog — Git’s database internals: packed object store</a></li><li><a href="https://github.blog/engineering/architecture-optimization/introducing-dgit/">GitHub Blog — Introducing DGit</a></li></ul></aside>
+    </section>
+  </main>
+  <footer class="foot shell">A notebook of curiosities · Git and GitHub, explained from one small change</footer>
+  <script>
+    (() => {
+      const parcelContents = ['new contents of hello.txt', 'new root folder listing', 'new commit'];
+      document.querySelectorAll('[data-pack-count]').forEach((node) => { node.textContent = parcelContents.length; });
+      document.querySelectorAll('[data-parcel-list]').forEach((list) => { list.replaceChildren(...parcelContents.map((item) => { const li = document.createElement('li'); li.textContent = item; return li; })); });
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      document.querySelectorAll('[data-scene]').forEach((scene) => {
+        const steps = [...scene.querySelectorAll('[data-step]')];
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => { if (entry.isIntersecting) scene.dataset.activeStep = entry.target.dataset.step; });
+        }, { rootMargin: '-42% 0px -42% 0px', threshold: 0 });
+        steps.forEach((step) => observer.observe(step));
+      });
+    })();
+  </script>
+  <script src="../js/post-progress.js" defer></script>
+</body>
+</html>

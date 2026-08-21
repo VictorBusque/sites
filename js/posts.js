@@ -20,7 +20,16 @@
    JSON so the checker can parse it directly. */
 window.VB_POSTS = [
     {
-        "slug": "blog/apollo-to-phone.html",
+        "slug": "blog/git-github-at-scale.html",
+        "no": "07",
+        "title": "How Git and GitHub Work at Scale",
+        "date": "2026-08",
+        "topic": "Systems · Developer tools",
+        "tags": ["Git", "GitHub", "Version control", "Commits"],
+        "deck": "See exactly what a Git push sends: new file contents, a folder listing, a commit, and a branch update request—then see where GitHub fits in."
+    },
+    {
+        "slug": "blog/apollo-to-phone.html", 
         "no": "06",
         "title": "Apollo and iPhone: Two Scales of Computing",
         "date": "2026-08",
