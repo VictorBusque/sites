@@ -12,7 +12,7 @@ description: >
   article is honest, polished, and complete on its own.
 metadata:
   author: Víctor Busqué
-  version: "5.0.0"
+  version: "5.1.0"
   site: notebook-of-curiosities
 ---
 
@@ -33,14 +33,45 @@ including its single-file output contract, which this site now follows
 exactly. This file adds the site's contracts: the standalone rule, voice, and
 the landing binding through `js/posts.js`.
 
+## Start with the topic narrative
+
+A new article normally begins with the three-stage topic pipeline:
+
+```text
+topics/<topic>/context.md → topics/<topic>/narrative.md → blog/<slug>.html
+```
+
+Use `create-a-narrative` to create and approve `narrative.md` before building.
+Read that file in full alongside its linked `context.md`; the narrative is the
+implementation brief, while the context is the evidence record. Do not invent
+missing story, visual, data, or metadata decisions during frontend work —
+record an open question in the narrative and resolve it first.
+
+Treat the narrative as the page contract:
+
+- its story contract and act table set the article’s order and prose purpose;
+- its evidence IDs, caveats, and illustrative labels govern copy, numbers,
+  labels, charts, and live readouts;
+- its scene specifications set state models, motion intent, static fallbacks,
+  accessibility, and mobile rules;
+- its visual direction sets the article’s one-of-a-kind aesthetic; and
+- its publishing handoff drafts the manifest and SEO values, which the `seo`
+  skill verifies before release.
+
+Keep `topics/` private: do not load it at runtime or link to it publicly. An
+existing published article can be edited without a narrative only when the
+change is narrowly corrective; create or update a matching narrative for any
+substantial story, scene, or design revision.
+
 ## The architecture in one paragraph
 
 `index.html` is the hub: fully featured, SEO-optimized, built from the
 landing's own system (`css/site.css`, `js/site.js`, `js/scene.js`,
 `js/vb.js`) and rendering its shelf from `js/posts.js` (`window.VB_POSTS`).
 Each `blog/<slug>.html` is a spoke: a standalone page that inlines
-everything it needs and **never links `../css/` or `../js/` assets**. The
-only contract between an article and the landing is metadata: the manifest
+everything it needs and links no shared `../css/` or `../js/` asset **except
+the required reading indicator**. The only contract between an article and the
+landing is metadata: the manifest
 row plus the article's own `<title>`, description, canonical, OG/Twitter
 cards, and `BlogPosting` JSON-LD, which must all agree. Articles are
 one-of-a-kind — two posts may share craft standards and house style, but no
@@ -78,8 +109,9 @@ Browser-platform rationale: [references/PLATFORM.md](references/PLATFORM.md).
 
 ## What the scaffold inlines for you
 
-`blog/template.html` (the canonical starting point) already contains, inlined
-and working: the base stylesheet (tokens, chrome, reveals, scene system,
+`blog/not-ready/template.html` (the canonical starting point) already
+contains, inlined and working: the base stylesheet (tokens, chrome, reveals,
+scene system,
 responsive + reduced-motion blocks), the site runtime (nav/footer mounts,
 progress, cursor, reveals), the scene runtime (step cards, progress rail,
 `data-active-step`, mobile bottom sheet, `--card-reserve`), and the
@@ -99,9 +131,20 @@ already does it; page scripts compute honest state and key stage states off
 
 ## Workflow
 
-### 1. Storyboard before writing a line
+### 1. Read the narrative, then validate the storyboard
 
-Create a compact internal storyboard using the Atelier progression:
+For a new topic, `topics/<topic>/narrative.md` is the required storyboard and
+build brief. Confirm it is `ready-for-build`, that every proposed fact/readout
+has evidence or an explicit illustrative label, and that every scene has a
+state model and fallback. Use its opening, ending, act table, and scene IDs as
+the source of truth; do not create a competing storyboard.
+
+If you are repairing an older article with no topic narrative, create a compact
+internal storyboard using the Atelier progression below. When the repair
+changes the story or visual system materially, capture the resulting decisions
+in `topics/<topic>/narrative.md` through `create-a-narrative`.
+
+The Atelier progression is:
 
 ```text
 ACT 0 — Hook
@@ -145,11 +188,33 @@ stylesheet and runtime inlined. It is kept current; always copy from it.
 `<slug>`: lowercase, hyphenated, one idea per article (e.g. `the-queue.html`,
 `token-budget.html`, `kv-cache.html`).
 
-### 3. Build the post
+### 3. Build the post from the narrative
 
 Replace in order: `<title>` and meta → hero (`crumb`, `h1`, `dek`,
 `post-meta`) → acts (prose sections + scenes) → `post-nav` links → footer
 label. Update the `status` in the nav mount (e.g. `POST 03 / WAITING`).
+
+Map the narrative one-to-one while building:
+
+- Use its **document outline** and act table for semantic headings and DOM
+  order; prose carries every conclusion before enhancement is added.
+- Build each **scene specification** with its stated visual inventory, named
+  stable states, evidence, choreography, acceptance check, and responsive
+  behavior. Keep ordered `[data-step]` paragraphs as the text equivalent.
+- Implement only the narrative’s declared **enhancement ladder** and state
+  source of truth. Extend it through the scrollytelling skill only when a
+  documented open question requires a better mechanism.
+- Translate its **visual direction** into page-local tokens, type roles,
+  diagram grammar, and motion character; do not default to the house style
+  when the narrative selected a different justified aesthetic.
+- Carry its **evidence boundaries** into captions and code. A computed
+  illustrative model must say so; a verified figure must retain its scope and
+  qualification. Never make the stage look more precise than its source.
+
+The shared reading indicator is the sole shared post asset. Keep the template’s
+relative `../../css/post-progress.css` + `../../js/post-progress.js` while the
+file is parked, and change both to `../css/post-progress.css` +
+`../js/post-progress.js` when it moves to top-level `blog/`.
 
 Pieces of the scaffold that must survive the copy **exactly** (they are the
 progressive-enhancement and binding contract):
@@ -243,10 +308,12 @@ It fails unless every top-level file in `blog/` has a matching `js/posts.js`
 entry whose `title`/`deck` match the post's own `<title>` and meta
 description; every manifest entry points at a real file carrying a
 `BlogPosting` JSON-LD block, a canonical, and OG/Twitter cards; every post is
-standalone (no `../css/` or `../js/` links, at least one `<style>` block);
-the sticky-scene honesty rules hold; and the sitemap lists exactly the
-published posts. Parked `blog/not-ready/` drafts are invisible to it; unlisted
-top-level drafts must be `noindex`.
+standalone (no shared `../css/` or `../js/` links except the required
+reading indicator, and at least one `<style>` block); the sticky-scene honesty
+rules hold; the required reading indicator is
+present; and the sitemap lists exactly the published posts. Parked
+`blog/not-ready/` drafts are invisible to it; unlisted top-level drafts must
+be `noindex`.
 
 See [Checklist](#checklist) and the validation section in
 [references/SCROLLYTELLING.md](references/SCROLLYTELLING.md#validation) before
@@ -334,8 +401,9 @@ Full reference: [references/MOTION.md](references/MOTION.md).
 
 - [ ] Storyboarded (acts + per-section question/payoff) before coding
 - [ ] Copied `blog/not-ready/template.html`; landing files untouched
-- [ ] `<html class="js">` gate present in `<head>`; no `../css/` or `../js/`
-      links anywhere — the post is standalone
+- [ ] `<html class="js">` gate present in `<head>`; no shared `../css/` or
+      `../js/` links except the required reading indicator — the post is
+      otherwise standalone
 - [ ] Document-first: the page reads as a complete article with JS disabled
       and with reduced motion (stage + stacked steps, all text visible)
 - [ ] Every `sticky-scene` honors the honesty contract: `[data-step]`

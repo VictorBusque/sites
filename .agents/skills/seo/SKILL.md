@@ -95,8 +95,8 @@ hides "LLM" entirely.
 ## Open Graph and Twitter
 
 Every public page ships the full card set inline in its own `<head>` (see
-`blog/template.html`) — posts are standalone files, so their SEO block is
-theirs alone:
+`blog/not-ready/template.html`) — posts are standalone files, so their SEO
+block is theirs alone:
 
 - `og:type` (`website` for index/about, `article` for posts), `og:site_name`,
   `og:title`, `og:description`, `og:url`, `og:locale`

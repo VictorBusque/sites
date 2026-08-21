@@ -165,8 +165,8 @@ decoration over the step story.
 
 ### Scene runtime (IntersectionObserver) — inlined by the scaffold
 
-Already inlined in every post from `blog/template.html` (the page owns its
-copy). For every `.sticky-scene` it:
+Already inlined in every post from `blog/not-ready/template.html` (the page
+owns its copy). For every `.sticky-scene` it:
 
 - wraps each `[data-step]`'s content in a `.step-card` and injects a
   `.step-progress` rail plus a conventional label when one is not authored;

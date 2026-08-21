@@ -1,10 +1,10 @@
 # Design Reference
 
 The house style — how the site looks by default. Every article inlines its
-own copy of the base stylesheet from `blog/template.html` (the landing keeps
-its copy at `css/site.css`); each page owns its copy and may diverge from
-the house freely. Keep the defaults unless the article has a reason to
-differ; add article-specific styles in its inline `<style>` blocks.
+own copy of the base stylesheet from `blog/not-ready/template.html` (the
+landing keeps its copy at `css/site.css`); each page owns its copy and may
+diverge from the house freely. Keep the defaults unless the article has a
+reason to differ; add article-specific styles in its inline `<style>` blocks.
 
 ## Tokens (base stylesheet, `:root`)
 
@@ -134,7 +134,7 @@ and centered compositions; full-bleed SVG stages declare a tighter mobile
 `viewBox` via `data-vb-narrow` (swapped by the inlined runtime below 850px) and get
 mobile font bumps in the page's media query (≥ 8px rendered). Step cards go
 full-width with generous padding. See `references/SCROLLYTELLING.md` and
-`blog/template.html` for working examples.
+`blog/not-ready/template.html` for working examples.
 
 ## Reduced motion
 
