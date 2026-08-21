@@ -20,6 +20,15 @@
    JSON so the checker can parse it directly. */
 window.VB_POSTS = [
     {
+        "slug": "blog/how-qr-codes-work.html",
+        "no": "11",
+        "title": "How a QR Code Works",
+        "date": "2026-10",
+        "topic": "Codes · Error correction",
+        "tags": ["QR codes", "Reed-Solomon", "Error correction", "Barcode"],
+        "deck": "Watch HELLO WORLD become a real QR code: finder patterns, a bitstream, Reed–Solomon insurance, the zigzag, the mask election — every number computed live."
+    },
+    {
         "slug": "blog/how-jpeg-works.html",
         "no": "10",
         "title": "How JPEG Compression Works",
