@@ -19,3 +19,7 @@
 - [ ] How does Google Maps calculate the best route?
 - [ ] How does Kubernetes work?
 - [ ] How does Kafka scale to trillions of messages?
+- [ ] How does an online payment actually happen?
+- [ ] How does JPEG make a 10 MB photo become 500 KB?
+- [ ] How does a QR code work?
+- [ ] How can one IP address represent millions of machines?
