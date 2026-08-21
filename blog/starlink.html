@@ -1358,7 +1358,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
         const steps = [...document.querySelectorAll('.step')];
         const bounds = steps.map(() => ({ top: 0, bottom: 0 }));
-        let active = 0, smoothStep = 0, auto = false, autoStart = 0;
+        let active = 0;
 
         function refreshBounds() {
           steps.forEach((el, i) => {
@@ -1382,7 +1382,6 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
           active = i;
           steps.forEach((s, j) => s.classList.toggle('is-active', j === i));
           document.getElementById('tc').textContent = String(i + 1).padStart(2, '0');
-          if (auto) autoStart = performance.now();
         }
 
         function smooth(t) { return t * t * (3 - 2 * t) }
@@ -1438,7 +1437,6 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
         function updateScene(step, p, time) {
           allVisible();
-          smoothStep += (step - smoothStep) * .10;
           const q = smooth(p);
 
           // subtle orbital motion keeps the scene alive without stealing attention
@@ -1582,27 +1580,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         }
 
         // Scroll activation
-        let lastScroll = scrollY;
         addEventListener('scroll', () => {
-          if (auto && Math.abs(scrollY - lastScroll) > 4) auto = false;
-          lastScroll = scrollY;
           const s = chooseStep();
           if (s !== active) activate(s);
         }, { passive: true });
-
-        function autoTick(now) {
-          if (auto && !reduced) {
-            const dur = 5200;
-            const elapsed = now - autoStart;
-            const local = Math.min(1, elapsed / dur);
-            const targetStep = Math.min(steps.length - 1, Math.floor(local * steps.length));
-            const sub = (local * steps.length) % 1;
-            const b = bounds[targetStep];
-            const target = b.top + (b.bottom - b.top - innerHeight * .22) * sub + innerHeight * .02;
-            scrollTo(0, Math.max(0, target));
-            if (elapsed > dur * steps.length) autoStart = now;
-          }
-        }
 
         function resize() {
           mobile = mobileQuery.matches;
@@ -1624,7 +1605,6 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
           const s = chooseStep();
           if (s !== active) activate(s);
           updateScene(active, localProgress(active), t);
-          autoTick(now);
           renderer.render(scene, camera);
           requestAnimationFrame(tick);
         }

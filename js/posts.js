@@ -20,13 +20,22 @@
    JSON so the checker can parse it directly. */
 window.VB_POSTS = [
     {
+        "slug": "blog/how-s3-works.html",
+        "no": "09",
+        "title": "How Amazon S3 Works: Eleven Nines, Explained",
+        "date": "2026-09",
+        "topic": "Cloud storage · Systems",
+        "tags": ["S3", "AWS", "Erasure coding", "Durability"],
+        "deck": "Follow one S3 upload: erasure-coded shards across three Availability Zones, a continuous repair loop, and the read barrier behind strong consistency."
+    },
+    {
         "slug": "blog/write-ahead-log.html",
         "no": "08",
-        "title": "Write-Ahead Logging and Durable Commits",
+        "title": "How WAL Saves a $100 Transfer.",
         "date": "2026-08",
         "topic": "Databases · Systems",
         "tags": ["WAL", "Databases", "Durability", "Systems"],
-        "deck": "Follow a $100 transfer through memory, a write-ahead log, crash recovery, and a checkpoint to see exactly what makes a database commit durable."
+        "deck": "Follow one $100 transfer through memory, a durable write-ahead log, a sudden crash, recovery, and the checkpoint that lets data catch up."
     },
     {
         "slug": "blog/git-github-at-scale.html",
@@ -85,10 +94,10 @@ window.VB_POSTS = [
     {
         "slug": "blog/spain-renewable-grid.html",
         "no": "01",
-        "title": "Spain, at Renewable Scale.",
+        "title": "How Spain's Grid Reached 62.3% Renewables.",
         "date": "2026-08",
         "topic": "Energy · Grid",
         "tags": ["Solar", "Wind", "Grid", "Spain"],
-        "deck": "A visual story about the current scale of Spain's renewable electricity deployment in 2026."
+        "deck": "See how Spain's peninsular grid reached 109.3 GW of renewables and 62.3% of its electricity mix by May 2026 — and why flexibility is now the bottleneck."
     }
 ];

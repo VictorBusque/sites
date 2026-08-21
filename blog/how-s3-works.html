@@ -1,0 +1,1793 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>How Amazon S3 Works: Eleven Nines, Explained — Víctor Busqué</title>
+  <meta name="description" content="Follow one S3 upload: erasure-coded shards across three Availability Zones, a continuous repair loop, and the read barrier behind strong consistency.">
+  <meta name="author" content="Víctor Busqué">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://engineering.victorbusque.com/blog/how-s3-works.html">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#131C2B">
+  <meta name="color-scheme" content="light dark">
+
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Víctor Busqué — Curiosities">
+  <meta property="og:title" content="How Amazon S3 Works: Eleven Nines, Explained — Víctor Busqué">
+  <meta property="og:description" content="Follow one S3 upload: erasure-coded shards across three Availability Zones, a continuous repair loop, and the read barrier behind strong consistency.">
+  <meta property="og:url" content="https://engineering.victorbusque.com/blog/how-s3-works.html">
+  <meta property="og:image" content="https://engineering.victorbusque.com/img/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="en_US">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How Amazon S3 Works: Eleven Nines, Explained — Víctor Busqué">
+  <meta name="twitter:description" content="Follow one S3 upload: erasure-coded shards across three Availability Zones, a continuous repair loop, and the read barrier behind strong consistency.">
+  <meta name="twitter:image" content="https://engineering.victorbusque.com/img/og.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "How Amazon S3 Works: Eleven Nines, Explained",
+    "description": "Follow one S3 upload: erasure-coded shards across three Availability Zones, a continuous repair loop, and the read barrier behind strong consistency.",
+    "datePublished": "2026-09",
+    "author": {"@type": "Person", "name": "Víctor Busqué", "url": "https://engineering.victorbusque.com/"},
+    "publisher": {"@type": "Person", "name": "Víctor Busqué"},
+    "image": "https://engineering.victorbusque.com/img/og.png",
+    "url": "https://engineering.victorbusque.com/blog/how-s3-works.html",
+    "mainEntityOfPage": "https://engineering.victorbusque.com/blog/how-s3-works.html",
+    "inLanguage": "en",
+    "keywords": ["S3", "AWS", "erasure coding", "durability", "Availability Zones"],
+    "articleSection": "Cloud storage · Systems"
+  }
+  </script>
+
+  <script>document.documentElement.className = 'js';</script>
+  <link rel="stylesheet" href="../css/post-progress.css">
+  <style>
+    /* ══════════════════════════════════════════════════════════════════
+       HOW ONE S3 UPLOAD EARNS ELEVEN NINES
+       Archival engineering manual: ink-on-paper article surfaces,
+       schematic "machine room" sheets for the mechanisms. System fonts
+       only — nothing is fetched. Every stage state below is keyed off
+       data-active-step (set by this page's own runtime); the base
+       styles show each scene RESOLVED, so the no-JS document is the
+       finished figure, and the .js gate replays it step by step.
+       ══════════════════════════════════════════════════════════════════ */
+    :root {
+      --paper: #F4F1E9;
+      --paper-2: #ECE7DA;
+      --ink: #1E2A3A;
+      --muted: #5D6B7C;
+      --rule: #C9C2B0;
+      --sheet: #131C2B;
+      --sheet-2: #182435;
+      --sheet-3: #1F2D42;
+      --sheet-text: #E8EDF4;
+      --sheet-muted: #97A6B8;
+      --hair: #ffffff26;
+      --ok: #0E7C6B;          /* confirmed durability / ack — on paper */
+      --ok-bright: #4FC8AE;   /* the same semantic on the navy sheet */
+      --warn: #C77800;        /* failure / loss — on paper */
+      --warn-bright: #E8A13D; /* the same semantic on the sheet */
+      --az1: #4E6E9C;
+      --az2: #5F7FA7;
+      --az3: #7390B5;
+      --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+      --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --ease-out: cubic-bezier(.16, 1, .3, 1);
+      --ease-in: cubic-bezier(.55, 0, .85, .36);
+      --ease-swift: cubic-bezier(.4, 0, .2, 1);
+      --slow: 760ms;
+      --med: 420ms;
+      --fast: 180ms;
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--sheet); scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      overflow-x: clip;
+      background: var(--paper);
+      color: var(--ink);
+      font: 19px/1.6 var(--serif);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    body[data-vb-progress-start] {
+      --vb-progress-start: #0E7C6B;
+      --vb-progress-mid: #5F7FA7;
+      --vb-progress-end: #C77800;
+    }
+    ::selection { background: #0E7C6B; color: #F4F1E9; }
+    a { color: inherit; text-underline-offset: .22em; }
+    button { font: inherit; cursor: pointer; }
+    :focus-visible { outline: 3px solid var(--ok); outline-offset: 3px; }
+    .sheet :focus-visible, .hero :focus-visible { outline-color: var(--ok-bright); }
+
+    .kicker, .meta, .scene-no, .scene-name, .scene-readout, .step-label, .caption,
+    .tiny, .sheet-foot, .sim-readout, .callout-label, .post-links small,
+    .footer, .stamp small, .legend, .quest-no {
+      font-family: var(--mono);
+    }
+    .kicker, .meta, .scene-no, .scene-readout, .step-label, .callout-label,
+    .post-links small, .stamp small {
+      text-transform: uppercase;
+      letter-spacing: .12em;
+    }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; margin: -1px;
+      clip-path: inset(50%); overflow: hidden; white-space: nowrap;
+    }
+
+    .skip {
+      position: fixed; z-index: 100; top: 1rem; left: 1rem;
+      transform: translateY(-180%);
+      padding: .7rem 1rem;
+      background: var(--ok); color: var(--paper);
+      font: 700 11px var(--mono);
+      transition: transform var(--fast) var(--ease-out);
+    }
+    .skip:focus { transform: none; }
+
+    /* ── Prose column ────────────────────────────────────────────── */
+    .prose { max-width: 680px; margin: 0 auto; padding: 3.5rem 1.3rem 1rem; }
+    .prose h2, .scene-title, .ending h2 {
+      font: 600 clamp(26px, 3.4vw, 38px)/1.12 var(--sans);
+      letter-spacing: -.035em;
+      margin: 0 0 1.1rem;
+    }
+    .prose h2 { margin-top: 4.5rem; }
+    .prose p, .ending p { margin: 0 0 1.35rem; }
+    .prose .lead { font-size: 22px; line-height: 1.55; }
+    .prose strong { font-weight: 700; }
+    .mono, .prose code {
+      font-family: var(--mono);
+      font-size: .82em;
+      background: var(--paper-2);
+      border: 1px solid var(--rule);
+      padding: .08em .34em;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+    .aside {
+      font: 11.5px/1.75 var(--mono);
+      color: var(--muted);
+      border-top: 1px solid var(--rule);
+      padding-top: .9rem;
+      margin: 2.6rem 0 0;
+    }
+
+    /* ── Hero: one second, one promise ───────────────────────────── */
+    .hero {
+      position: relative;
+      min-height: 100svh;
+      display: grid;
+      align-content: end;
+      gap: 2.2rem;
+      padding: clamp(1.4rem, 5vw, 5rem) clamp(1.3rem, 5vw, 4rem) clamp(2rem, 6vh, 4rem);
+      background: var(--sheet);
+      color: var(--sheet-text);
+      overflow: clip;
+    }
+    .hero::before {
+      content: "";
+      position: absolute; inset: 0; pointer-events: none;
+      background-image:
+        linear-gradient(var(--hair) 1px, transparent 1px),
+        linear-gradient(90deg, var(--hair) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: radial-gradient(120% 90% at 70% 10%, #000 0%, transparent 68%);
+    }
+    .hero::after {
+      content: "";
+      position: absolute; inset: 14px; pointer-events: none;
+      border: 1px solid #ffffff1c;
+    }
+    .hero-copy { position: relative; max-width: 900px; }
+    .hero .kicker { color: var(--ok-bright); font-size: 11px; margin: 0 0 1.2rem; }
+    .hero h1 {
+      font: 600 clamp(40px, 6.4vw, 84px)/1.02 var(--sans);
+      letter-spacing: -.05em;
+      margin: 0 0 1.4rem;
+      max-width: 15ch;
+    }
+    .hero h1 em { font: italic 400 1.02em var(--serif); letter-spacing: -.02em; color: var(--ok-bright); }
+    .hero .dek { font-size: clamp(17px, 1.7vw, 20px); line-height: 1.6; max-width: 560px; color: #C6D0DD; margin: 0; }
+    .hero .meta { margin-top: 1.6rem; font-size: 10.5px; color: var(--sheet-muted); display: flex; gap: 1.4rem; flex-wrap: wrap; }
+    .hero .meta b { color: var(--sheet-text); font-weight: 500; }
+
+    /* the hook figure: object card → 200 OK → the promise stamp */
+    .hook { position: relative; max-width: 660px; }
+    .hook-rails { position: absolute; inset: -30px -10px auto -10px; height: 150%; pointer-events: none; opacity: .5; }
+    .hook-rails i {
+      position: absolute; top: 0; bottom: 0; width: 1px; background: #ffffff14;
+      left: 22%; box-shadow: 260px 0 0 #ffffff10, 520px 0 0 #ffffff0d;
+    }
+    .hook-row { display: flex; align-items: stretch; gap: .9rem; flex-wrap: wrap; position: relative; }
+    .obj-card {
+      border: 1px solid var(--hair);
+      background: var(--sheet-2);
+      padding: .8rem 1.1rem;
+      min-width: min(300px, 100%);
+    }
+    .obj-card .name { font: 500 13px var(--mono); color: var(--sheet-text); }
+    .obj-card .size { font: 11px var(--mono); color: var(--sheet-muted); margin-top: .25rem; }
+    .sliver {
+      flex: 1; min-width: 130px; align-self: center;
+      display: grid; gap: .45rem;
+    }
+    .sliver .track { height: 3px; background: #ffffff1f; overflow: hidden; }
+    .sliver .fill { display: block; height: 100%; background: var(--ok-bright); transform-origin: 0 50%; }
+    .ok-chip {
+      font: 500 11px var(--mono);
+      color: var(--sheet);
+      background: var(--ok-bright);
+      padding: .5rem .8rem;
+      align-self: center;
+      white-space: nowrap;
+    }
+    .stamp {
+      margin-top: 1rem;
+      display: inline-block;
+      border: 2px solid var(--warn-bright);
+      color: var(--warn-bright);
+      padding: .7rem 1.1rem;
+      transform: rotate(-2deg);
+    }
+    .stamp b { font: 700 clamp(17px, 2.4vw, 23px) var(--mono); letter-spacing: .02em; display: block; }
+    .stamp small { font-size: 9.5px; color: #D8B98A; display: block; margin-top: .3rem; }
+    .js .sliver .fill { transform: scaleX(0); animation: hookfill 1s var(--ease-swift) .5s both; }
+    .js .ok-chip { opacity: 0; animation: hookpop var(--med) var(--ease-out) 1.5s both; }
+    .js .stamp { opacity: 0; animation: hookpress var(--slow) var(--ease-out) 2s both; }
+    @keyframes hookfill { to { transform: scaleX(1); } }
+    @keyframes hookpop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    @keyframes hookpress {
+      0% { opacity: 0; transform: rotate(-2deg) scale(1.25); }
+      55% { opacity: 1; transform: rotate(-2deg) scale(.94); }
+      100% { opacity: 1; transform: rotate(-2deg) scale(1); }
+    }
+
+    /* ── Sticky scenes: the machine-room sheets ──────────────────── */
+    .sticky-scene { position: relative; background: var(--sheet); color: var(--sheet-text); }
+    .sticky-scene + .sticky-scene { margin-top: 0; }
+    .js .sticky-scene { padding-bottom: 100svh; }
+    .scene-title {
+      color: var(--sheet-text);
+      padding: clamp(2.4rem, 6vh, 4rem) clamp(1.3rem, 5vw, 4rem) 1.6rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .scene-title .act {
+      display: block;
+      font: 500 10.5px var(--mono);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--ok-bright);
+      margin-bottom: .8rem;
+    }
+    .sticky-scene__stage {
+      position: relative;
+      min-height: 64svh;
+      overflow: clip;
+      background-image:
+        linear-gradient(#ffffff08 1px, transparent 1px),
+        linear-gradient(90deg, #ffffff08 1px, transparent 1px);
+      background-size: 34px 34px;
+    }
+    .js .sticky-scene__stage { position: sticky; top: 0; height: 100svh; min-height: 0; }
+    .sticky-scene__stage::after {
+      /* the sheet's right-edge measurement rule */
+      content: "";
+      position: absolute; top: 0; bottom: 0; right: 10px; width: 8px;
+      background: repeating-linear-gradient(180deg, #ffffff2e 0 1px, transparent 1px 17px);
+      pointer-events: none;
+    }
+    .sheet { position: absolute; inset: 0; display: flex; flex-direction: column; }
+    .scene-head {
+      display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+      border-bottom: 1px solid #ffffff1a;
+      padding: .9rem clamp(1.3rem, 4vw, 2.4rem);
+    }
+    .scene-no { font-size: 10px; letter-spacing: .16em; color: var(--warn-bright); }
+    .scene-name { font-size: 10px; letter-spacing: .2em; color: var(--sheet-text); }
+    .scene-readout { font-size: 10px; color: var(--sheet-muted); margin-left: auto; }
+    .sheet-body {
+      flex: 1; min-height: 0;
+      display: grid; place-items: center;
+      padding: clamp(.8rem, 2.5vh, 2rem) clamp(1.3rem, 4vw, 2.4rem) clamp(1rem, 3vh, 2rem);
+    }
+    .sheet-foot {
+      display: flex; justify-content: space-between; gap: 1rem;
+      padding: .55rem clamp(1.3rem, 4vw, 2.4rem);
+      border-top: 1px solid #ffffff14;
+      font-size: 9px; letter-spacing: .14em; color: var(--sheet-muted);
+      text-transform: uppercase;
+    }
+    .fig { width: min(760px, 100%); display: grid; gap: 1.1rem; }
+
+    /* steps overlay */
+    .js .sticky-scene__steps {
+      position: relative; margin-top: -100svh; z-index: 4; pointer-events: none;
+    }
+    .js .sticky-scene__steps > .step {
+      min-height: 100svh;
+      display: flex; align-items: center;
+      padding: 0 clamp(1.3rem, 4vw, 4rem);
+    }
+    .step-card {
+      width: min(440px, 100%);
+      background: var(--paper);
+      border: 1px solid var(--ink);
+      box-shadow: 5px 5px 0 #00000040;
+      padding: 1.15rem 1.3rem 1.25rem;
+      color: var(--ink);
+    }
+    .step-label {
+      display: block; font-size: 9.5px; color: var(--warn);
+      margin-bottom: .6rem;
+    }
+    .step-card p { margin: 0; font-size: 16px; line-height: 1.6; }
+    .js .step-card { opacity: 0; transform: translateY(24px); transition: opacity var(--slow) var(--ease-out), transform var(--slow) var(--ease-out); }
+    .js .step.is-active .step-card { opacity: 1; transform: none; }
+    .caption {
+      color: var(--sheet-muted);
+      font-size: 12.5px; line-height: 1.7;
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 1.1rem clamp(1.3rem, 5vw, 4rem) 2.6rem;
+    }
+    .caption b { color: var(--ok-bright); font-weight: 500; letter-spacing: .1em; text-transform: uppercase; font-size: 10px; margin-right: .5rem; }
+
+    /* ── Shared diagram parts ── */
+    .lane-label {
+      font: 500 9.5px var(--mono); letter-spacing: .16em; text-transform: uppercase;
+      color: var(--sheet-muted);
+    }
+    .az-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7rem; }
+    .az-box {
+      border: 1px solid var(--hair);
+      background: var(--sheet-2);
+      padding: .6rem .7rem .7rem;
+      display: grid; gap: .5rem;
+    }
+    .az-box .lane-label b { color: var(--sheet-text); font-weight: 500; }
+    .az-box[data-az="1"] { border-top: 3px solid var(--az1); }
+    .az-box[data-az="2"] { border-top: 3px solid var(--az2); }
+    .az-box[data-az="3"] { border-top: 3px solid var(--az3); }
+
+    /* shard tiles: hatch = data, dots = parity, cross-hatch = failed */
+    .tile {
+      border: 1px solid #ffffff38;
+      background: var(--sheet-3);
+      color: var(--sheet-text);
+      font: 500 11px var(--mono);
+      min-height: 44px;
+      display: grid; place-items: center;
+      position: relative;
+    }
+    .tile::before { content: ""; position: absolute; inset: 0; pointer-events: none; }
+    .tile.t-d::before { background-image: repeating-linear-gradient(45deg, #ffffff12 0 1px, transparent 1px 6px); }
+    .tile.t-p::before { background-image: radial-gradient(#ffffff1c 1px, transparent 1.4px); background-size: 7px 7px; }
+    .tile.is-failed::before { opacity: 0; }
+    .tile.is-failed {
+      background-image:
+        repeating-linear-gradient(45deg, #00000000 0 3px, #E8A13D38 3px 4px),
+        repeating-linear-gradient(-45deg, #00000000 0 3px, #E8A13D38 3px 4px);
+      border-color: var(--warn-bright);
+      color: var(--sheet-muted);
+      text-decoration: line-through;
+    }
+
+    /* ── S02 · the model: a card and a stream ── */
+    .model-fig { display: grid; gap: 1rem; justify-items: center; }
+    .capsule {
+      border: 1px solid #ffffff38;
+      background: var(--sheet-2);
+      padding: .8rem 1.4rem;
+      font: 500 13px var(--mono);
+      color: var(--sheet-text);
+      text-align: center;
+    }
+    .capsule small { display: block; color: var(--sheet-muted); font-size: 10.5px; margin-top: .25rem; }
+    .seam { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, #ffffff38 18% 82%, transparent); position: relative; }
+    .planes { display: grid; grid-template-columns: 1.15fr .85fr; gap: .9rem; width: 100%; }
+    .mcard {
+      border: 1px solid var(--hair);
+      background: var(--sheet-2);
+      padding: .7rem .85rem;
+      display: grid; gap: .4rem;
+    }
+    .mcard .mc-head { display: flex; justify-content: space-between; gap: .6rem; }
+    .mc-row { display: grid; grid-template-columns: 5.2em 1fr; gap: .5rem; font: 11px var(--mono); }
+    .mc-row span { color: var(--sheet-muted); letter-spacing: .08em; }
+    .mc-row b { color: var(--sheet-text); font-weight: 500; overflow-wrap: anywhere; }
+    .stream-lane { border: 1px solid var(--hair); background: var(--sheet-2); padding: .7rem .85rem; display: grid; gap: .55rem; align-content: start; }
+    .stream-lane .bytes { display: flex; gap: 5px; flex-wrap: wrap; }
+    .stream-lane .bytes i { width: 14px; height: 8px; background: #ffffff33; }
+    .az-chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+    .az-chip {
+      border: 1px dashed #ffffff30;
+      color: var(--sheet-muted);
+      font: 9.5px var(--mono); letter-spacing: .12em;
+      text-align: center; padding: .5rem .3rem;
+      text-transform: uppercase;
+    }
+    .az-chip b { display: block; color: var(--sheet-text); font-weight: 500; margin-bottom: .2rem; }
+
+    /* ── S03 · the write path ── */
+    .wp-fig { display: grid; gap: .95rem; }
+    .wp-top { display: grid; grid-template-columns: auto 1fr; gap: .7rem; align-items: center; }
+    .req-chip {
+      font: 500 11px var(--mono);
+      border: 1px solid var(--hair);
+      color: var(--sheet-text);
+      padding: .5rem .8rem;
+      white-space: nowrap;
+      background: var(--sheet-2);
+    }
+    .auth-box {
+      border: 1px solid var(--hair);
+      padding: .5rem .9rem;
+      font: 10px var(--mono); letter-spacing: .12em;
+      color: var(--sheet-muted);
+      text-transform: uppercase;
+      background: var(--sheet-2);
+      display: flex; gap: .7rem; align-items: center;
+    }
+    .auth-box .lamp { width: 8px; height: 8px; border-radius: 50%; background: #ffffff2e; }
+    .wp-slice { display: grid; place-items: center; min-height: 74px; }
+    .wp-object {
+      border: 1px solid #ffffff38;
+      background: var(--sheet-2);
+      padding: .75rem 1.6rem;
+      font: 500 12.5px var(--mono);
+      color: var(--sheet-text);
+    }
+    .wp-object small { color: var(--sheet-muted); margin-left: .8rem; font-size: 10.5px; }
+    .wp-chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+    .wp-bank-col { display: grid; gap: .35rem; }
+    .wp-chips .tile { min-height: 34px; width: 100%; }
+    .wp-slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+    .wp-slots .az-box { padding: .5rem .55rem .6rem; }
+    .wp-slot { min-height: 36px; border: 1px dashed #ffffff26; display: grid; place-items: center; font: 10.5px var(--mono); color: var(--sheet-text); }
+    .wp-slot b { font-weight: 500; }
+    .wp-lands { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+    .wp-check {
+      font: 10px var(--mono); letter-spacing: .1em;
+      border: 1px solid var(--hair);
+      padding: .45rem .6rem;
+      display: flex; gap: .45rem; align-items: center;
+      background: var(--sheet-2);
+      color: var(--sheet-muted);
+      text-transform: uppercase;
+    }
+    .wp-check i { width: 9px; height: 9px; border: 1px solid #ffffff3c; display: inline-block; }
+    .wp-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; align-items: stretch; }
+    .gate {
+      border: 1px solid var(--hair);
+      background: var(--sheet-2);
+      padding: .6rem .9rem;
+      display: grid; gap: .35rem; align-content: center;
+    }
+    .gate .g-state { font: 600 13.5px var(--mono); color: var(--sheet-muted); display: flex; align-items: center; gap: .5rem; }
+    .gate .g-state::before {
+      content: ""; width: 10px; height: 10px; border-radius: 50%;
+      background: var(--ok-bright); flex: 0 0 auto;
+    }
+    .js .gate .g-state::before { background: var(--warn-bright); }
+    .js .sticky-scene[data-active-step="4"] .gate .g-state::before { background: var(--ok-bright); }
+    .gate.is-open { border-color: var(--ok-bright); }
+    .gate.is-open .g-state { color: var(--ok-bright); }
+    .g-storing, .g-stored { display: none; }
+    [data-g="stored"] .g-stored { display: inline; color: var(--ok-bright); }
+    .js .gate .g-storing { display: inline; }
+    .js .gate .g-stored { display: none; }
+    .js .sticky-scene[data-active-step="4"] .gate .g-storing { display: none; }
+    .js .sticky-scene[data-active-step="4"] .gate .g-stored { display: inline; }
+    .wp-ack {
+      display: grid; grid-template-columns: 1fr auto; gap: .7rem; align-items: center;
+    }
+    .wp-ackrow { display: flex; gap: .6rem; align-items: center; justify-content: space-between; }
+    .wp-ok {
+      font: 600 11.5px var(--mono);
+      background: var(--ok-bright); color: var(--sheet);
+      padding: .55rem .9rem;
+      white-space: nowrap;
+    }
+
+    /* ── S04 · shard math ── */
+    .sm-fig { display: grid; gap: 1rem; justify-items: center; }
+    .sm-gridwrap { display: grid; gap: .45rem; width: min(400px, 100%); }
+    .sm-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+    .sm-cols .lane-label { text-align: center; }
+    .sm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+    .sm-grid .tile { min-height: 52px; }
+    .rule-plate {
+      border: 1px solid var(--ok-bright);
+      color: var(--ok-bright);
+      font: 600 11px var(--mono); letter-spacing: .14em;
+      padding: .55rem 1rem;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 9.5px; letter-spacing: .1em; color: var(--sheet-muted); text-transform: uppercase; }
+    .legend i { width: 12px; height: 12px; display: inline-block; vertical-align: -2px; margin-right: .4rem; border: 1px solid #ffffff38; background: var(--sheet-3); }
+    .legend .l-d { background-image: repeating-linear-gradient(45deg, #ffffff22 0 1px, transparent 1px 4px); }
+    .legend .l-p { background-image: radial-gradient(#ffffff30 1px, transparent 1.3px); background-size: 5px 5px; }
+    .legend .l-f { background-image: repeating-linear-gradient(45deg, transparent 0 2px, #E8A13D55 2px 3px), repeating-linear-gradient(-45deg, transparent 0 2px, #E8A13D55 2px 3px); border-color: var(--warn-bright); }
+    .meter { width: min(440px, 100%); display: grid; gap: .6rem; }
+    .meter .m-row { display: grid; grid-template-columns: 8.2em 1fr 3.6em; gap: .6rem; align-items: center; font: 10px var(--mono); color: var(--sheet-muted); }
+    .meter .m-row b { color: var(--sheet-text); font-weight: 500; letter-spacing: .06em; }
+    .meter .m-track { height: 12px; border: 1px solid var(--hair); background: var(--sheet-2); }
+    .meter .m-fill { display: block; height: 100%; background: var(--az2); transform: scaleX(var(--w, 1)); transform-origin: 0 50%; }
+    .meter .m-fill.m-scheme { --w: .5; }
+    .meter .m-row.m-copies .m-fill { background: #8091A8; }
+    .meter .m-val { color: var(--sheet-text); text-align: right; }
+    .sm-fig { position: relative; }
+    .sweep { position: absolute; inset: 0; pointer-events: none; overflow: clip; }
+    .sweep i {
+      position: absolute; top: 0; bottom: 0; width: 26%;
+      left: -30%;
+      background: linear-gradient(90deg, transparent, #4FC8AE26, transparent);
+    }
+
+    /* ── S05 · break the machine (interactive) ── */
+    .sim-mount { position: relative; z-index: 6; padding: 0 clamp(1.3rem, 4vw, 4rem); }
+    .js .sim-mount { position: sticky; top: 64px; display: flex; justify-content: flex-end; pointer-events: auto; }
+    .sim {
+      width: min(500px, 100%);
+      background: var(--paper);
+      border: 1px solid var(--ink);
+      box-shadow: 6px 6px 0 #00000045;
+      color: var(--ink);
+      padding: 1rem 1.1rem 1.1rem;
+    }
+    .sim-head { display: flex; justify-content: space-between; gap: .8rem; align-items: baseline; margin-bottom: .7rem; }
+    .sim-head b { font: 600 12px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+    .sim-head span { font: 10px var(--mono); color: var(--muted); letter-spacing: .08em; }
+    .sim-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .45rem; position: relative; }
+    .sim-col { display: grid; gap: .45rem; }
+    .sim-azhead {
+      font: 500 9.5px var(--mono); letter-spacing: .14em; text-transform: uppercase;
+      color: var(--muted); text-align: center;
+      border-bottom: 2px solid var(--az2);
+      padding-bottom: .3rem;
+    }
+    .sim-col[data-az="1"] .sim-azhead { border-color: var(--az1); }
+    .sim-col[data-az="2"] .sim-azhead { border-color: var(--az2); }
+    .sim-col[data-az="3"] .sim-azhead { border-color: var(--az3); }
+    .sim-col.is-dead .sim-azhead { color: var(--warn); border-color: var(--warn); text-decoration: line-through; }
+    .sim-tile {
+      min-height: 46px;
+      border: 1px solid var(--ink);
+      background: var(--paper-2);
+      color: var(--ink);
+      font: 500 11.5px var(--mono);
+      display: grid; place-items: center;
+      transition: background-color var(--fast) var(--ease-swift),
+        color var(--fast) var(--ease-swift),
+        opacity var(--fast) var(--ease-swift),
+        transform var(--fast) var(--ease-swift);
+    }
+    .sim-tile.t-d { background-image: repeating-linear-gradient(45deg, #1E2A3A14 0 1px, transparent 1px 6px); }
+    .sim-tile.t-p { background-image: radial-gradient(#1E2A3A22 1px, transparent 1.4px); background-size: 7px 7px; }
+    .sim-tile:hover { background-color: #E2DBC8; }
+    .sim-tile:active { transform: scale(.95); }
+    .sim-tile.is-failed {
+      background-image:
+        repeating-linear-gradient(45deg, transparent 0 3px, #C7780040 3px 4px),
+        repeating-linear-gradient(-45deg, transparent 0 3px, #C7780040 3px 4px);
+      border-color: var(--warn);
+      color: var(--muted);
+    }
+    .sim-tile:disabled { cursor: default; }
+    .sim-tile.is-az-dead { opacity: .45; transform: scaleY(.55); transform-origin: 50% 0; }
+    .sim-controls { display: grid; grid-template-columns: 1fr 1fr; gap: .45rem; margin-top: .75rem; }
+    .sim-btn {
+      font: 600 10px var(--mono); letter-spacing: .12em; text-transform: uppercase;
+      border: 1px solid var(--ink);
+      background: transparent; color: var(--ink);
+      padding: .6rem .5rem;
+      transition: background-color var(--fast) var(--ease-swift), color var(--fast) var(--ease-swift);
+    }
+    .sim-btn:hover { background: var(--ink); color: var(--paper); }
+    .sim-btn[aria-pressed="true"] { background: var(--warn); border-color: var(--warn); color: var(--paper); }
+    .sim-readout {
+      margin: .75rem 0 0;
+      font-size: 11px; line-height: 1.6; letter-spacing: .04em;
+      border-top: 1px solid var(--rule);
+      padding-top: .6rem;
+      color: var(--ink);
+      min-height: 2.6em;
+    }
+    .sim.is-lost .sim-readout { color: var(--warn); }
+    .sim-static { display: none; }
+    .no-js .sim-live { display: none; }
+    .no-js .sim-static { display: block; }
+    .sim-static .sim-grid { margin-bottom: .6rem; }
+    .sim-static .sim-tile { min-height: 40px; }
+    .sim-static p { font: 11px var(--mono); color: var(--muted); margin: .4rem 0 0; }
+
+    /* ── S06 · the read path ── */
+    .rp-fig { display: grid; gap: .9rem; }
+    .rp-card {
+      border: 1px solid var(--hair);
+      background: var(--sheet-2);
+      padding: .55rem .8rem;
+      display: flex; gap: 1.1rem; flex-wrap: wrap;
+      font: 10.5px var(--mono); color: var(--sheet-muted);
+    }
+    .rp-card b { color: var(--sheet-text); font-weight: 500; }
+    .rp-card .ptr { color: var(--ok-bright); }
+    .rp-rows { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+    .rp-rows .az-box { padding: .5rem .55rem .6rem; }
+    .rp-rows .tile { min-height: 38px; position: relative; }
+    .rp-rows .tile .tick {
+      position: absolute; top: -7px; right: -5px;
+      font: 700 8.5px var(--mono);
+      background: var(--ok-bright); color: var(--sheet);
+      min-width: 14px; height: 14px;
+      display: grid; place-items: center;
+      padding: 0 2px;
+    }
+    .tile.is-flown { border-color: #4FC8AE66; color: var(--sheet-muted); opacity: .8; transition: transform var(--med) var(--ease-out), opacity var(--med) var(--ease-out); }
+    .rp-end { display: grid; grid-template-columns: 1fr auto; gap: .7rem; align-items: center; }
+    .reassembly {
+      border: 1px dashed #ffffff30;
+      padding: .6rem .8rem;
+      display: flex; gap: .4rem; align-items: center; flex-wrap: wrap;
+      min-height: 52px;
+      background: var(--sheet-2);
+    }
+    .reassembly .mini {
+      width: 22px; height: 22px;
+      border: 1px solid var(--ok-bright);
+      color: var(--ok-bright);
+      font: 600 7.5px var(--mono);
+      display: grid; place-items: center;
+    }
+    .reassembly .done {
+      font: 500 11px var(--mono); color: var(--ok-bright);
+      margin-left: auto;
+      white-space: nowrap;
+    }
+    .ms-chip {
+      font: 600 12px var(--mono);
+      border: 1px solid var(--ok-bright);
+      color: var(--ok-bright);
+      padding: .6rem .8rem;
+      white-space: nowrap;
+    }
+    .express {
+      max-width: 680px; margin: 0 auto;
+      padding: 0 clamp(1.3rem, 5vw, 4rem) 2.8rem;
+    }
+    .express table { width: 100%; border-collapse: collapse; font: 12px/1.55 var(--mono); color: var(--sheet-text); }
+    .express caption {
+      caption-side: top; text-align: left;
+      font: 500 10px var(--mono); letter-spacing: .16em; text-transform: uppercase;
+      color: var(--ok-bright); padding-bottom: .6rem;
+    }
+    .express th, .express td {
+      border: 1px solid #ffffff1f;
+      padding: .6rem .7rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    .express th { font-weight: 500; letter-spacing: .08em; color: var(--ok-bright); white-space: nowrap; }
+    .express td { color: var(--sheet-muted); }
+    .express td b { color: var(--sheet-text); font-weight: 500; }
+    .express .ex-note { color: var(--sheet-muted); font-size: 11px; margin-top: .6rem; }
+
+    /* ── S07 · consistency timeline ── */
+    .cs-fig { display: grid; gap: .9rem; width: min(720px, 100%); }
+    .era {
+      justify-self: start;
+      font: 500 9.5px var(--mono); letter-spacing: .16em; text-transform: uppercase;
+      border: 1px solid var(--hair); color: var(--sheet-muted);
+      padding: .4rem .7rem;
+    }
+    .cs-lane { border: 1px solid var(--hair); background: var(--sheet-2); padding: .65rem .8rem; display: grid; gap: .55rem; }
+    .cs-lane .lane-label { display: flex; justify-content: space-between; }
+    .write-line { display: flex; align-items: center; gap: .5rem; font: 500 11px var(--mono); color: var(--sheet-text); flex-wrap: wrap; }
+    .seq {
+      border: 1px solid #ffffff38;
+      padding: .45rem .7rem;
+      background: var(--sheet-3);
+      white-space: nowrap;
+    }
+    .seq small { color: var(--sheet-muted); margin-left: .45rem; }
+    .seq.is-commit { border-color: var(--ok-bright); color: var(--ok-bright); }
+    .w-arrow { flex: 1; min-width: 22px; height: 1px; background: #ffffff33; position: relative; }
+    .w-arrow::after { content: ""; position: absolute; right: 0; top: -3px; border: 3.5px solid transparent; border-left-color: #ffffff45; }
+    .witness { display: flex; align-items: center; gap: .6rem; font: 10px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--sheet-muted); }
+    .witness .w-track { flex: 1; height: 1px; background: #ffffff22; position: relative; }
+    .w-token {
+      position: absolute; top: -7px; left: 22%;
+      display: flex; align-items: center; gap: .35rem;
+      transition: left var(--med) var(--ease-swift);
+    }
+    .w-token i { width: 13px; height: 13px; background: var(--ok-bright); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+    .w-token span { font: 600 9px var(--mono); color: var(--ok-bright); letter-spacing: .08em; }
+    .read-split { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+    .r-path {
+      border: 1px dashed #ffffff2a;
+      padding: .55rem .7rem;
+      font: 10.5px var(--mono);
+      color: var(--sheet-muted);
+      display: grid; gap: .3rem;
+    }
+    .r-path b { color: var(--sheet-text); font-weight: 500; }
+    .r-path .verdict { letter-spacing: .1em; text-transform: uppercase; font-size: 9px; }
+    .r-path.is-served { border: 1px solid var(--ok-bright); }
+    .r-path.is-served .verdict { color: var(--ok-bright); }
+    .r-path.is-blocked .verdict { color: var(--warn-bright); }
+    .bracket {
+      border: 1px solid var(--warn-bright);
+      color: var(--warn-bright);
+      font: 9px var(--mono); letter-spacing: .1em;
+      padding: .2rem .45rem;
+      justify-self: start;
+      text-transform: uppercase;
+    }
+
+    /* ── S08 · synthesis ── */
+    .synthesis { background: var(--sheet); color: var(--sheet-text); padding: clamp(3rem, 8vh, 5.5rem) 0 0; }
+    .syn-inner { max-width: 760px; margin: 0 auto; padding: 0 clamp(1.3rem, 5vw, 4rem); }
+    .synthesis h2 { font: 600 clamp(26px, 3.4vw, 38px)/1.12 var(--sans); letter-spacing: -.035em; margin: 0 0 1.2rem; }
+    .synthesis .act { display: block; font: 500 10.5px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ok-bright); margin-bottom: .8rem; }
+    .synthesis p { color: #C6D0DD; line-height: 1.7; margin: 0 0 1.3rem; }
+    .machine {
+      border: 1px solid #ffffff1f;
+      background: var(--sheet-2);
+      display: grid;
+      margin: 2.2rem 0 1rem;
+    }
+    .machine .m-layer {
+      display: grid; grid-template-columns: 9.5em 1fr; gap: .9rem;
+      padding: .8rem 1rem;
+      border-bottom: 1px solid #ffffff14;
+      align-items: center;
+    }
+    .machine .m-layer:last-child { border-bottom: 0; }
+    .machine .m-name { font: 500 10px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ok-bright); }
+    .machine .m-draw { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; min-height: 34px; }
+    .machine .m-part {
+      border: 1px solid #ffffff30;
+      color: var(--sheet-muted);
+      font: 9.5px var(--mono); letter-spacing: .06em;
+      padding: .35rem .55rem;
+      white-space: nowrap;
+    }
+    .machine .m-part.mp-ok { border-color: #4FC8AE55; color: var(--sheet-text); }
+    .machine .m-part.mp-az1 { border-top: 2px solid var(--az1); }
+    .machine .m-part.mp-az2 { border-top: 2px solid var(--az2); }
+    .machine .m-part.mp-az3 { border-top: 2px solid var(--az3); }
+    .machine .m-part.mp-warn { border-color: var(--warn-bright); color: var(--warn-bright); }
+    .machine .m-loop { color: var(--ok-bright); font: 11px var(--mono); }
+    .machine-glosses { margin: 0 0 2rem; padding: 0; list-style: none; display: grid; gap: .55rem; }
+    .machine-glosses li { font: 12px/1.65 var(--mono); color: var(--sheet-muted); display: grid; grid-template-columns: 9.5em 1fr; gap: .9rem; }
+    .machine-glosses b { color: var(--sheet-text); font-weight: 500; letter-spacing: .1em; text-transform: uppercase; font-size: 10px; padding-top: .15em; }
+    .callout {
+      border: 1px solid var(--warn-bright);
+      border-left: 4px solid var(--warn-bright);
+      padding: 1rem 1.2rem;
+      margin: 1.8rem 0;
+    }
+    .callout p { margin: 0; color: var(--sheet-text); }
+    .callout-label { display: block; font-size: 10px; color: var(--warn-bright); margin-bottom: .5rem; }
+    .questions {
+      border: 1px solid #ffffff1f;
+      background: var(--sheet-2);
+      margin: 1.8rem 0;
+      display: grid;
+    }
+    .questions div {
+      display: grid; grid-template-columns: 2.6em 1fr; gap: .8rem;
+      padding: .85rem 1.1rem;
+      border-bottom: 1px solid #ffffff14;
+    }
+    .questions div:last-child { border-bottom: 0; }
+    .quest-no { font-size: 11px; color: var(--ok-bright); letter-spacing: .1em; }
+    .questions p { margin: 0; color: var(--sheet-text); font-size: 15.5px; }
+    .questions p small { display: block; color: var(--sheet-muted); font: 11px var(--mono); margin-top: .25rem; }
+    .footnote {
+      font: 11px/1.75 var(--mono);
+      color: var(--sheet-muted);
+      border-top: 1px solid #ffffff18;
+      padding-top: .9rem;
+      margin: 2.4rem 0 0;
+    }
+
+    /* ── Ending ── */
+    .ending { background: var(--sheet); color: var(--sheet-text); padding: clamp(3rem, 9vh, 6rem) 0 0; }
+    .ending .rule-line { max-width: 760px; margin: 0 auto 2.5rem; padding: 0 clamp(1.3rem, 5vw, 4rem); display: grid; gap: .8rem; }
+    .ending .rule-line i { height: 1px; background: linear-gradient(90deg, var(--ok-bright), transparent 65%); }
+    .end-inner { max-width: 680px; margin: 0 auto; padding: 0 clamp(1.3rem, 5vw, 4rem) 3rem; }
+    .ending .kicker { color: var(--ok-bright); font-size: 11px; margin: 0 0 1rem; }
+    .ending h2 em { color: var(--ok-bright); font-style: italic; }
+    .ending p { color: #C6D0DD; line-height: 1.72; }
+    .post-links {
+      display: grid; grid-template-columns: 1fr 1fr; gap: .8rem;
+      margin: 3rem 0 0;
+    }
+    .post-links a {
+      border: 1px solid #ffffff22;
+      padding: 1rem 1.2rem;
+      display: grid; gap: .4rem;
+      transition: border-color var(--fast) var(--ease-swift), background-color var(--fast) var(--ease-swift);
+    }
+    .post-links a:hover { border-color: var(--ok-bright); background: #ffffff08; }
+    .post-links a + a { text-align: right; }
+    .post-links small { font-size: 9.5px; color: var(--sheet-muted); letter-spacing: .14em; }
+    .post-links b { font: 500 15px var(--sans); letter-spacing: -.02em; }
+    .footer {
+      display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+      border-top: 1px solid #ffffff18;
+      margin-top: 3.5rem; padding-top: 1.1rem;
+      font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--sheet-muted);
+    }
+    .footer a { color: var(--sheet-muted); }
+    .footer a:hover { color: var(--sheet-text); }
+
+    /* ══════════════════════════════════════════════════════════════
+       STEP-KEYED STAGE STATES
+       Base styles above are the resolved (no-JS) figures. Under the
+       .js gate each scene resets to its first state; the selectors
+       below then rebuild it step by step as data-active-step changes —
+       the exact inverse runs when the reader scrolls back.
+       ══════════════════════════════════════════════════════════════ */
+
+    /* S02 — card and stream */
+    .js .model-fig .capsule { display: grid; }
+    .js .model-fig .planes, .js .model-fig .seam { display: none; }
+    .js .sticky-scene[data-active-step="2"] .model-fig .capsule,
+    .js .sticky-scene[data-active-step="3"] .model-fig .capsule { display: none; }
+    .js .sticky-scene[data-active-step="2"] .model-fig .planes,
+    .js .sticky-scene[data-active-step="2"] .model-fig .seam,
+    .js .sticky-scene[data-active-step="3"] .model-fig .planes,
+    .js .sticky-scene[data-active-step="3"] .model-fig .seam { display: grid; }
+    .js .sticky-scene[data-active-step="2"] .planes .mcard { animation: card-in .55s var(--ease-out) both; }
+    .js .sticky-scene[data-active-step="2"] .planes .stream-lane { animation: stream-in .55s var(--ease-out) .1s both; }
+    .js .mc-row.mc-ver b, .js .mc-row.mc-shards b { visibility: hidden; }
+    .js .sticky-scene[data-active-step="3"] .mc-row.mc-ver b,
+    .js .sticky-scene[data-active-step="3"] .mc-row.mc-shards b { visibility: visible; }
+    .js .az-chips { opacity: 0; transform: translateY(10px); transition: opacity var(--med) var(--ease-out), transform var(--med) var(--ease-out); }
+    .js .sticky-scene[data-active-step="3"] .az-chips { opacity: 1; transform: none; }
+    @keyframes card-in { from { opacity: 0; transform: translateX(-22px); } to { opacity: 1; transform: none; } }
+    @keyframes stream-in { from { opacity: 0; transform: translateX(22px); } to { opacity: 1; transform: none; } }
+
+    /* S03 — the write path */
+    .js .wp-object { display: block; }
+    .js .wp-chips { display: none; }
+    .js .sticky-scene[data-active-step="2"] .wp-object,
+    .js .sticky-scene[data-active-step="3"] .wp-object,
+    .js .sticky-scene[data-active-step="4"] .wp-object { display: none; }
+    .js .sticky-scene[data-active-step="2"] .wp-chips,
+    .js .sticky-scene[data-active-step="3"] .wp-chips,
+    .js .sticky-scene[data-active-step="4"] .wp-chips { display: grid; }
+    .js .auth-box { border-color: var(--ok-bright); color: var(--sheet-text); }
+    .js .auth-box .lamp { background: var(--ok-bright); }
+    .js .sticky-scene[data-active-step="2"] .auth-box,
+    .js .sticky-scene[data-active-step="3"] .auth-box,
+    .js .sticky-scene[data-active-step="4"] .auth-box { border-color: var(--hair); color: var(--sheet-muted); }
+    .js .sticky-scene[data-active-step="2"] .auth-box .lamp,
+    .js .sticky-scene[data-active-step="3"] .auth-box .lamp,
+    .js .sticky-scene[data-active-step="4"] .auth-box .lamp { background: #ffffff2e; }
+    /* the chips drop straight down into the boxes below them */
+    .js .wp-slot b { opacity: 0; transform: translateY(-44px) scale(.85); }
+    .js .sticky-scene[data-active-step="3"] .wp-slot b,
+    .js .sticky-scene[data-active-step="4"] .wp-slot b { opacity: 1; transform: none; }
+    .wp-slot b { display: block; transition: opacity .38s var(--ease-out), transform .38s var(--ease-out); }
+    .js .wp-slots .az-box:nth-child(1) .wp-slot:nth-of-type(1) b { transition-delay: 0s; }
+    .js .wp-slots .az-box:nth-child(1) .wp-slot:nth-of-type(2) b { transition-delay: .08s; }
+    .js .wp-slots .az-box:nth-child(1) .wp-slot:nth-of-type(3) b { transition-delay: .16s; }
+    .js .wp-slots .az-box:nth-child(2) .wp-slot:nth-of-type(1) b { transition-delay: .05s; }
+    .js .wp-slots .az-box:nth-child(2) .wp-slot:nth-of-type(2) b { transition-delay: .13s; }
+    .js .wp-slots .az-box:nth-child(2) .wp-slot:nth-of-type(3) b { transition-delay: .21s; }
+    .js .wp-slots .az-box:nth-child(3) .wp-slot:nth-of-type(1) b { transition-delay: .1s; }
+    .js .wp-slots .az-box:nth-child(3) .wp-slot:nth-of-type(2) b { transition-delay: .18s; }
+    .js .wp-slots .az-box:nth-child(3) .wp-slot:nth-of-type(3) b { transition-delay: .26s; }
+    .js .sticky-scene[data-active-step="3"] .wp-chips .tile { opacity: .3; }
+    .js .wp-check { color: var(--sheet-muted); }
+    .js .wp-check i { background: transparent; }
+    .js .sticky-scene[data-active-step="3"] .wp-check,
+    .js .sticky-scene[data-active-step="4"] .wp-check { color: var(--ok-bright); }
+    .js .sticky-scene[data-active-step="3"] .wp-check i,
+    .js .sticky-scene[data-active-step="4"] .wp-check i { background: var(--ok-bright); border-color: var(--ok-bright); }
+    .wp-check { transition: color var(--fast) var(--ease-swift); }
+    .wp-check i { transition: background-color var(--fast) var(--ease-swift); }
+    .js .gate { border-color: var(--warn-bright); }
+    .js .gate .g-state { color: var(--warn-bright); }
+    .js .sticky-scene[data-active-step="4"] .gate { border-color: var(--ok-bright); }
+    .js .sticky-scene[data-active-step="4"] .gate .g-state { color: var(--ok-bright); }
+    .gate { transition: border-color var(--fast) var(--ease-swift); }
+    .js .wp-ack .wp-ok, .js .wp-ack .wp-card-fields { opacity: 0; transform: translateY(8px); transition: opacity var(--med) var(--ease-out), transform var(--med) var(--ease-out); }
+    .js .sticky-scene[data-active-step="4"] .wp-ack .wp-ok,
+    .js .sticky-scene[data-active-step="4"] .wp-ack .wp-card-fields { opacity: 1; transform: none; }
+
+    /* S04 — shard math (scoped to .sm4 so the Act 04 backdrop stays lit) */
+    .js .sm4 .tile::before { opacity: 0; transition: opacity .3s var(--ease-out); }
+    .js .sticky-scene[data-active-step="2"] .sm4 .tile::before,
+    .js .sticky-scene[data-active-step="3"] .sm4 .tile::before { opacity: 1; }
+    .js .sm4 .tile:nth-child(1)::before { transition-delay: 0s; }
+    .js .sm4 .tile:nth-child(2)::before { transition-delay: .05s; }
+    .js .sm4 .tile:nth-child(3)::before { transition-delay: .1s; }
+    .js .sm4 .tile:nth-child(4)::before { transition-delay: .15s; }
+    .js .sm4 .tile:nth-child(5)::before { transition-delay: .2s; }
+    .js .sm4 .tile:nth-child(6)::before { transition-delay: .25s; }
+    .js .sm4 .tile:nth-child(7)::before { transition-delay: .3s; }
+    .js .sm4 .tile:nth-child(8)::before { transition-delay: .35s; }
+    .js .sm4 .tile:nth-child(9)::before { transition-delay: .4s; }
+    .js .sm4 .rule-plate { border-color: var(--hair); color: var(--sheet-muted); }
+    .js .sticky-scene[data-active-step="2"] .sm4 .rule-plate,
+    .js .sticky-scene[data-active-step="3"] .sm4 .rule-plate { border-color: var(--ok-bright); color: var(--ok-bright); transition-delay: .5s; }
+    .sm4 .rule-plate { transition: color var(--fast) var(--ease-swift), border-color var(--fast) var(--ease-swift); }
+    .js .sm4 .meter .m-fill { transform: scaleX(0); transition: transform 700ms var(--ease-swift); }
+    .js .sticky-scene[data-active-step="3"] .sm4 .meter .m-fill { transform: scaleX(var(--w, 1)); }
+    .js .sticky-scene[data-active-step="3"] .sm4 .m-copies .m-fill { transition-delay: .3s; }
+    .js .sticky-scene[data-active-step="3"] .sm4 .sweep i { animation: sweepx 1.1s var(--ease-swift) .15s both; }
+    .sweep.is-running i { animation: sweepx 1.1s var(--ease-swift) both; }
+    @keyframes sweepx { from { left: -30%; } to { left: 104%; } }
+
+    /* S06 — the read path */
+    .js .rp-card .ptr { color: var(--sheet-muted); }
+    .js .sticky-scene[data-active-step="2"] .rp-card .ptr,
+    .js .sticky-scene[data-active-step="3"] .rp-card .ptr { color: var(--ok-bright); }
+    .js .rp-rows .tile .tick { opacity: 0; transform: scale(.4); transition: opacity var(--fast) var(--ease-out), transform var(--fast) var(--ease-out); }
+    .js .rp-rows .tile.is-flown { border-color: #ffffff38; }
+    .js .sticky-scene[data-active-step="3"] .rp-rows .tile.is-flown { opacity: .55; transform: translateY(-8px); }
+    .js .rp-rows .tile.is-flown { transform: none; opacity: .8; }
+    .js .sticky-scene[data-active-step="3"] .rp-rows .tile.is-flown .tick { opacity: 1; transform: scale(1); }
+    .js .reassembly .mini, .js .reassembly .done, .js .ms-chip { opacity: 0; transform: translateY(8px); transition: opacity var(--med) var(--ease-out), transform var(--med) var(--ease-out); }
+    .js .sticky-scene[data-active-step="3"] .reassembly .mini:nth-child(1) { transition-delay: .1s; }
+    .js .sticky-scene[data-active-step="3"] .reassembly .mini:nth-child(2) { transition-delay: .18s; }
+    .js .sticky-scene[data-active-step="3"] .reassembly .mini:nth-child(3) { transition-delay: .26s; }
+    .js .sticky-scene[data-active-step="3"] .reassembly .mini:nth-child(4) { transition-delay: .34s; }
+    .js .sticky-scene[data-active-step="3"] .reassembly .mini:nth-child(5) { transition-delay: .42s; }
+    .js .sticky-scene[data-active-step="3"] .reassembly .mini:nth-child(6) { transition-delay: .5s; }
+    .js .sticky-scene[data-active-step="3"] .reassembly .mini,
+    .js .sticky-scene[data-active-step="3"] .reassembly .done { opacity: 1; transform: none; }
+    .js .sticky-scene[data-active-step="3"] .ms-chip { opacity: 1; transform: none; transition-delay: .65s; }
+
+    /* S07 — consistency */
+    .js .seq.v2 { opacity: 0; transform: translateX(14px); }
+    .js .sticky-scene[data-active-step="2"] .seq.v2,
+    .js .sticky-scene[data-active-step="3"] .seq.v2 { opacity: 1; transform: none; }
+    .js .seq.v2 { transition: opacity var(--med) var(--ease-out), transform var(--med) var(--ease-out); }
+    .js .w-token { left: 6%; }
+    .js .sticky-scene[data-active-step="2"] .w-token,
+    .js .sticky-scene[data-active-step="3"] .w-token { left: 62%; }
+    .js .era .era-now { display: none; }
+    .js .era .era-before { display: inline; }
+    .js .sticky-scene[data-active-step="2"] .era .era-now,
+    .js .sticky-scene[data-active-step="3"] .era .era-now { display: inline; }
+    .js .sticky-scene[data-active-step="2"] .era .era-before,
+    .js .sticky-scene[data-active-step="3"] .era .era-before { display: none; }
+    .js .r-path .verdict { opacity: 0; }
+    .js .r-path .bracket { opacity: 0; transform: scale(.85); }
+    .js .sticky-scene[data-active-step="3"] .r-path .verdict { opacity: 1; }
+    .js .sticky-scene[data-active-step="3"] .r-path .bracket { opacity: 1; transform: none; }
+    .js .r-path.cache-old { border-color: #ffffff2a; }
+    .js .sticky-scene[data-active-step="3"] .r-path.cache-old { border-color: var(--warn-bright); }
+    .r-path .verdict { transition: opacity var(--fast) var(--ease-out); }
+    .r-path .bracket { transition: opacity var(--fast) var(--ease-out), transform var(--fast) var(--ease-out); }
+
+    /* ══════════════════════════════════════════════════════════════
+       RESPONSIVE
+       ══════════════════════════════════════════════════════════════ */
+    @media (max-width: 850px) {
+      .post-links { grid-template-columns: 1fr; }
+      .post-links a + a { text-align: left; }
+      .planes { grid-template-columns: 1fr; }
+      .wp-bottom { grid-template-columns: 1fr; }
+      .rp-end { grid-template-columns: 1fr; justify-items: start; }
+      .read-split { grid-template-columns: 1fr; }
+      .machine .m-layer, .machine-glosses li { grid-template-columns: 1fr; gap: .3rem; }
+      .meter .m-row { grid-template-columns: 6.4em 1fr 3.4em; }
+    }
+
+    /* Portrait phones: the step text becomes a bottom sheet docked over
+       the pinned sheet; the diagram centers in the space above it
+       (--card-reserve is measured from the tallest card by the runtime). */
+    @media (max-width: 850px) and (min-height: 521px) {
+      .js .sticky-scene__stage { display: flex; flex-direction: column; }
+      .js .sticky-scene__stage .scene-head { flex: 0 0 auto; padding: .7rem 1.3rem; }
+      .js .sticky-scene__stage .sheet { position: static; flex: 1 1 auto; min-height: 0; }
+      .js .sheet-body { padding-bottom: calc(var(--card-reserve, 34svh) + 6px); }
+      .js .sticky-scene__steps > .step { align-items: flex-end; padding: 0 1.1rem; }
+      .step-card {
+        position: sticky;
+        bottom: max(16px, env(safe-area-inset-bottom, 0px));
+        max-height: 42svh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        border-radius: 14px;
+      }
+      .js .step-card { transition: opacity .16s var(--ease-in), transform .2s var(--ease-in); }
+      .js .step.is-active .step-card { transition: opacity .34s var(--ease-out) .18s, transform .4s var(--ease-out) .18s; }
+      /* the interactive panel stays pinned just under the scene head,
+         above the bottom-docked step sheet — controls remain reachable
+         through the whole scene */
+      .js .sim-mount { justify-content: center; }
+      .sim { box-shadow: 4px 4px 0 #00000045; }
+    }
+
+    /* Landscape phones: card pins right, diagram keeps left */
+    @media (max-height: 520px) and (max-width: 960px) {
+      .js .sticky-scene__steps > .step { align-items: center; justify-content: flex-end; }
+      .step-card { max-width: 320px; }
+      .sheet-body { padding-right: 42%; }
+    }
+
+    @media (max-width: 480px) {
+      body { font-size: 17.5px; }
+      .hero h1 { font-size: clamp(34px, 10vw, 44px); }
+      .tile { min-height: 38px; font-size: 9.5px; }
+      .sm-grid .tile { min-height: 42px; }
+      .wp-chips .tile { min-width: 36px; }
+      .step-card p { font-size: 15px; }
+      .rule-plate { font-size: 9.5px; padding: .5rem .7rem; }
+      .sim-controls { grid-template-columns: 1fr 1fr; }
+      .stamp b { font-size: 15px; }
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       REDUCED MOTION — the document fallback. Sticky scenes collapse
+       to plain flow: sheet first, steps stacked, every word visible.
+       The S05 controls stay functional with instant state swaps.
+       ══════════════════════════════════════════════════════════════ */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        transition-delay: 0s !important;
+        scroll-behavior: auto !important;
+      }
+      .js .sliver .fill, .js .ok-chip, .js .stamp { animation: none; opacity: 1; transform: rotate(-2deg); }
+      .js .sliver .fill { transform: scaleX(1); }
+      .js .sticky-scene { padding-bottom: 0; }
+      .js .sticky-scene__stage { position: relative; height: auto; min-height: 56svh; }
+      .js .sticky-scene__stage .sheet { position: static; }
+      .js .sticky-scene__steps { margin-top: 0; }
+      .js .sticky-scene__steps > .step { min-height: auto; display: block; padding: 1.4rem 1.3rem; }
+      .js .step-card { opacity: 1; transform: none; max-height: none; overflow: visible; }
+      .js .sim-mount { position: static; display: block; }
+    }
+  </style>
+</head>
+
+<body data-vb-progress-start="#0E7C6B" data-vb-progress-mid="#5F7FA7" data-vb-progress-end="#C77800">
+  <a class="skip" href="#article">Skip to content</a>
+
+  <!-- ════ ACT 0 · S01 — one second, one promise ════ -->
+  <header class="hero">
+    <div class="hook" aria-hidden="true">
+      <div class="hook-rails"><i></i></div>
+      <div class="hook-row">
+        <div class="obj-card">
+          <div class="name">PUT videos/aurora.mp4</div>
+          <div class="size">42 MB · ILLUSTRATIVE OBJECT</div>
+        </div>
+        <div class="sliver">
+          <div class="track"><span class="fill"></span></div>
+        </div>
+        <span class="ok-chip">200 OK · ~1 S</span>
+      </div>
+      <div class="stamp">
+        <b>99.999999999% / YR</b>
+        <small>durability — AWS design target, Standard classes</small>
+      </div>
+    </div>
+    <div class="hero-copy">
+      <p class="kicker">A visual story about cloud storage</p>
+      <h1>How one S3 upload earns <em>eleven nines.</em></h1>
+      <p class="dek">You PUT one file. About a second later, S3 answers 200 OK — having accepted a design target of 99.999999999% yearly durability for it. Here is what happened to your bytes in that second.</p>
+      <p class="meta"><span><b>SEP 2026</b></span><span>~<b>9</b> MIN</span><span><b>6</b> SCENES</span><span>ILLUSTRATIVE SHARDS · <b>REAL MECHANISMS</b></span></p>
+    </div>
+  </header>
+
+  <main id="article">
+    <section class="prose" aria-labelledby="hook-title">
+      <h2 id="hook-title">One upload, one second, eleven nines</h2>
+      <p class="lead">You PUT one 42 MB video — an illustrative object — and S3 answers <span class="mono">200 OK</span> about a second later. In that second, AWS accepted a design target of eleven nines of yearly durability for it: 99.999999999%.</p>
+      <p>In AWS's own framing: store ten million objects and you would expect to lose one every ten thousand years. That is not a disk you can buy. It is a machine, and this article follows your bytes through it.</p>
+      <p class="aside">ILLUSTRATIVE OBJECT AND 6+3 SHARDS — S3'S REAL PARAMETERS ARE NOT PUBLIC · DURABILITY: AWS DESIGN TARGET, MODELED NOT MEASURED.</p>
+    </section>
+
+    <!-- ════ ACT 1 · S02 — not a disk: a card and a stream ════ -->
+    <section class="sticky-scene" data-scene data-active-step="1" aria-labelledby="model-title">
+      <h2 class="scene-title" id="model-title"><span class="act">Act 01 · The model</span>Two systems answer your request: a card and a stream</h2>
+      <div class="sticky-scene__stage" aria-hidden="true">
+        <div class="sheet">
+          <div class="scene-head">
+            <span class="scene-no">ACT 01</span>
+            <span class="scene-name">NOT A DISK</span>
+            <span class="scene-readout" data-readout>STEP 1 / 3</span>
+          </div>
+          <div class="sheet-body">
+            <div class="fig model-fig">
+              <div class="capsule">
+                videos/aurora.mp4
+                <small>ONE OBJECT · 42 MB · ILLUS.</small>
+              </div>
+              <div class="seam"></div>
+              <div class="planes">
+                <div class="mcard">
+                  <div class="mc-head">
+                    <span class="lane-label">THE CARD — METADATA PLANE</span>
+                    <span class="lane-label">ALWAYS RIGHT</span>
+                  </div>
+                  <div class="mc-row"><span>KEY</span><b>videos/aurora.mp4</b></div>
+                  <div class="mc-row"><span>SIZE</span><b>42 MB</b></div>
+                  <div class="mc-row mc-ver"><span>VERSION</span><b>v1</b></div>
+                  <div class="mc-row mc-shards"><span>SHARDS</span><b>→ 9 locations</b></div>
+                </div>
+                <div class="stream-lane">
+                  <div class="mc-head">
+                    <span class="lane-label">THE STREAM — DATA PLANE</span>
+                    <span class="lane-label">NEVER LOST</span>
+                  </div>
+                  <div class="bytes">
+                    <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                  </div>
+                  <div class="az-chips">
+                    <div class="az-chip"><b>AZ 1</b>separate building</div>
+                    <div class="az-chip"><b>AZ 2</b>own power + network</div>
+                    <div class="az-chip"><b>AZ 3</b>own cooling</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sheet-foot"><span>SHEET 02 · THE MODEL</span><span>BUCKETS ARE GLOBAL · ONE REGION EACH</span></div>
+        </div>
+      </div>
+      <div class="sticky-scene__steps">
+        <article class="step" data-step="1">
+          <div class="step-card"><p><span class="step-label">01 · flat keys</span>A bucket holds objects named by flat string keys. <span class="mono">videos/aurora.mp4</span> is one key — not a path through real folders.</p></div>
+        </article>
+        <article class="step" data-step="2">
+          <div class="step-card"><p><span class="step-label">02 · the split</span>It is two systems. The card keeps the record — key, size, version, where the shards live. The stream is the encoded bytes, on disks.</p></div>
+        </article>
+        <article class="step" data-step="3">
+          <div class="step-card"><p><span class="step-label">03 · the geography</span>The card must be always right. The bytes must be never lost. Below the stream wait at least three Availability Zones — separate buildings, power, and networks.</p></div>
+        </article>
+      </div>
+      <p class="caption"><b>What to watch</b> The object splits down the middle: a card that must be always right, and bytes that must be never lost.</p>
+    </section>
+
+    <!-- ════ ACT 2 · S03 — the write path ════ -->
+    <section class="sticky-scene" data-scene data-active-step="1" aria-labelledby="wp-title">
+      <h2 class="scene-title" id="wp-title"><span class="act">Act 02 · The mechanism</span>PUT: the reply waits for the shards</h2>
+      <div class="sticky-scene__stage" aria-hidden="true">
+        <div class="sheet">
+          <div class="scene-head">
+            <span class="scene-no">ACT 02</span>
+            <span class="scene-name">THE WRITE PATH</span>
+            <span class="scene-readout" data-readout>STEP 1 / 4</span>
+          </div>
+          <div class="sheet-body">
+            <div class="fig wp-fig">
+              <div class="wp-top">
+                <span class="req-chip">PUT videos/aurora.mp4</span>
+                <div class="auth-box"><span class="lamp"></span>FRONT END · STATELESS · AUTH ✓</div>
+              </div>
+              <div class="wp-slice">
+                <div class="wp-object">videos/aurora.mp4<small>42 MB · ONE STREAM</small></div>
+                <div class="wp-chips">
+                  <div class="wp-bank-col">
+                    <span class="tile t-d">D1</span><span class="tile t-d">D4</span><span class="tile t-p">P1</span>
+                  </div>
+                  <div class="wp-bank-col">
+                    <span class="tile t-d">D2</span><span class="tile t-d">D5</span><span class="tile t-p">P2</span>
+                  </div>
+                  <div class="wp-bank-col">
+                    <span class="tile t-d">D3</span><span class="tile t-d">D6</span><span class="tile t-p">P3</span>
+                  </div>
+                </div>
+              </div>
+              <div class="wp-slots">
+                <div class="az-box">
+                  <span class="lane-label">AZ 1 · <b>3 SHARDS</b></span>
+                  <div class="wp-slot"><b>D1</b></div><div class="wp-slot"><b>D4</b></div><div class="wp-slot"><b>P1</b></div>
+                </div>
+                <div class="az-box">
+                  <span class="lane-label">AZ 2 · <b>3 SHARDS</b></span>
+                  <div class="wp-slot"><b>D2</b></div><div class="wp-slot"><b>D5</b></div><div class="wp-slot"><b>P2</b></div>
+                </div>
+                <div class="az-box">
+                  <span class="lane-label">AZ 3 · <b>3 SHARDS</b></span>
+                  <div class="wp-slot"><b>D3</b></div><div class="wp-slot"><b>D6</b></div><div class="wp-slot"><b>P3</b></div>
+                </div>
+              </div>
+              <div class="wp-lands">
+                <div class="wp-check"><i></i>AZ 1 ✓</div>
+                <div class="wp-check"><i></i>AZ 2 ✓</div>
+                <div class="wp-check"><i></i>AZ 3 ✓</div>
+              </div>
+              <div class="wp-bottom">
+                <div class="wp-ack">
+                  <div class="mcard wp-card-fields">
+                    <div class="mc-head"><span class="lane-label">INDEX CARD · WRITES LAST</span></div>
+                    <div class="mc-row"><span>KEY</span><b>videos/aurora.mp4</b></div>
+                    <div class="mc-row mc-ver"><span>VERSION</span><b>v1</b></div>
+                    <div class="mc-row mc-shards"><span>SHARDS</span><b>→ 9 locations</b></div>
+                  </div>
+                  <span class="wp-ok">200 OK</span>
+                </div>
+                <div class="gate is-open" data-g="stored">
+                  <span class="lane-label">ACK GATE — REDUNDANCY TARGET</span>
+                  <span class="g-state"><span class="g-storing">storing…</span><span class="g-stored">stored ✓</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sheet-foot"><span>SHEET 03 · WRITE PATH · 6+3 ILLUSTRATIVE</span><span>LARGE OBJECTS ARRIVE AS PARALLEL MULTIPART PARTS</span></div>
+        </div>
+      </div>
+      <div class="sticky-scene__steps">
+        <article class="step" data-step="1">
+          <div class="step-card"><p><span class="step-label">01 · the front door</span>First stop: stateless front-end servers. You are authenticated and authorized before anything touches data.</p></div>
+        </article>
+        <article class="step" data-step="2">
+          <div class="step-card"><p><span class="step-label">02 · the cut</span>On the way in, the stream is cut into nine 7 MB shards — six data, three parity. Illustrative 6+3.</p></div>
+        </article>
+        <article class="step" data-step="3">
+          <div class="step-card"><p><span class="step-label">03 · the drop</span>The shards drop into separate failure domains — different disks and racks, across at least three AZs.</p></div>
+        </article>
+        <article class="step" data-step="4">
+          <div class="step-card"><p><span class="step-label">04 · the release</span>All three checks tick. The card writes last. Only then does 200 OK leave.</p></div>
+        </article>
+      </div>
+      <p class="caption"><b>What to watch</b> The gate stays shut until every AZ check ticks; the card writes last, and only then 200 OK.</p>
+    </section>
+
+    <!-- ════ ACT 3 · S04 — any six of nine ════ -->
+    <section class="sticky-scene" data-scene data-active-step="1" aria-labelledby="sm-title">
+      <h2 class="scene-title" id="sm-title"><span class="act">Act 03 · The critical detail</span>Why shards beat copies</h2>
+      <div class="sticky-scene__stage" aria-hidden="true">
+        <div class="sheet">
+          <div class="scene-head">
+            <span class="scene-no">ACT 03</span>
+            <span class="scene-name">SHARD MATH</span>
+            <span class="scene-readout" data-readout>STEP 1 / 3</span>
+          </div>
+          <div class="sheet-body">
+            <div class="fig sm-fig sm4">
+              <div class="sm-gridwrap">
+                <div class="sm-cols">
+                  <span class="lane-label">AZ 1</span><span class="lane-label">AZ 2</span><span class="lane-label">AZ 3</span>
+                </div>
+                <div class="sm-grid">
+                  <span class="tile t-d">D1</span><span class="tile t-d">D2</span><span class="tile t-d">D3</span>
+                  <span class="tile t-d">D4</span><span class="tile t-d">D5</span><span class="tile t-d">D6</span>
+                  <span class="tile t-p">P1</span><span class="tile t-p">P2</span><span class="tile t-p">P3</span>
+                </div>
+              </div>
+              <span class="rule-plate">ANY 6 OF 9 REBUILD</span>
+              <div class="meter">
+                <div class="m-row">
+                  <b>THIS SCHEME</b>
+                  <span class="m-track"><span class="m-fill m-scheme"></span></span>
+                  <span class="m-val">1.5×</span>
+                </div>
+                <div class="m-row m-copies">
+                  <b>THREE COPIES</b>
+                  <span class="m-track"><span class="m-fill"></span></span>
+                  <span class="m-val">3.0×</span>
+                </div>
+              </div>
+              <div class="legend">
+                <span><i class="l-d"></i>DATA — HATCH</span>
+                <span><i class="l-p"></i>PARITY — DOTS</span>
+                <span><i class="l-f"></i>FAILED — CROSS-HATCH</span>
+              </div>
+              <div class="sweep" aria-hidden="true"><i></i></div>
+            </div>
+          </div>
+          <div class="sheet-foot"><span>SHEET 04 · SHARD MATH · ILLUSTRATIVE — REAL PARAMETERS NOT PUBLIC</span><span>9 × 7 MB = 63 MB = 1.5× · 3 × 42 MB = 126 MB = 3.0×</span></div>
+        </div>
+      </div>
+      <div class="sticky-scene__steps">
+        <article class="step" data-step="1">
+          <div class="step-card"><p><span class="step-label">01 · two roles</span>Six data shards carry the bytes. Three parity shards carry recovery math. Any six of nine rebuild the object.</p></div>
+        </article>
+        <article class="step" data-step="2">
+          <div class="step-card"><p><span class="step-label">02 · the cost</span>This costs 1.5× the original size. Three full copies would cost 3.0× — and die on the third loss.</p></div>
+        </article>
+        <article class="step" data-step="3">
+          <div class="step-card"><p><span class="step-label">03 · the loop</span>Shards are not parked: checksums verify, scrubbing patrols, and losses are rebuilt from survivors. Redundancy is a loop.</p></div>
+        </article>
+      </div>
+      <p class="caption"><b>What to watch</b> The tiles differentiate into data and parity, then the rule lights: any six of nine rebuild. Parity is a checksum strong enough to redraw a missing piece.</p>
+    </section>
+
+    <!-- ════ ACT 4 · S05 — break the machine (interactive) ════ -->
+    <section class="sticky-scene" data-scene data-active-step="1" aria-labelledby="sim-title">
+      <h2 class="scene-title" id="sim-title"><span class="act">Act 04 · The stress test</span>Lose a disk. Lose a datacenter. Still readable.</h2>
+      <div class="sticky-scene__stage" aria-hidden="true">
+        <div class="sheet">
+          <div class="scene-head">
+            <span class="scene-no">ACT 04</span>
+            <span class="scene-name">BREAK THE MACHINE</span>
+            <span class="scene-readout" data-readout>STEP 1 / 3</span>
+          </div>
+          <div class="sheet-body">
+            <div class="fig sm-fig">
+              <div class="sm-gridwrap" style="width:min(430px,100%)">
+                <div class="sm-cols">
+                  <span class="lane-label">AZ 1</span><span class="lane-label">AZ 2</span><span class="lane-label">AZ 3</span>
+                </div>
+                <div class="sm-grid">
+                  <span class="tile t-d">D1</span><span class="tile t-d">D2</span><span class="tile t-d">D3</span>
+                  <span class="tile t-d">D4</span><span class="tile t-d">D5</span><span class="tile t-d">D6</span>
+                  <span class="tile t-p">P1</span><span class="tile t-p">P2</span><span class="tile t-p">P3</span>
+                </div>
+              </div>
+              <span class="rule-plate">ANY 6 OF 9 REBUILD</span>
+              <div class="sweep" id="simSweep" aria-hidden="true"><i></i></div>
+            </div>
+          </div>
+          <div class="sheet-foot"><span>SHEET 05 · FAILURE SIM · ILLUSTRATIVE 6+3</span><span>S3'S REAL REDUNDANCY AND REPAIR GO FURTHER</span></div>
+        </div>
+      </div>
+      <div class="sticky-scene__steps">
+        <div class="sim-mount">
+          <div class="sim sim-live" id="simPanel">
+            <div class="sim-head">
+              <b>SHARD PANEL</b>
+              <span>6+3 · ILLUS.</span>
+            </div>
+            <div class="sim-grid" id="simGrid" role="group" aria-label="Nine shard tiles across three Availability Zones. Select a tile to fail or restore that shard.">
+              <div class="sim-col" data-az="1">
+                <span class="sim-azhead">AZ 1</span>
+                <button type="button" class="sim-tile t-d" data-shard="1" aria-pressed="false">D1</button>
+                <button type="button" class="sim-tile t-d" data-shard="4" aria-pressed="false">D4</button>
+                <button type="button" class="sim-tile t-p" data-shard="7" aria-pressed="false">P1</button>
+              </div>
+              <div class="sim-col" data-az="2">
+                <span class="sim-azhead">AZ 2</span>
+                <button type="button" class="sim-tile t-d" data-shard="2" aria-pressed="false">D2</button>
+                <button type="button" class="sim-tile t-d" data-shard="5" aria-pressed="false">D5</button>
+                <button type="button" class="sim-tile t-p" data-shard="8" aria-pressed="false">P2</button>
+              </div>
+              <div class="sim-col" data-az="3">
+                <span class="sim-azhead">AZ 3</span>
+                <button type="button" class="sim-tile t-d" data-shard="3" aria-pressed="false">D3</button>
+                <button type="button" class="sim-tile t-d" data-shard="6" aria-pressed="false">D6</button>
+                <button type="button" class="sim-tile t-p" data-shard="9" aria-pressed="false">P3</button>
+              </div>
+            </div>
+            <div class="sim-controls">
+              <button type="button" class="sim-btn" id="simRandom">FAIL RANDOM SHARD</button>
+              <button type="button" class="sim-btn" id="simAz" aria-pressed="false">KILL AZ 1</button>
+              <button type="button" class="sim-btn" id="simRepair">REPAIR ALL</button>
+              <button type="button" class="sim-btn" id="simReset">RESET</button>
+            </div>
+            <p class="sim-readout" role="status" id="simReadout">shards alive 9/9 · needed 6 · margin +3 · status: readable</p>
+          </div>
+          <div class="sim sim-static">
+            <div class="sim-head"><b>WORST CASE, SHOWN STATIC</b><span>AZ 1 LOST</span></div>
+            <div class="sim-grid">
+              <div class="sim-col" data-az="1">
+                <span class="sim-azhead" style="color:var(--warn);border-color:var(--warn);text-decoration:line-through">AZ 1</span>
+                <span class="sim-tile t-d is-failed">D1</span>
+                <span class="sim-tile t-d is-failed">D4</span>
+                <span class="sim-tile t-p is-failed">P1</span>
+              </div>
+              <div class="sim-col" data-az="2">
+                <span class="sim-azhead">AZ 2</span>
+                <span class="sim-tile t-d">D2</span>
+                <span class="sim-tile t-d">D5</span>
+                <span class="sim-tile t-p">P2</span>
+              </div>
+              <div class="sim-col" data-az="3">
+                <span class="sim-azhead">AZ 3</span>
+                <span class="sim-tile t-d">D3</span>
+                <span class="sim-tile t-d">D6</span>
+                <span class="sim-tile t-p">P3</span>
+              </div>
+            </div>
+            <p>6 of 9 alive — still readable, zero margin. Enable JavaScript for the interactive version.</p>
+          </div>
+        </div>
+        <article class="step" data-step="1">
+          <div class="step-card"><p><span class="step-label">01 · break things</span>Tap shards to break them. The object stays readable while six of nine survive.</p></div>
+        </article>
+        <article class="step" data-step="2">
+          <div class="step-card"><p><span class="step-label">02 · lose a building</span>Kill a whole Availability Zone — three shards gone, six left. Readable, with zero margin.</p></div>
+        </article>
+        <article class="step" data-step="3">
+          <div class="step-card"><p><span class="step-label">03 · repair</span>Repair rebuilds the missing shards from survivors, into healthy failure domains. Eleven nines is this loop, winning forever.</p></div>
+        </article>
+      </div>
+      <p class="caption"><b>What to watch</b> Each failure eats margin, not the object. Below six alive, the object is gone.</p>
+    </section>
+
+    <!-- ════ ACT 5 · S06 — the read path ════ -->
+    <section class="sticky-scene" data-scene data-active-step="1" aria-labelledby="rp-title">
+      <h2 class="scene-title" id="rp-title"><span class="act">Act 05 · The way out</span>GET: the card answers first, then the shards race</h2>
+      <div class="sticky-scene__stage" aria-hidden="true">
+        <div class="sheet">
+          <div class="scene-head">
+            <span class="scene-no">ACT 05</span>
+            <span class="scene-name">THE READ PATH</span>
+            <span class="scene-readout" data-readout>STEP 1 / 3</span>
+          </div>
+          <div class="sheet-body">
+            <div class="fig rp-fig">
+              <div class="wp-top">
+                <span class="req-chip">GET videos/aurora.mp4</span>
+                <div class="auth-box"><span class="lamp" style="background:#4FC8AE"></span>FRONT END · AUTH ✓</div>
+              </div>
+              <div class="rp-card">
+                <span>KEY <b>videos/aurora.mp4</b></span>
+                <span>VERSION <b>v1</b></span>
+                <span class="ptr">SHARDS → <b>AZ 1 · AZ 2 · AZ 3</b></span>
+              </div>
+              <div class="rp-rows">
+                <div class="az-box">
+                  <span class="lane-label">AZ 1</span>
+                  <div class="tile t-d is-flown">D1<span class="tick">6</span></div>
+                  <div class="tile t-d is-flown">D4<span class="tick">1</span></div>
+                  <div class="tile t-p">P1</div>
+                </div>
+                <div class="az-box">
+                  <span class="lane-label">AZ 2</span>
+                  <div class="tile t-d is-flown">D2<span class="tick">2</span></div>
+                  <div class="tile t-d is-flown">D5<span class="tick">4</span></div>
+                  <div class="tile t-p is-flown">P2<span class="tick">3</span></div>
+                </div>
+                <div class="az-box">
+                  <span class="lane-label">AZ 3</span>
+                  <div class="tile t-d is-flown">D3<span class="tick">5</span></div>
+                  <div class="tile t-d">D6</div>
+                  <div class="tile t-p">P3</div>
+                </div>
+              </div>
+              <div class="rp-end">
+                <div class="reassembly">
+                  <span class="mini">D4</span><span class="mini">D2</span><span class="mini">P2</span>
+                  <span class="mini">D5</span><span class="mini">D3</span><span class="mini">D1</span>
+                  <span class="done">aurora.mp4 ✓</span>
+                </div>
+                <span class="ms-chip">~MS</span>
+              </div>
+            </div>
+          </div>
+          <div class="sheet-foot"><span>SHEET 06 · READ PATH</span><span>FASTEST-SIX IS AN ILLUSTRATIVE COUNT · MS TO TENS OF MS</span></div>
+        </div>
+      </div>
+      <div class="sticky-scene__steps">
+        <article class="step" data-step="1">
+          <div class="step-card"><p><span class="step-label">01 · the card first</span>Auth again — then the card says where this version's shards live, before any bytes move.</p></div>
+        </article>
+        <article class="step" data-step="2">
+          <div class="step-card"><p><span class="step-label">02 · the race</span>Fetches race in parallel. The fastest six answer, the object is rebuilt, and it streams out — in milliseconds.</p></div>
+        </article>
+        <article class="step" data-step="3">
+          <div class="step-card"><p><span class="step-label">03 · separate promises</span>Availability is a separate promise: 99.99% a year — tens of minutes. Express One Zone trades the other AZs for single-digit milliseconds.</p></div>
+        </article>
+      </div>
+      <p class="caption"><b>What to watch</b> Six tiles lift and answer first, numbered in arrival order; the stragglers never gate the read.</p>
+      <div class="express">
+        <table>
+          <caption>STANDARD VS EXPRESS ONE ZONE — WHAT A LOST BUILDING CHANGES</caption>
+          <tbody>
+            <tr>
+              <th scope="row">STANDARD</th>
+              <td><b>At least three AZs.</b> Milliseconds to tens of milliseconds. Designed to survive the loss of an Availability Zone.</td>
+            </tr>
+            <tr>
+              <th scope="row">EXPRESS ONE ZONE</th>
+              <td><b>One AZ.</b> Single-digit milliseconds. Still designed for eleven nines of durability — but the loss of that one AZ is not survived.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="ex-note">Both classes quote the same durability design target; the trade is latency and cost against building-level resilience.</p>
+      </div>
+    </section>
+
+    <!-- ════ ACT 6 · S07 — strong consistency ════ -->
+    <section class="sticky-scene" data-scene data-active-step="1" aria-labelledby="cs-title">
+      <h2 class="scene-title" id="cs-title"><span class="act">Act 06 · The freshness rule</span>Write v2, read v2 — always</h2>
+      <div class="sticky-scene__stage" aria-hidden="true">
+        <div class="sheet">
+          <div class="scene-head">
+            <span class="scene-no">ACT 06</span>
+            <span class="scene-name">CONSISTENCY</span>
+            <span class="scene-readout" data-readout>STEP 1 / 3</span>
+          </div>
+          <div class="sheet-body">
+            <div class="fig cs-fig">
+              <span class="era"><span class="era-before">ERA · BEFORE DEC 2020</span><span class="era-now">S3 TODAY · SINCE DEC 2020</span></span>
+              <div class="cs-lane">
+                <span class="lane-label"><span>WRITE LANE — OBJECT: report.pdf</span><span>ORDERED PER OBJECT</span></span>
+                <div class="write-line">
+                  <span class="seq">v1<small>seq 101</small></span>
+                  <span class="w-arrow"></span>
+                  <span class="seq v2 is-commit">v2 ✓<small>seq 102</small></span>
+                </div>
+              </div>
+              <div class="cs-lane">
+                <span class="lane-label"><span>WITNESS — LATEST COMMITTED VERSION</span></span>
+                <div class="witness">
+                  <span>POINTER</span>
+                  <span class="w-track"><span class="w-token"><i></i><span>102</span></span></span>
+                  <span>v2</span>
+                </div>
+              </div>
+              <div class="cs-lane">
+                <span class="lane-label"><span>READ LANE</span><span>FRESH OR BYPASSED</span></span>
+                <div class="read-split">
+                  <div class="r-path cache-old">
+                    <b>CACHE · v1 · seq 101</b>
+                    <span class="bracket">101 &lt; 102 → BYPASS</span>
+                    <span class="verdict">stale — not allowed to answer</span>
+                  </div>
+                  <div class="r-path is-served">
+                    <b>AUTHORITATIVE · v2</b>
+                    <span class="verdict">serves GET → v2 ✓</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sheet-foot"><span>SHEET 07 · CONSISTENCY · SEQUENCE NUMBERS ILLUSTRATIVE</span><span>STRONG SINCE DEC 2020 · ALL OPS, ALL REGIONS · AFTER AWS'S PUBLISHED DESCRIPTION</span></div>
+        </div>
+      </div>
+      <div class="sticky-scene__steps">
+        <article class="step" data-step="1">
+          <div class="step-card"><p><span class="step-label">01 · the old world</span>Before December 2020, a read right after a write could briefly answer with the old value — caches lagged.</p></div>
+        </article>
+        <article class="step" data-step="2">
+          <div class="step-card"><p><span class="step-label">02 · the ordering</span>Now every write takes a sequence number — v2 lands as 102 — and a witness tracks the latest committed version.</p></div>
+        </article>
+        <article class="step" data-step="3">
+          <div class="step-card"><p><span class="step-label">03 · fresh or bypassed</span>A cache may answer only if it can prove it is not behind the witness. Otherwise, straight to the authoritative store. You always read v2.</p></div>
+        </article>
+      </div>
+      <p class="caption"><b>What to watch</b> The witness jumps to 102; the stale cache is checked and rerouted — never served.</p>
+    </section>
+
+    <!-- ════ ACT 7 · S08 — the whole machine ════ -->
+    <section class="synthesis" aria-labelledby="syn-title">
+      <div class="syn-inner">
+        <span class="act">Act 07 · The synthesis</span>
+        <h2 id="syn-title">Eleven nines is a loop you can audit</h2>
+        <p>The whole machine in one picture: a front door that checks identity, a strongly consistent card, an erasure-coded fleet across at least three AZs, and a repair loop holding it all in place. AWS has published research on the parts — ShardStore, a formally verified Rust storage node, and Physalia, metadata built from millions of tiny consensus cells.</p>
+        <div class="machine" aria-hidden="true">
+          <div class="m-layer">
+            <span class="m-name">01 · FRONT DOOR</span>
+            <span class="m-draw"><span class="m-part">AUTHENTICATE EVERY REQUEST</span><span class="m-part">STATELESS</span></span>
+          </div>
+          <div class="m-layer">
+            <span class="m-name">02 · METADATA</span>
+            <span class="m-draw"><span class="m-part mp-ok">CARD: KEY · SIZE · VERSION</span><span class="m-part mp-ok">WITNESS → SEQ 102</span></span>
+          </div>
+          <div class="m-layer">
+            <span class="m-name">03 · DATA FLEET</span>
+            <span class="m-draw">
+              <span class="m-part mp-az1">AZ 1 · D1 D4 P1</span>
+              <span class="m-part mp-az2">AZ 2 · D2 D5 P2</span>
+              <span class="m-part mp-az3">AZ 3 · D3 D6 P3</span>
+            </span>
+          </div>
+          <div class="m-layer">
+            <span class="m-name">04 · REPAIR LOOP</span>
+            <span class="m-draw"><span class="m-part">CHECKSUM · SCRUB</span><span class="m-loop">↻</span><span class="m-part">RECONSTRUCT</span></span>
+          </div>
+          <div class="m-layer">
+            <span class="m-name">05 · ACK GATE</span>
+            <span class="m-draw"><span class="m-part mp-ok">REDUNDANCY MET → COMMIT → 200 OK</span><span class="m-part mp-warn">DELETE → GONE (BY DESIGN)</span></span>
+          </div>
+        </div>
+        <ol class="machine-glosses">
+          <li><b>Front door</b>Identity and permissions checked before anything touches data or metadata.</li>
+          <li><b>Metadata plane</b>The always-right index card — strongly consistent, with the witness as read barrier.</li>
+          <li><b>Data fleet</b>The erasure-coded bytes, spread across at least three Availability Zones.</li>
+          <li><b>Repair loop</b>Checksums, scrubbing, and reconstruction holding redundancy in place forever.</li>
+          <li><b>Ack gate</b>200 OK only after redundancy is real — and DELETE honored as a valid command.</li>
+        </ol>
+        <p>What this does not promise: your own <span class="mono">DELETE</span>. Durability protects against infrastructure failure — not against you.</p>
+        <div class="callout">
+          <span class="callout-label">THE HONEST LIMIT</span>
+          <p>Durability, availability, backup — three different axes. Eleven nines will not save you from an authorized delete; versioning will. Cross-region replication covers the regional disaster.</p>
+        </div>
+        <p>Keep four questions for any storage system — S3's answers are one polished instance. The questions transfer; the answers do not.</p>
+        <div class="questions">
+          <div><span class="quest-no">Q1</span><p>Where does the metadata live?<small>S3: a strongly consistent index, replicated, with a witness read barrier.</small></p></div>
+          <div><span class="quest-no">Q2</span><p>How is the data spread?<small>S3: erasure-coded shards across at least three Availability Zones.</small></p></div>
+          <div><span class="quest-no">Q3</span><p>When does it say done?<small>S3: only after the redundancy target is met — then metadata commits, then 200 OK.</small></p></div>
+          <div><span class="quest-no">Q4</span><p>What repairs it?<small>S3: checksums, background scrubbing, and reconstruction from surviving shards.</small></p></div>
+        </div>
+        <p class="footnote">HISTORY — PER-PREFIX CEILINGS (ABOUT 3,500 WRITES/S, 5,500 READS/S) SHAPED KEY-NAMING HABITS. AWS HAS SINCE AUTOMATED PARTITION SPLITTING; TREAT THEM AS HISTORY, NOT LIMITS.</p>
+      </div>
+    </section>
+
+    <!-- ════ The ending ════ -->
+    <section class="ending" aria-labelledby="end-title">
+      <div class="rule-line" aria-hidden="true"><i></i><i></i></div>
+      <div class="end-inner">
+        <p class="kicker">The whole idea</p>
+        <h2 id="end-title">Durability is a <em>race</em> between failure and repair, won by design.</h2>
+        <p>Eleven nines is not a property of any disk, rack, or building. It is a loop: split every object into shards, spread them across at least three Availability Zones, acknowledge only when redundancy is real, and repair losses faster than the world causes them.</p>
+        <p>The same loop tells you what S3 is not: not a local disk, and not a backup against your own <span class="mono">DELETE</span>. Meet any storage system and ask: where is the metadata, how is the data spread, when does it say done, and what repairs it?</p>
+        <div class="post-links" role="navigation" aria-label="Article navigation">
+          <a href="/"><small>Notebook</small><b>← All curiosities</b></a>
+          <a href="write-ahead-log.html"><small>Previous curiosity</small><b>How WAL saves a $100 transfer →</b></a>
+        </div>
+        <footer class="footer"><span>AMAZON S3 · VISUAL EDITION</span><a href="/">engineering.victorbusque.com</a></footer>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    /* ══════════════════════════════════════════════════════════════════
+       Page runtime — this file's own engine.
+       1. Sticky scenes: IntersectionObserver activates steps, sets
+          data-active-step (the single source of truth for stage states),
+          fills the STEP k / n readout, and measures --card-reserve so the
+          mobile diagram centers above the bottom-docked sheet.
+       2. The S05 failure simulation: explicit state (failed set, azDown
+          flag) rendered by one function; every readout number is computed
+          from that state. Works under reduced motion (instant swaps).
+       Without IntersectionObserver the .js gate is removed and the page
+       stays the complete static document.
+       ══════════════════════════════════════════════════════════════════ */
+    (function () {
+      'use strict';
+      var root = document.documentElement;
+      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var portraitMob = window.matchMedia('(max-width: 850px) and (min-height: 521px)');
+
+      function activate(scene, step) {
+        var number = String(step.getAttribute('data-step'));
+        var steps = [].slice.call(scene.querySelectorAll('.step[data-step]'));
+        scene.setAttribute('data-active-step', number);
+        steps.forEach(function (item) { item.classList.toggle('is-active', item === step); });
+        var readout = scene.querySelector('[data-readout]');
+        if (readout) readout.textContent = 'STEP ' + number + ' / ' + steps.length;
+      }
+
+      function wireScene(scene) {
+        var steps = [].slice.call(scene.querySelectorAll('.step[data-step]'));
+        if (!steps.length) return;
+        activate(scene, steps[0]);
+        var band = portraitMob.matches ? '-20% 0px -20% 0px' : '-42% 0px -42% 0px';
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) { if (entry.isIntersecting) activate(scene, entry.target); });
+        }, { rootMargin: band, threshold: 0 });
+        steps.forEach(function (step) { io.observe(step); });
+      }
+
+      function measureCards() {
+        if (!portraitMob.matches) return;
+        [].slice.call(document.querySelectorAll('.sticky-scene')).forEach(function (scene) {
+          var cards = [].slice.call(scene.querySelectorAll('.step-card'));
+          var tallest = Math.max.apply(null, [0].concat(cards.map(function (c) { return c.getBoundingClientRect().height; })));
+          var stage = scene.querySelector('.sticky-scene__stage');
+          if (stage) stage.style.setProperty('--card-reserve', Math.ceil(tallest + 30) + 'px');
+        });
+      }
+
+      /* ── The S05 simulation ── */
+      var K = 6, N = 9;
+      var panel = document.getElementById('simPanel');
+      var grid = document.getElementById('simGrid');
+      var failed = {};      /* shard id → true */
+      var azDown = false;   /* AZ 1 = shards 1, 4, 7 */
+      var busy = false;
+
+      function azOf(id) { return ((id - 1) % 3) + 1; }
+      function isAlive(id) { return !failed[id]; }
+
+      function render() {
+        if (!grid) return;
+        [].slice.call(grid.querySelectorAll('.sim-tile')).forEach(function (t) {
+          var id = +t.getAttribute('data-shard');
+          var azDead = azDown && azOf(id) === 1;
+          t.classList.toggle('is-failed', !!failed[id]);
+          t.classList.toggle('is-az-dead', azDead);
+          t.setAttribute('aria-pressed', failed[id] ? 'true' : 'false');
+          t.disabled = azDead;
+        });
+        [].slice.call(grid.querySelectorAll('.sim-col')).forEach(function (col) {
+          col.classList.toggle('is-dead', col.getAttribute('data-az') === '1' && azDown);
+        });
+        var azBtn = document.getElementById('simAz');
+        if (azBtn) {
+          azBtn.setAttribute('aria-pressed', azDown ? 'true' : 'false');
+          azBtn.textContent = azDown ? 'RESTORE AZ 1' : 'KILL AZ 1';
+        }
+        var alive = 0, i;
+        for (i = 1; i <= N; i++) if (isAlive(i)) alive++;
+        var margin = alive - K;
+        var status = alive >= K ? (margin === 0 ? 'readable · ZERO MARGIN' : 'readable') : 'UNRECOVERABLE (ILLUS.)';
+        var sign = margin >= 0 ? '+' : '';
+        var readout = document.getElementById('simReadout');
+        if (readout) readout.textContent = 'shards alive ' + alive + '/' + N + ' · needed ' + K +
+          ' · margin ' + sign + margin + ' · status: ' + status;
+        if (panel) panel.classList.toggle('is-lost', alive < K);
+      }
+
+      function repair() {
+        if (busy) return;
+        var missing = [], i;
+        for (i = 1; i <= N; i++) if (failed[i]) missing.push(i);
+        if (!missing.length) return;
+        var sweep = document.getElementById('simSweep');
+        if (reduceMotion || !sweep) { failed = {}; azDown = false; render(); return; }
+        busy = true;
+        sweep.classList.add('is-running');
+        azDown = false; render();
+        missing.forEach(function (id, n) {
+          setTimeout(function () { delete failed[id]; render(); }, 160 + n * 90);
+        });
+        setTimeout(function () {
+          failed = {}; azDown = false; render();
+          sweep.classList.remove('is-running');
+          busy = false;
+        }, 260 + missing.length * 90);
+      }
+
+      if (grid && panel) {
+        grid.addEventListener('click', function (e) {
+          var tile = e.target.closest ? e.target.closest('.sim-tile') : null;
+          if (!tile || busy || tile.disabled) return;
+          var id = +tile.getAttribute('data-shard');
+          if (failed[id]) delete failed[id]; else failed[id] = true;
+          render();
+        });
+        var rnd = document.getElementById('simRandom');
+        if (rnd) rnd.addEventListener('click', function () {
+          if (busy) return;
+          var pool = [], i;
+          for (i = 1; i <= N; i++) if (isAlive(i) && !(azDown && azOf(i) === 1)) pool.push(i);
+          if (!pool.length) return;
+          failed[pool[Math.floor(Math.random() * pool.length)]] = true;
+          render();
+        });
+        var az = document.getElementById('simAz');
+        if (az) az.addEventListener('click', function () {
+          if (busy) return;
+          var i;
+          if (azDown) {
+            azDown = false;
+            for (i = 1; i <= N; i++) if (azOf(i) === 1) delete failed[i];
+          } else {
+            azDown = true;
+            for (i = 1; i <= N; i++) if (azOf(i) === 1) failed[i] = true;
+          }
+          render();
+        });
+        var rep = document.getElementById('simRepair');
+        if (rep) rep.addEventListener('click', repair);
+        var rst = document.getElementById('simReset');
+        if (rst) rst.addEventListener('click', function () { failed = {}; azDown = false; render(); });
+        render();
+      }
+
+      /* ── Scene wiring (after the sim so step 1 text overlays a ready panel) ── */
+      if (!('IntersectionObserver' in window)) {
+        root.className = 'no-js';
+        return;
+      }
+      [].slice.call(document.querySelectorAll('[data-scene]')).forEach(wireScene);
+      measureCards();
+      window.addEventListener('resize', measureCards, { passive: true });
+      window.addEventListener('orientationchange', measureCards);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(measureCards);
+    })();
+  </script>
+  <script src="../js/post-progress.js" defer></script>
+</body>
+</html>
