@@ -20,6 +20,15 @@
    JSON so the checker can parse it directly. */
 window.VB_POSTS = [
     {
+        "slug": "blog/how-jpeg-works.html",
+        "no": "10",
+        "title": "How JPEG Compression Works",
+        "date": "2026-09",
+        "topic": "Media · Compression",
+        "tags": ["JPEG", "DCT", "Compression", "Images"],
+        "deck": "Watch a photo become numbers, lose its color detail, dissolve into waves, and rebuild tiny — the real math of JPEG, computed live in your browser."
+    },
+    {
         "slug": "blog/how-s3-works.html",
         "no": "09",
         "title": "How Amazon S3 Works: Eleven Nines, Explained",

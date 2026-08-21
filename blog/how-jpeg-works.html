@@ -1,0 +1,2509 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+
+    <!-- Primary meta -->
+    <title>How JPEG Compression Works — Víctor Busqué</title>
+    <meta name="description" content="Watch a photo become numbers, lose its color detail, dissolve into waves, and rebuild tiny — the real math of JPEG, computed live in your browser.">
+    <meta name="author" content="Víctor Busqué">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://engineering.victorbusque.com/blog/how-jpeg-works.html">
+
+    <!-- Favicons / PWA (absolute paths resolve from /blog/) -->
+    <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/img/favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+    <meta name="theme-color" content="#0d0d0f">
+    <meta name="color-scheme" content="dark">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Víctor Busqué — Curiosities">
+    <meta property="og:title" content="How JPEG Compression Works — Víctor Busqué">
+    <meta property="og:description" content="Watch a photo become numbers, lose its color detail, dissolve into waves, and rebuild tiny — the real math of JPEG, computed live in your browser.">
+    <meta property="og:url" content="https://engineering.victorbusque.com/blog/how-jpeg-works.html">
+    <meta property="og:image" content="https://engineering.victorbusque.com/img/og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="How JPEG Compression Works — Víctor Busqué">
+    <meta name="twitter:description" content="Watch a photo become numbers, lose its color detail, dissolve into waves, and rebuild tiny — the real math of JPEG, computed live in your browser.">
+    <meta name="twitter:image" content="https://engineering.victorbusque.com/img/og.png">
+
+    <!-- Performance: preconnect to font CDN -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Structured data — matches js/posts.js, the site's single post manifest. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": "How JPEG Compression Works",
+      "description": "Watch a photo become numbers, lose its color detail, dissolve into waves, and rebuild tiny — the real math of JPEG, computed live in your browser.",
+      "datePublished": "2026-09",
+      "author": { "@id": "https://engineering.victorbusque.com/#person" },
+      "publisher": { "@id": "https://engineering.victorbusque.com/#person" },
+      "url": "https://engineering.victorbusque.com/blog/how-jpeg-works.html",
+      "mainEntityOfPage": "https://engineering.victorbusque.com/blog/how-jpeg-works.html",
+      "inLanguage": "en",
+      "keywords": ["JPEG", "DCT", "Compression", "Images"],
+      "articleSection": "Media · Compression"
+    }
+    </script>
+
+    <!-- The .js gate: enables the scene overlay layout. Without it (no JS,
+         reduced motion) scenes render as a plain document — stage first,
+         steps stacked. Must run before the body parses. -->
+    <script>document.documentElement.className += ' js';</script>
+
+    <style>
+/* ════════════════════════════════════════════════════════════════════
+   BASE — the article's own darkroom stylesheet.
+   Skeleton contracts (sticky scenes, step cards, mobile bottom sheet,
+   reduced-motion collapse) follow the site's scaffold; the skin is this
+   article's alone: a photograph inspected in the dark.
+   ════════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Unbounded:wght@400;500;600;700&display=swap');
+
+:root {
+    --bg: #0d0d0f;
+    --bg-2: #121317;
+    --stage: #0a0a0c;
+    --ink: #ece9e2;
+    --body: #cfcbc2;
+    --muted: #98948b;
+    --mint: #5fe0c0;      /* kept · present · active */
+    --coral: #ff6b4a;     /* discarded · loss · watch this */
+    --violet: #b1a6ff;    /* structure being examined */
+    --line: #ffffff1f;
+    --line-2: #ffffff12;
+
+    --ease-out: cubic-bezier(.16, 1, .3, 1);
+    --ease-in: cubic-bezier(.55, 0, .85, .36);
+    --ease-snap: cubic-bezier(.2, 0, 0, 1);
+    --ease-swift: cubic-bezier(.4, 0, .2, 1);
+    --t-fast: 180ms;
+    --t-med: 400ms;
+    --t-slow: 800ms;
+    --t-dramatic: 1100ms;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+.skip-link {
+    position: fixed;
+    left: max(16px, env(safe-area-inset-left, 0px));
+    top: max(12px, env(safe-area-inset-top, 0px));
+    z-index: 100;
+    padding: 10px 14px;
+    background: var(--mint);
+    color: #0d0d0f;
+    font: 10px "DM Mono", monospace;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    transform: translateY(-160%);
+    transition: transform var(--t-fast) var(--ease-out);
+}
+.skip-link:focus { transform: none; }
+
+body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Newsreader", Georgia, serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+::selection { background: var(--mint); color: #0d0d0f; }
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--mint); outline-offset: 3px; }
+
+.mono { font-family: "DM Mono", monospace; }
+
+/* ── scroll reveals ── */
+.reveal {
+    opacity: 0;
+    transform: translateY(26px);
+    transition: opacity var(--t-slow) var(--ease-out), transform var(--t-slow) var(--ease-out);
+    transition-delay: var(--d, 0s);
+}
+.reveal.seen { opacity: 1; transform: none; }
+
+/* ── hero ── */
+.hero {
+    position: relative;
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    overflow: hidden;
+    /* no-JS fallback: the memory of the photo, as gradient */
+    background: linear-gradient(168deg, #1c2150 0%, #2c2050 34%, #7a4a68 62%, #ff9e5e 86%, #ffd696 100%);
+}
+.hero-canvas-wrap { position: absolute; inset: 0; }
+#heroCanvas {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    opacity: 0;
+    transition: opacity 1.4s var(--ease-out);
+}
+#heroCanvas.is-on { opacity: 1; }
+.hero-scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, #0d0d0f8c 0%, #0d0d0f2e 30%, #0d0d0f4d 62%, #0d0d0f 100%);
+    pointer-events: none;
+}
+.hero-inner {
+    position: relative;
+    z-index: 2;
+    padding: 0 4vw 7vh;
+    max-width: 1240px;
+    width: 100%;
+    margin: 0 auto;
+}
+.hero-kicker {
+    font: 10px "DM Mono", monospace;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--mint);
+    margin-bottom: 26px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.hero-kicker::before {
+    content: "";
+    width: 34px;
+    height: 1px;
+    background: var(--mint);
+}
+.hero h1 {
+    font-family: "Unbounded", sans-serif;
+    font-weight: 500;
+    font-size: clamp(42px, 7.2vw, 108px);
+    letter-spacing: -.06em;
+    line-height: .92;
+    margin-bottom: 30px;
+}
+.hero h1 .h-line { display: block; overflow: hidden; padding-bottom: .08em; margin-bottom: -.08em; }
+.hero h1 .h-line > span {
+    display: block;
+    transform: translateY(112%);
+    animation: rise var(--t-dramatic) var(--ease-out) both;
+}
+.hero h1 .h-line:nth-child(1) > span { animation-delay: .15s; }
+.hero h1 .h-line:nth-child(2) > span { animation-delay: .3s; }
+.hero h1 em {
+    font-family: "Instrument Serif", serif;
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -.03em;
+    color: var(--coral);
+}
+.hero .dek {
+    font-size: 18px;
+    line-height: 1.65;
+    max-width: 640px;
+    color: #ddd9d0;
+    opacity: 0;
+    transform: translateY(18px);
+    animation: fade-rise var(--t-slow) var(--ease-out) .65s both;
+}
+.hero-meta {
+    margin-top: 34px;
+    display: flex;
+    gap: 26px;
+    flex-wrap: wrap;
+    font: 10px "DM Mono", monospace;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #a5a196;
+    opacity: 0;
+    animation: fade-rise var(--t-slow) var(--ease-out) .9s both;
+}
+.hero-meta b { color: var(--ink); font-weight: 500; }
+.hero-cue {
+    position: absolute;
+    right: 4vw;
+    bottom: 7vh;
+    width: 1px;
+    height: 64px;
+    overflow: hidden;
+    opacity: 0;
+    animation: fade-rise var(--t-slow) var(--ease-out) 1.2s both;
+}
+.hero-cue::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: -40%;
+    width: 1px;
+    height: 40%;
+    background: var(--mint);
+    animation: cue-drop 2.2s var(--ease-swift) infinite;
+}
+@keyframes cue-drop {
+    0% { top: -40%; }
+    60%, 100% { top: 110%; }
+}
+@keyframes rise { to { transform: translateY(0); } }
+@keyframes fade-rise { to { opacity: 1; transform: none; } }
+
+/* ── prose ── */
+.prose {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 11vh 4vw 0;
+}
+.prose > p {
+    font-size: 18px;
+    line-height: 1.76;
+    color: var(--body);
+    margin-bottom: 1.5em;
+}
+.prose > p strong { color: var(--ink); font-weight: 600; }
+.prose h2 {
+    font-family: "Unbounded", sans-serif;
+    font-weight: 500;
+    font-size: clamp(24px, 3.3vw, 36px);
+    letter-spacing: -.045em;
+    line-height: 1.08;
+    margin: 0 0 26px;
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+    color: var(--ink);
+}
+.prose h2 .sec-no {
+    font: 10px "DM Mono", monospace;
+    letter-spacing: .14em;
+    color: var(--coral);
+    align-self: center;
+}
+.prose .callout {
+    border-left: 4px solid var(--mint);
+    background: #10201b;
+    padding: 24px 28px;
+    margin: 5vh 0;
+    font: italic 23px/1.45 "Instrument Serif", serif;
+    color: #e9f5ef;
+}
+.prose .callout em { font-style: normal; color: var(--mint); }
+.prose .aside {
+    font: 11px/1.75 "DM Mono", monospace;
+    color: var(--muted);
+    border-top: 1px solid var(--line-2);
+    padding-top: 14px;
+    margin: 6vh 0 0;
+}
+
+/* ── sticky scene system (scaffold contract, darkroom skin) ── */
+.sticky-scene {
+    position: relative;
+    border-top: 1px solid var(--line-2);
+    border-bottom: 1px solid var(--line-2);
+    margin: 11vh 0;
+}
+.js .sticky-scene {
+    padding-bottom: 100vh;
+    padding-bottom: 100svh;
+}
+.sticky-scene__stage {
+    background-color: var(--stage);
+    background-image: linear-gradient(#ffffff08 1px, transparent 1px),
+        linear-gradient(90deg, #ffffff08 1px, transparent 1px);
+    background-size: 32px 32px;
+    color: var(--ink);
+    position: relative;
+    overflow: hidden;
+    min-height: 60vh;
+}
+.js .sticky-scene__stage {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100svh;
+    min-height: 0;
+}
+.sticky-scene__stage::after {
+    content: "";
+    position: absolute;
+    width: 220px;
+    height: 220px;
+    border: 1px solid #ffffff10;
+    border-radius: 50%;
+    right: -110px;
+    bottom: -110px;
+    pointer-events: none;
+}
+.scene-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid #ffffff14;
+    padding: 12px 4vw;
+    position: relative;
+    z-index: 2;
+}
+.scene-no {
+    font: 10px "DM Mono", monospace;
+    letter-spacing: .14em;
+    color: var(--coral);
+}
+.scene-name {
+    font: 10px "DM Mono", monospace;
+    letter-spacing: .18em;
+}
+.scene-readout {
+    font: 10px "DM Mono", monospace;
+    color: #7c7a74;
+    margin-left: auto;
+}
+.scene-readout b { color: var(--mint); font-weight: 500; }
+
+.js .sticky-scene__steps {
+    position: relative;
+    margin-top: -100vh;
+    margin-top: -100svh;
+    pointer-events: none;
+    z-index: 1;
+}
+.js .sticky-scene__steps > * {
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    padding: 0 4vw;
+}
+.step {
+    max-width: 440px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    padding: 26px 28px;
+    color: var(--ink);
+}
+.js .step {
+    background: none;
+    border: 0;
+    padding: 0;
+    max-width: none;
+    pointer-events: none;
+}
+.js .step.is-active { pointer-events: auto; }
+.step-card {
+    width: 100%;
+    max-width: 440px;
+    background: #14151add;
+    border: 1px solid #ffffff22;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 26px 28px;
+    color: var(--ink);
+    opacity: 0;
+    transform: translateY(26px);
+    transition: opacity var(--t-slow) var(--ease-out),
+        transform var(--t-slow) var(--ease-out);
+}
+.js .step.is-active .step-card {
+    opacity: 1;
+    transform: none;
+}
+.step-progress { display: none; }
+.step-k {
+    font: 9px "DM Mono", monospace;
+    letter-spacing: .16em;
+    color: var(--coral);
+    display: block;
+    margin-bottom: 10px;
+}
+.step p {
+    font-size: 16.5px;
+    line-height: 1.62;
+    color: #ddd9d0;
+}
+.step p + p { margin-top: .8em; }
+.step p b { color: var(--mint); font-weight: 500; }
+.step p i { font-style: normal; color: var(--violet); }
+
+/* ── breather ── */
+.breather {
+    padding: 16vh 4vw;
+    text-align: center;
+    position: relative;
+}
+.breather::before, .breather::after {
+    content: "";
+    display: block;
+    width: 120px;
+    height: 1px;
+    background: var(--line);
+    margin: 0 auto 7vh;
+}
+.breather::after { margin: 7vh auto 0; }
+.breather .breather-line {
+    font: italic clamp(30px, 4.4vw, 52px)/1.25 "Instrument Serif", serif;
+    max-width: 720px;
+    margin: 0 auto;
+    color: var(--ink);
+}
+.breather .breather-line em { color: var(--mint); font-style: italic; }
+
+/* ── reduced motion: the plain document ── */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+    }
+    .reveal, .hero h1 .h-line > span, .hero .dek, .hero-meta, .hero-cue, #heroCanvas {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+    .js .sticky-scene__stage { position: relative; height: auto; min-height: 50vh; }
+    .js .sticky-scene { padding-bottom: 0; }
+    .js .sticky-scene__steps { margin-top: 0; }
+    .js .sticky-scene__steps > * { min-height: auto; display: block; padding: 0 4vw; }
+    .js .step {
+        opacity: 1 !important;
+        transform: none !important;
+        max-width: none;
+        background: none;
+        border: 0;
+        padding: 30px 0;
+        pointer-events: auto;
+    }
+    .js .step-card {
+        opacity: 1 !important;
+        transform: none !important;
+        background: none;
+        border: 0;
+        padding: 0;
+        max-width: none;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+    .step-progress { display: none !important; }
+}
+</style>
+
+    <script>
+/* ── Inlined site runtime helpers (window.VB) ────────────────────────
+   This copy belongs to this article alone. It exists while the page
+   parses so page scripts can use it immediately. ── */
+(function () {
+    'use strict';
+
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function esc(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function mulberry32(seed) {
+        var a = seed | 0;
+        return function () {
+            a |= 0; a = a + 0x6D2B79F5 | 0;
+            var t = Math.imul(a ^ a >>> 15, 1 | a);
+            t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+            return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        };
+    }
+
+    function onReady(fn) {
+        if (window.VBScene) { fn(); return; }
+        document.addEventListener('DOMContentLoaded', function () { fn(); });
+    }
+
+    window.VB = {
+        reduceMotion: reduceMotion,
+        esc: esc,
+        mulberry32: mulberry32,
+        fmt: {
+            pct: function (p, d) { return (p * 100).toFixed(d == null ? 1 : d) + '%'; },
+            ordinal: function (n) { var s = ['TH', 'ST', 'ND', 'RD'], v = n % 100; return s[(v - 20) % 10] || s[v] || s[0]; },
+            sup: function (n) { var D = '⁰¹²³⁴⁵⁶⁷⁸⁹'; return (n < 0 ? '⁻' : '') + String(Math.abs(n)).split('').map(function (c) { return D[+c]; }).join(''); }
+        },
+        motion: {
+            retrig: function (el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); },
+            countUp: function (el, txt) { el.textContent = txt; }
+        },
+        onReady: onReady
+    };
+})();
+</script>
+
+    <style>
+/* ════════════════════════════════════════════════════════════════════
+   PAGE — scene stages, the lab, the pipeline, mobile blocks
+   ════════════════════════════════════════════════════════════════════ */
+
+.scene-frame {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    padding: 70px 4vw 24px;
+}
+canvas.sc {
+    display: block;
+    border: 1px solid #ffffff1c;
+    background: #08080a;
+    max-width: 100%;
+    max-height: 100%;
+}
+.stage-chip {
+    position: absolute;
+    font: 10px "DM Mono", monospace;
+    letter-spacing: .14em;
+    color: var(--muted);
+    padding: 7px 11px;
+    border: 1px solid #ffffff1c;
+    background: #0d0d0fd9;
+    white-space: nowrap;
+}
+.stage-chip b { color: var(--mint); font-weight: 500; }
+.stage-chip.is-hot b { color: var(--coral); }
+
+/* ── scene 1 · raw truth ── */
+#s1Canvas { width: min(66vw, 78vh * 1.3333, 640px); height: auto; aspect-ratio: 4 / 3; }
+.s1-chips {
+    position: absolute;
+    top: 84px;
+    right: 4vw;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+}
+.s1-chip {
+    font: 10px "DM Mono", monospace;
+    letter-spacing: .14em;
+    color: var(--muted);
+    padding: 8px 12px;
+    border: 1px solid #ffffff1a;
+    background: #0d0d0fd9;
+    opacity: 0;
+    transform: translateX(14px);
+    transition: opacity .6s var(--ease-out), transform .6s var(--ease-out);
+}
+.s1-chip b { color: var(--mint); font-weight: 500; }
+.sticky-scene[data-active-step="1"] #chipDims,
+.sticky-scene[data-active-step="2"] #chipDims,
+.sticky-scene[data-active-step="3"] #chipDims,
+.sticky-scene[data-active-step="4"] #chipDims,
+.sticky-scene[data-active-step="5"] #chipDims { opacity: 1; transform: none; }
+.sticky-scene[data-active-step="2"] #chipZoom,
+.sticky-scene[data-active-step="3"] #chipZoom { opacity: 1; transform: none; }
+.sticky-scene[data-active-step="3"] #chipRGB { opacity: 1; transform: none; }
+.sticky-scene[data-active-step="4"] #chipBytes,
+.sticky-scene[data-active-step="5"] #chipBytes { opacity: 1; transform: none; }
+
+/* ── scene 2 · color tax ── */
+.s2-panels {
+    display: flex;
+    gap: 18px;
+    align-items: stretch;
+}
+.s2-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: opacity .7s var(--ease-swift), transform .7s var(--ease-swift), filter .7s var(--ease-swift);
+}
+.s2-panel canvas { width: min(21vw, 25vh * 1.3333, 252px); height: auto; aspect-ratio: 4 / 3; }
+.s2-label {
+    font: 9.5px "DM Mono", monospace;
+    letter-spacing: .16em;
+    color: var(--muted);
+    text-align: center;
+}
+.s2-label b { color: var(--ink); font-weight: 500; }
+#s2FullWrap {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 70px 4vw 24px;
+    opacity: 0;
+    transform: scale(.97);
+    transition: opacity .8s var(--ease-out), transform .8s var(--ease-out);
+    pointer-events: none;
+}
+#s2FullWrap canvas { width: min(60vw, 72vh * 1.3333, 600px); height: auto; aspect-ratio: 4 / 3; }
+.sticky-scene[data-active-step="2"] .s2-panel-pchroma,
+.sticky-scene[data-active-step="3"] .s2-panel-py { opacity: .18; filter: saturate(.4); }
+.sticky-scene[data-active-step="2"] .s2-panel-py { transform: scale(1.06); }
+.sticky-scene[data-active-step="3"] .s2-panel-pchroma { transform: scale(1.06); }
+.sticky-scene[data-active-step="4"] .s2-panel-py { transform: scale(1.06); }
+.sticky-scene[data-active-step="4"] .s2-panel-pchroma { transform: scale(.92); }
+.sticky-scene[data-active-step="5"] .s2-panels { opacity: 0; }
+.sticky-scene[data-active-step="5"] #s2FullWrap { opacity: 1; transform: none; }
+.s2-chip {
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, 0);
+    bottom: 12vh;
+}
+.s2-chip { opacity: 0; transition: opacity .6s var(--ease-out); }
+.sticky-scene[data-active-step="4"] #chipSub { opacity: 1; }
+.sticky-scene[data-active-step="5"] #chipDelta { opacity: 1; }
+
+/* ── scene 3 · dictionary of waves ── */
+.s3-main { flex: 1 1 auto; display: grid; place-items: center; min-width: 0; }
+#s3Main { width: min(46vw, 52vh, 460px); height: auto; aspect-ratio: 1 / 1; }
+#s3Main.is-full { aspect-ratio: 4 / 3; width: min(58vw, 66vh * 1.3333, 620px); }
+.s3-side {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    opacity: 0;
+    transform: translateX(22px);
+    transition: opacity .8s var(--ease-out), transform .8s var(--ease-out);
+}
+#s3Dict { width: min(24vw, 30vh, 236px); height: auto; aspect-ratio: 1 / 1; }
+.s3-side .s3-cap { font: 9px "DM Mono", monospace; letter-spacing: .16em; color: var(--muted); text-align: center; }
+.sticky-scene[data-active-step="2"] .s3-side,
+.sticky-scene[data-active-step="3"] .s3-side,
+.sticky-scene[data-active-step="4"] .s3-side,
+.sticky-scene[data-active-step="5"] .s3-side { opacity: 1; transform: none; }
+.sticky-scene[data-active-step="1"] .s3-side,
+.sticky-scene[data-active-step="6"] .s3-side { opacity: .25; }
+.s3-readouts {
+    position: absolute;
+    left: 4vw;
+    bottom: 5vh;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.sticky-scene[data-active-step="4"] .s3-readouts,
+.sticky-scene[data-active-step="5"] .s3-readouts,
+.sticky-scene[data-active-step="6"] .s3-readouts { opacity: 1; }
+.s3-readouts { opacity: 0; transition: opacity .5s var(--ease-out); }
+
+/* ── scene 4 · the rounding ── */
+#s4Wall { width: min(56vw, 62vh, 520px); height: auto; aspect-ratio: 1 / 1; }
+.s4-chip {
+    position: absolute;
+    right: 4vw;
+    bottom: 5vh;
+    max-width: 300px;
+    line-height: 1.7;
+    white-space: normal;
+}
+
+/* ── the lab ── */
+.lab {
+    border-top: 1px solid var(--line-2);
+    border-bottom: 1px solid var(--line-2);
+    background: var(--stage);
+    background-image: linear-gradient(#ffffff07 1px, transparent 1px),
+        linear-gradient(90deg, #ffffff07 1px, transparent 1px);
+    background-size: 32px 32px;
+    padding: 0 0 9vh;
+    margin: 11vh 0 0;
+}
+.lab-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid #ffffff14;
+    padding: 12px 4vw;
+}
+.lab-grid {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 6vh 4vw 0;
+    display: grid;
+    grid-template-columns: 1.1fr .9fr;
+    gap: 5vw;
+    align-items: start;
+}
+.lab-crops { display: grid; gap: 16px; }
+.lab-crop { position: relative; }
+.lab-crop canvas { width: 100%; height: auto; aspect-ratio: 4 / 3; }
+.lab-crop .lab-tag {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font: 9.5px "DM Mono", monospace;
+    letter-spacing: .14em;
+    color: var(--ink);
+    background: #0d0d0fd9;
+    border: 1px solid #ffffff22;
+    padding: 5px 9px;
+}
+.lab-crop .lab-tag b { color: var(--mint); font-weight: 500; }
+.lab-note { font: 10px "DM Mono", monospace; letter-spacing: .12em; color: var(--muted); line-height: 1.8; }
+.lab-note b { color: var(--ink); font-weight: 500; }
+
+.lab-panel { display: flex; flex-direction: column; gap: 26px; }
+.lab-dial { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; }
+.lab-dial label { font: 10px "DM Mono", monospace; letter-spacing: .16em; color: var(--muted); }
+.lab-dial output { font: 500 15px "DM Mono", monospace; color: var(--mint); }
+input[type="range"] {
+    width: 100%;
+    accent-color: var(--mint);
+    height: 28px;
+    cursor: ew-resize;
+    background: transparent;
+}
+.lab-number {
+    font: italic clamp(58px, 7vw, 96px)/0.95 "Instrument Serif", serif;
+    color: var(--ink);
+    letter-spacing: -.02em;
+}
+.lab-number small {
+    font: 10px "DM Mono", monospace;
+    letter-spacing: .16em;
+    color: var(--muted);
+    display: block;
+    margin-top: 10px;
+}
+.lab-stats { display: flex; gap: 30px; flex-wrap: wrap; }
+.lab-stat b {
+    display: block;
+    font: 500 19px "DM Mono", monospace;
+    color: var(--mint);
+}
+.lab-stat span { font: 9.5px "DM Mono", monospace; letter-spacing: .14em; color: var(--muted); }
+#labTable { width: min(100%, 232px); height: auto; aspect-ratio: 1 / 1; border: 1px solid #ffffff1c; }
+.lab-table-wrap { display: flex; gap: 18px; align-items: center; }
+.lab-table-wrap .lab-note { max-width: 220px; }
+
+/* ── split scene 5 · last squeeze ── */
+.split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6vw;
+    align-items: center;
+    max-width: 1240px;
+    margin: 11vh auto;
+    padding: 0 4vw;
+}
+.split h2 {
+    font-family: "Unbounded", sans-serif;
+    font-weight: 500;
+    font-size: clamp(24px, 3.3vw, 36px);
+    letter-spacing: -.045em;
+    line-height: 1.08;
+    margin: 0 0 22px;
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+}
+.split h2 .sec-no {
+    font: 10px "DM Mono", monospace;
+    letter-spacing: .14em;
+    color: var(--coral);
+    align-self: center;
+}
+.split p { font-size: 17px; line-height: 1.72; color: var(--body); margin-bottom: 1.2em; }
+.split .visual { display: grid; place-items: center; }
+#zigCanvas { width: min(40vw, 46vh, 400px); height: auto; aspect-ratio: 1 / 1; }
+
+/* ── synthesis ── */
+.pipeline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin: 6vh 0;
+}
+.pipe-chip {
+    font: 10px "DM Mono", monospace;
+    letter-spacing: .13em;
+    padding: 10px 14px;
+    border: 1px solid var(--line);
+    color: var(--body);
+    background: var(--bg-2);
+    white-space: nowrap;
+}
+.pipe-chip b { color: var(--mint); font-weight: 500; }
+.pipe-chip.is-loss b { color: var(--coral); }
+.pipe-arrow { color: var(--muted); font: 12px "DM Mono", monospace; }
+.fin {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin: 6vh 0;
+}
+.fin-crop { position: relative; }
+.fin-crop canvas { width: 100%; height: auto; aspect-ratio: 4 / 3; }
+.fin-tag {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    font: 9.5px "DM Mono", monospace;
+    letter-spacing: .13em;
+    color: var(--ink);
+    background: #0d0d0fd9;
+    border: 1px solid #ffffff22;
+    padding: 6px 10px;
+}
+.fin-tag b { color: var(--mint); font-weight: 500; }
+.fin-stats {
+    display: flex;
+    gap: 34px;
+    flex-wrap: wrap;
+    margin-bottom: 5vh;
+}
+.fin-stat b {
+    display: block;
+    font: italic 34px/1 "Instrument Serif", serif;
+    color: var(--ink);
+}
+.fin-stat span { font: 9.5px "DM Mono", monospace; letter-spacing: .14em; color: var(--muted); }
+.sources { font-size: 14px; line-height: 2; color: var(--muted); }
+.sources a { border-bottom: 1px solid #ffffff2e; padding-bottom: 1px; transition: color var(--t-fast) var(--ease-snap); }
+.sources a:hover { color: var(--mint); }
+.foot {
+    margin-top: 10vh;
+    padding-top: 18px;
+    border-top: 1px solid var(--line-2);
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    font: 10px "DM Mono", monospace;
+    letter-spacing: .13em;
+    color: var(--muted);
+}
+.foot a { color: var(--mint); }
+
+/* ── responsive ── */
+@media (max-width: 1020px) {
+    .lab-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 850px) {
+    .scene-frame { flex-direction: column; gap: 16px; padding: 76px 4vw calc(var(--card-reserve, 30vh) + 8px); justify-content: flex-start; }
+    #s1Canvas { width: min(92vw, 60vh * 1.3333); }
+    .s1-chips { top: auto; bottom: calc(var(--card-reserve, 30vh) + 16px); flex-direction: row; flex-wrap: wrap; justify-content: center; position: static; margin-top: 4px; }
+    .s2-panels { flex-wrap: wrap; justify-content: center; }
+    .s2-panel canvas { width: min(38vw, 160px); }
+    #s2FullWrap canvas { width: min(92vw, 54vh * 1.3333); }
+    .s2-chip { bottom: calc(var(--card-reserve, 30vh) + 16px); }
+    .s3-side { flex-direction: row; align-items: center; }
+    #s3Dict { width: min(34vw, 150px); }
+    #s3Main { width: min(92vw, 48vh); }
+    #s3Main.is-full { width: min(92vw, 56vh * 1.3333); }
+    .s3-readouts { position: static; justify-content: center; margin-top: 2px; }
+    #s4Wall { width: min(92vw, 52vh); }
+    .s4-chip { position: static; margin-top: 2px; max-width: 420px; }
+    .split { grid-template-columns: 1fr; }
+    .split .visual { order: 2; }
+    #zigCanvas { width: min(80vw, 44vh); }
+    .fin { grid-template-columns: 1fr; }
+    .hero-cue { display: none; }
+    #s2FullWrap { padding: 76px 4vw calc(var(--card-reserve, 30vh) + 8px); }
+}
+@media (max-width: 480px) {
+    .prose > p { font-size: 17px; }
+    .prose .callout { font-size: 20px; padding: 18px 20px; }
+    .step-card { padding: 20px 22px; }
+    .step-card p { font-size: 15.5px; }
+    .lab-number { font-size: 56px; }
+    .fin-stat b { font-size: 28px; }
+    .breather .breather-line { font-size: clamp(26px, 8vw, 34px); }
+}
+
+/* ── portrait phones: bottom-sheet cards (scaffold contract) ── */
+@media (max-width: 850px) and (min-height: 521px) {
+    /* overlays live inside .scene-frame; keep it the positioning context
+       after the scaffold's static-promotion of the single stage child */
+    .js .sticky-scene__stage > .scene-frame { position: relative !important; inset: auto; }
+    .js .sticky-scene__stage {
+        display: flex;
+        flex-direction: column;
+        padding-top: 48px;
+    }
+    .js .sticky-scene__stage .scene-head {
+        flex: 0 0 auto;
+        width: 100%;
+        padding: 8px 4vw;
+    }
+    .js .sticky-scene__stage > :not(.scene-head) {
+        position: static !important;
+        flex: 1 1 auto;
+        width: 100%;
+        min-height: 0;
+        justify-content: center !important;
+        padding: 10px 4vw calc(var(--card-reserve, 30vh) + 4px) !important;
+    }
+    .js .sticky-scene__steps > * {
+        min-height: 100vh;
+        min-height: 100svh;
+    }
+    .js .step-card {
+        width: 100%;
+        max-width: 560px;
+        border-radius: 18px 18px 14px 14px;
+        box-shadow: 0 20px 44px -24px rgba(0, 0, 0, .8);
+        padding: 12px 20px 18px;
+        max-height: 44vh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        opacity: 0;
+        transform: translateY(52px);
+        transform-origin: 50% 100%;
+        transition: opacity .16s var(--ease-in), transform .2s var(--ease-in);
+    }
+    .js .step.is-active .step-card {
+        opacity: 1;
+        transform: none;
+        transition: opacity .36s var(--ease-out) .2s, transform .44s var(--ease-out) .2s;
+    }
+    .step-progress {
+        display: block;
+        height: 3px;
+        border-radius: 3px;
+        background: rgba(127, 127, 127, .28);
+        overflow: hidden;
+        margin: 0 0 12px;
+    }
+    .step-progress i {
+        display: block;
+        height: 100%;
+        width: 0;
+        border-radius: 3px;
+        background: var(--mint);
+        transition: width .5s var(--ease-out) .2s;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+        .js .step-card .step-k,
+        .js .step-card p {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity .14s var(--ease-in), transform .16s var(--ease-in);
+        }
+        .js .step.is-active .step-card .step-k {
+            opacity: 1;
+            transform: none;
+            transition: opacity .3s var(--ease-out) .24s, transform .32s var(--ease-out) .24s;
+        }
+        .js .step.is-active .step-card p {
+            opacity: 1;
+            transform: none;
+            transition: opacity .3s var(--ease-out) .3s, transform .32s var(--ease-out) .3s;
+        }
+    }
+}
+
+/* ── short viewports (landscape phones): right-docked cards ── */
+@media (max-height: 520px) and (max-width: 960px) {
+    .js .sticky-scene__steps > * {
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 0 3vw;
+    }
+    .step-card {
+        position: sticky;
+        right: max(14px, env(safe-area-inset-right, 0px));
+        bottom: max(12px, env(safe-area-inset-bottom, 0px));
+        max-width: 300px;
+    }
+    .js .sticky-scene__stage > div { padding-right: 48%; padding-top: 44px; }
+    .js .sticky-scene__stage > div > * { max-width: 100%; }
+}
+    </style>
+    <link rel="stylesheet" href="../css/post-progress.css">
+    <link rel="stylesheet" href="../css/post-nav.css">
+</head>
+
+<body data-vb-progress-start="#5fe0c0" data-vb-progress-mid="#b1a6ff" data-vb-progress-end="#ff6b4a">
+
+    <header class="hero">
+        <div class="hero-canvas-wrap" aria-hidden="true">
+            <canvas id="heroCanvas"></canvas>
+        </div>
+        <div class="hero-scrim" aria-hidden="true"></div>
+        <div class="hero-inner">
+            <div class="hero-kicker">Note 10 · Image compression · Est. 1992</div>
+            <h1>
+                <span class="h-line"><span>A photograph,</span></span>
+                <span class="h-line"><span><em>mostly deleted.</em></span></span>
+            </h1>
+            <p class="dek">Watch a photo become numbers, lose its color detail, dissolve into waves, and rebuild tiny — the real math of JPEG, computed live in your browser.</p>
+            <div class="hero-meta">
+                <span>Sep <b>2026</b></span>
+                <span>~<b>8</b> min</span>
+                <span><b>5</b> scenes + <b>1</b> lab</span>
+                <span>Mode: <b>computed live</b></span>
+            </div>
+        </div>
+        <div class="hero-cue" aria-hidden="true"></div>
+    </header>
+
+    <main>
+        <section class="prose">
+            <h2><span class="sec-no">01</span>One photo, taken apart</h2>
+            <p>The photograph above this text does not exist as a file. Every dot of it was computed by this page the
+                moment you arrived, from a fixed recipe: a coast at golden hour, a lighthouse, a town switching its
+                windows on. Deterministic — the same photo for you as for me, and the same one every number below is
+                measured on.</p>
+            <p>In 1992, a working group called the <strong>Joint Photographic Experts Group</strong> published the
+                standard the world now calls JPEG, and it has been the default way photographs travel ever since. Its
+                promise sounds impossible: compression around <strong>ten to one</strong> is routine, with no loss you
+                can see. The trick is not clever arithmetic. It is knowing, precisely, what you will fail to see.</p>
+            <p>This article is that whole pipeline, run on this one photo, in front of you: the raw size, the color
+                cut, the wave transform, the rounding, and the final measured file. Nothing is canned — every figure is
+                computed as you scroll.</p>
+            <div class="aside">The photo is 768 × 576 — 442,368 dots. All arithmetic on this page derives from those
+                dimensions and from the pixels this page generated.</div>
+        </section>
+
+        <!-- ════ SCENE 01 · the raw truth ════ -->
+        <section class="sticky-scene" data-scene id="scene1">
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 01</span>
+                    <span class="scene-name">THE RAW TRUTH</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="scene-frame">
+                    <canvas class="sc" id="s1Canvas" width="1536" height="1152"></canvas>
+                    <div class="s1-chips">
+                        <span class="s1-chip" id="chipDims"><b>768 × 576</b> DOTS</span>
+                        <span class="s1-chip" id="chipZoom">ZOOM <b id="chipZoomV">1×</b></span>
+                        <span class="s1-chip" id="chipRGB">R <b id="chipR">·</b> G <b id="chipG">·</b> B <b id="chipB">·</b></span>
+                        <span class="s1-chip" id="chipBytes">442,368 × 3 = <b>1,327,104</b> BYTES</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>Start with the whole picture: 768 × 576 dots, 442,368 of them, each an exact color fixed by the
+                        recipe. This is the raw material — there is nothing else in the file.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>Zoom in, to the lighthouse. The smooth photograph is a <b>grid of squares</b>. There are no
+                        curves anywhere — only tiles of solid color, packed edge to edge.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p>Zoom onto the red band, forty-eight times. One tile of that grid is <b>three numbers</b>:
+                        how much red, how much green, how much blue. Values 0–255 — three bytes. That is all a dot
+                        ever is.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <p>So the honest size of this picture is 442,368 × 3 = <b>1,327,104 bytes</b> — about 1.27 MB.
+                        That is the number everything below has to beat.</p>
+                </article>
+                <article class="step" data-step="5">
+                    <p>The JPEG file will keep only a slice of it. Five cuts follow, all computed from this exact
+                        photo, in your browser, as you scroll.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="prose">
+            <h2><span class="sec-no">02</span>Your eye is the accomplice</h2>
+            <p>Everything JPEG throws away, it throws away because of two facts about your visual system. First: you
+                resolve <strong>brightness far better than color</strong>. The world could halve the resolution of
+                every hue around you and, outside of hard color edges, you would not notice. Second: you notice coarse
+                structure — where light meets dark — long before you notice fine grain. Sharpness, the thing
+                photographers prize, is mostly the thing your eye is worst at counting.</p>
+            <p>The first cut uses fact one, and it happens before anything we would call “compression.”</p>
+        </section>
+
+        <!-- ════ SCENE 02 · the color tax ════ -->
+        <section class="sticky-scene" data-scene id="scene2">
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 02</span>
+                    <span class="scene-name">THE COLOR TAX</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="scene-frame">
+                    <div class="s2-panels">
+                        <div class="s2-panel s2-panel-py">
+                            <canvas class="sc" id="s2y" width="1008" height="756"></canvas>
+                            <div class="s2-label"><b>Y</b> — BRIGHTNESS</div>
+                        </div>
+                        <div class="s2-panel s2-panel-pchroma">
+                            <canvas class="sc" id="s2cb" width="1008" height="756"></canvas>
+                            <div class="s2-label"><b>Cb</b> — BLUE ↔ AMBER</div>
+                        </div>
+                        <div class="s2-panel s2-panel-pchroma">
+                            <canvas class="sc" id="s2cr" width="1008" height="756"></canvas>
+                            <div class="s2-label"><b>Cr</b> — RED ↔ TEAL</div>
+                        </div>
+                    </div>
+                    <div id="s2FullWrap">
+                        <canvas class="sc" id="s2Full" width="1536" height="1152"></canvas>
+                    </div>
+                    <span class="stage-chip s2-chip" id="chipSub">KEPT: <b>1 CHROMA SAMPLE / 2×2</b> — SAMPLES 1,327,104 → <b>663,552</b></span>
+                    <span class="stage-chip s2-chip" id="chipDelta">RECOMBINED — WORST CHANNEL <b id="deltaMax">·</b> · MEAN <b id="deltaMean">·</b> OF 255</span>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>The first move isn't a cut — it's a change of accounting. Each dot's red-green-blue triple is
+                        rewritten as three other numbers: <b>Y</b>, its brightness, and <i>Cb, Cr</i>, its two color
+                        offsets.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>Look at <b>Y</b> alone: the whole black-and-white photograph is in there, at full resolution.
+                        Color television was built on exactly this fact — brightness was the signal everyone already
+                        owned.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p>Now the color planes. They are soft — <b>watercolor washes</b>. Edges live in brightness; color
+                        mostly says which wash goes where.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <p>So JPEG keeps every Y sample, and only <b>one Cb and one Cr per 2×2 square</b> — “4:2:0”.
+                        Three of every four color samples are never written: 1,327,104 samples become 663,552. Half
+                        the photo, already gone.</p>
+                </article>
+                <article class="step" data-step="5">
+                    <p>Recombined: the largest change anywhere is <b id="stepDeltaMax">—</b> levels of 255 — on the
+                        lighthouse's red edge, where averaging is hardest to hide. The average change is
+                        <b id="stepDeltaMean">—</b>. Find it by eye. I'll wait.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="breather">
+            <p class="breather-line reveal">The eye forgives <em>what it never measured.</em></p>
+        </section>
+
+        <section class="prose">
+            <h2><span class="sec-no">03</span>Blocks into waves</h2>
+            <p>The brightness plane now gets divided into squares of 8 × 8 samples — <strong>6,912 blocks</strong> on
+                this photo — and each block travels the rest of the machine alone.</p>
+            <p>What happens next is the famous part: the <strong>discrete cosine transform</strong>. It is only a
+                change of vocabulary — the same 64 numbers, rewritten as 64 weights on fixed wave patterns. Run by
+                itself, it throws nothing away.</p>
+        </section>
+
+        <!-- ════ SCENE 03 · the dictionary of waves ════ -->
+        <section class="sticky-scene" data-scene id="scene3">
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 03</span>
+                    <span class="scene-name">THE DICTIONARY OF WAVES</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="scene-frame">
+                    <div class="s3-main">
+                        <canvas class="sc" id="s3Main" width="1024" height="1024"></canvas>
+                    </div>
+                    <div class="s3-side">
+                        <canvas class="sc" id="s3Dict" width="472" height="472"></canvas>
+                        <div class="s3-cap">THE FIXED 64 — ROUGH → FINE</div>
+                    </div>
+                    <div class="s3-readouts">
+                        <span class="stage-chip">WEIGHTS KEPT <b id="s3K">—</b> / 64</span>
+                        <span class="stage-chip">ERROR <b id="s3Rms">—</b> LEVELS RMS</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>Each block: 64 numbers. Zoomed here on the lighthouse's foot, where tower, door, rock, and sea
+                        meet — the <b>busiest square</b> on the whole photo.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>JPEG rewrites those 64 numbers as 64 weights on this fixed <b>dictionary of waves</b>. Every
+                        tile is a pure cosine ripple — and any 8×8 block whatsoever is exactly some mix of these 64.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p>The dictionary runs <b>rough to fine</b>: a flat average in the corner, faster ripples
+                        outward. Photographs live at the rough end; the fine tiles hold grain and hard edges.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <p>Rebuild the busiest block from its <b>single flattest weight</b>: a gray smear — but the smear
+                        is already the right gray. One number, one guess, and it isn't wrong.</p>
+                </article>
+                <article class="step" data-step="5">
+                    <p><b>Fifteen weights</b> in: light side, dark side, the shape of the door. The remaining
+                        forty-nine weights are mostly grain. Your eye already stopped caring.</p>
+                </article>
+                <article class="step" data-step="6">
+                    <p>Now the whole photo, rebuilt block by block from its first <b id="s3KStep">k</b> waves. Scroll
+                        and k runs to 64 — the world sharpens into place. At k = 64 the transform is exact:
+                        <b>nothing has been lost yet.</b></p>
+                </article>
+            </div>
+        </section>
+
+        <section class="prose">
+            <h2><span class="sec-no">04</span>Where the loss actually lives</h2>
+            <p>The transform loses nothing — run it backwards and your block returns to the last decimal. The
+                compression comes from the next step, and it is almost embarrassingly simple:
+                <strong>division, then rounding</strong>.</p>
+            <p>Each weight is divided by an entry in a small table and rounded to the nearest whole number. Flat
+                waves get small divisors; fine waves get big ones. Small weights on fine waves — grain, mostly —
+                divide down to less than half and round to <strong>zero</strong>. The classic tables ship in the
+                standard's Annex K; every quality setting you have ever chosen is just a number that scales this
+                table up or down.</p>
+        </section>
+
+        <!-- ════ SCENE 04 · the rounding ════ -->
+        <section class="sticky-scene" data-scene id="scene4">
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 04</span>
+                    <span class="scene-name">THE ROUNDING</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="scene-frame">
+                    <canvas class="sc" id="s4Wall" width="1024" height="1024"></canvas>
+                    <span class="stage-chip s4-chip" id="s4Chip">BUSIEST BLOCK · QUALITY 75 — <b id="s4Surv">—</b> OF 64 WEIGHTS SURVIVE · WHOLE PHOTO NOW <b id="s4Zero">—</b> ZEROS</span>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>The busiest block's 64 weights. The corner value is the block's average; the rest measure
+                        ripple at each of the dictionary's frequencies. Still reversible — these numbers rebuild the
+                        block exactly.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>Now divide each weight by its table entry at quality 75 — the classic mapping — and
+                        <b>round to the nearest integer</b>.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p><b id="s4GoneStep">—</b> of the 64 weights rounded to zero. Across the entire photo,
+                        <b id="s4ZeroStep">—</b> of all weights are now zero — before any clever coding has happened.
+                        This table is the meaning of “quality.”</p>
+                </article>
+                <article class="step" data-step="4">
+                    <p>Decoding multiplies back by the table. Zeros stay zero. The missing waves do not come back
+                        smaller — <b>they do not come back.</b> That rounding is the entire loss in “lossy.”</p>
+                </article>
+            </div>
+        </section>
+
+        <!-- ════ LAB · the quality dial ════ -->
+        <section class="lab" id="lab" aria-labelledby="labTitle">
+            <div class="lab-head">
+                <span class="scene-no">LAB</span>
+                <span class="scene-name" id="labTitle">THE QUALITY DIAL</span>
+                <span class="scene-readout">MEASURED — YOUR BROWSER'S ENCODER</span>
+            </div>
+            <div class="lab-grid">
+                <div class="lab-crops">
+                    <div class="lab-crop">
+                        <canvas id="labOrig" width="1024" height="768"></canvas>
+                        <span class="lab-tag">ORIGINAL CROP · <b>4× ZOOM</b></span>
+                    </div>
+                    <div class="lab-crop">
+                        <canvas id="labEnc" width="1024" height="768"></canvas>
+                        <span class="lab-tag">JPEG <b id="labQTag">75</b> · SAME CROP</span>
+                    </div>
+                </div>
+                <div class="lab-panel">
+                    <div class="lab-dial">
+                        <label for="labQ">Quality — scales the rounding table</label>
+                        <output id="labQv" for="labQ">75</output>
+                    </div>
+                    <input type="range" id="labQ" min="5" max="100" step="1" value="75">
+                    <div class="lab-number"><span id="labBytes">—</span> bytes<small>MEASURED FILE SIZE, FULL PHOTO</small></div>
+                    <div class="lab-stats">
+                        <div class="lab-stat"><b id="labRatio">—</b><span>RAW : JPEG</span></div>
+                        <div class="lab-stat"><b id="labKeep">—</b><span>OF RAW KEPT</span></div>
+                        <div class="lab-stat"><b id="labZeros">—</b><span>WEIGHTS = ZERO</span></div>
+                    </div>
+                    <div class="lab-table-wrap">
+                        <canvas id="labTable" width="464" height="464" aria-hidden="true"></canvas>
+                        <div class="lab-note">THE LUMINANCE ROUNDING TABLE AT THIS SETTING — <b>SMALL DIVISORS KEEP,
+                            LARGE ONES DELETE</b>. CLASSIC SCALING, AS LIBJPEG DOES IT.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="prose">
+            <h2><span class="sec-no">05</span>Turn the dial</h2>
+            <p class="reveal">Everything above is now yours to break. The slider scales the rounding table exactly
+                as encoders do, and the photo is re-encoded by your browser's real JPEG engine on every change.</p>
+            <p class="reveal"><span class="mono" style="font-size:10px;letter-spacing:.16em;color:var(--coral)">WHAT TO WATCH</span>
+                <br>Drag quality toward 10 and the 8×8 grid announces itself; edges grow a shimmering fringe —
+                <em>mosquito noise</em>, the fine waves that survived rounding by error. The byte figure is measured,
+                not modeled: it is the size of the actual JPEG file your browser just wrote for this exact photo.</p>
+        </section>
+
+        <!-- ════ SCENE 05 · the last squeeze ════ -->
+        <section class="split" id="scene5">
+            <div class="copy">
+                <h2><span class="sec-no">06</span>Why zeros are almost free</h2>
+                <p>A wall of zeros is cheap to store if you refuse to store it. The block's weights are read out in a
+                    <strong>zigzag</strong> — corner outward, rough to fine — so the zeros cluster at the end of the
+                    journey, and one <em>end-of-block</em> symbol can stand in for dozens of them.</p>
+                <p>The surviving numbers are then written with <strong>Huffman codes</strong>: short bit patterns for
+                    common values, long ones for rare. The measured sizes in the dial above already include all of
+                    this — it is the last stage, not a bonus one.</p>
+            </div>
+            <div class="visual" aria-hidden="true">
+                <canvas class="sc" id="zigCanvas" width="800" height="800"></canvas>
+            </div>
+        </section>
+
+        <section class="prose">
+            <h2><span class="sec-no">07</span>The whole machine</h2>
+            <p>That is the entire trick, end to end. Your eye's weakness for color set the first cut. The wave
+                dictionary made detail countable. Rounding made the deletion gentle and tunable. Entropy coding made
+                the survivors cheap. Put together, the photo you scrolled past at the top becomes this:</p>
+
+            <div class="pipeline reveal" role="img" aria-label="The JPEG pipeline: photo, RGB to YCbCr, 4:2:0 chroma cut, 8 by 8 discrete cosine transform, quantization, zigzag plus run-length plus Huffman coding, JPEG file.">
+                <span class="pipe-chip">PHOTO <b>768×576</b></span><span class="pipe-arrow">→</span>
+                <span class="pipe-chip">RGB → <b>YCbCr</b></span><span class="pipe-arrow">→</span>
+                <span class="pipe-chip is-loss"><b>4:2:0</b> COLOR CUT</span><span class="pipe-arrow">→</span>
+                <span class="pipe-chip"><b>8×8 DCT</b></span><span class="pipe-arrow">→</span>
+                <span class="pipe-chip is-loss"><b>QUANTIZE</b> + ROUND</span><span class="pipe-arrow">→</span>
+                <span class="pipe-chip">ZIGZAG · RLE · <b>HUFFMAN</b></span><span class="pipe-arrow">→</span>
+                <span class="pipe-chip"><b>.JPG</b></span>
+            </div>
+
+            <div class="fin reveal">
+                <div class="fin-crop">
+                    <canvas id="finOrig" width="1536" height="1152"></canvas>
+                    <span class="fin-tag">RAW SAMPLES · <b>1,327,104 B</b></span>
+                </div>
+                <div class="fin-crop">
+                    <canvas id="finEnc" width="1536" height="1152"></canvas>
+                    <span class="fin-tag">JPEG QUALITY 75 · <b id="finBytes">—</b></span>
+                </div>
+            </div>
+            <div class="fin-stats reveal">
+                <div class="fin-stat"><b id="finRatio">—</b><span>RAW : JPEG</span></div>
+                <div class="fin-stat"><b id="finKeep">—</b><span>OF RAW KEPT</span></div>
+                <div class="fin-stat"><b id="finDel">—</b><span>NEVER STORED</span></div>
+            </div>
+
+            <div class="callout reveal">JPEG doesn't store a photograph. It stores a <em>forecast of your
+                attention</em> — brightness first, rough color second, fine grain last.</div>
+
+            <div class="aside reveal">Scope: this is baseline sequential JPEG, the mode cameras and browsers write by
+                default. The photo is synthetic by design, so the page ships no assets and every number is
+                reproducible; its grain and glitter are tuned to behave like a sensor's. Successors — WebP, HEIF,
+                AVIF, JPEG XL — inherit this same skeleton with better transforms and better entropy coders.
+                Sources: ITU-T <a href="https://www.w3.org/Graphics/JPEG/itu-t81.pdf" target="_blank" rel="noreferrer" style="color:var(--mint)">T.81 (1992)</a>,
+                <a href="https://en.wikipedia.org/wiki/JPEG" target="_blank" rel="noreferrer" style="color:var(--mint)">Wikipedia · JPEG</a>,
+                <a href="https://en.wikipedia.org/wiki/Chroma_subsampling" target="_blank" rel="noreferrer" style="color:var(--mint)">Chroma subsampling</a>,
+                <a href="https://github.com/libjpeg-turbo/ijg/blob/main/jcparam.c" target="_blank" rel="noreferrer" style="color:var(--mint)">libjpeg jcparam.c</a>.</div>
+
+            <footer class="foot reveal">
+                <span>JPEG · THE VISUAL EDITION</span>
+                <a href="/">engineering.victorbusque.com</a>
+            </footer>
+        </section>
+    </main>
+
+    <script>
+/* ════════════════════════════════════════════════════════════════════
+   PAGE SCRIPT — the deterministic photo, the real math, the renders.
+   Nothing below is faked: every readout is computed from the photo
+   this page generates, or measured from the browser's own encoder.
+   ════════════════════════════════════════════════════════════════════ */
+(function () {
+    'use strict';
+
+    /* ── the photo: pure per-pixel math, deterministic ── */
+    var W = 768, H = 576;
+    var HORIZON = 340, SEA_BOTTOM = 470;
+    var SUN = { x: 540, y: 300, r: 22 };
+    var LH = { x0: 90, x1: 102, top: 316, base: 372 };
+
+    function hash2(x, y) {
+        var h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263)) | 0;
+        h = (h ^ (h >>> 13)) | 0;
+        h = Math.imul(h, 1274126177);
+        h = (h ^ (h >>> 16)) >>> 0;
+        return h / 4294967296;
+    }
+    function noise2(x, y) {
+        var xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+        var u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+        return hash2(xi, yi) * (1 - u) * (1 - v) + hash2(xi + 1, yi) * u * (1 - v) +
+            hash2(xi, yi + 1) * (1 - u) * v + hash2(xi + 1, yi + 1) * u * v;
+    }
+    function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function smooth(t) { return t * t * (3 - 2 * t); }
+
+    var SKY = [[0, 28, 33, 76], [0.55, 118, 72, 104], [0.88, 250, 150, 92], [1, 255, 214, 150]];
+    function skyColor(y) {
+        var t = clamp(y / HORIZON, 0, 1);
+        for (var i = 0; i < SKY.length - 1; i++) {
+            var a = SKY[i], b = SKY[i + 1];
+            if (t <= b[0]) {
+                var k = smooth((t - a[0]) / (b[0] - a[0]));
+                return [lerp(a[1], b[1], k), lerp(a[2], b[2], k), lerp(a[3], b[3], k)];
+            }
+        }
+        return [255, 214, 150];
+    }
+    function headlandMargin(y) {
+        var t = smooth(clamp((y - 285) / (SEA_BOTTOM - 285), 0, 1));
+        return lerp(-30, 235, t) + (noise2(3.1, y * 0.02) - 0.5) * 26;
+    }
+    var HOUSES = [];
+    (function () {
+        for (var i = 0; i < 19; i++) {
+            HOUSES.push({
+                x: Math.round(300 + i * 23 + (hash2(i, 92) - 0.5) * 10),
+                w: Math.round(13 + hash2(i, 91) * 9),
+                h: Math.round(9 + hash2(i, 93) * 12)
+            });
+        }
+    })();
+
+    function pixel(x, y) {
+        var r = 0, g = 0, b = 0, FG = 470, t, i;
+        if (y >= FG) {
+            t = (y - FG) / (H - FG);
+            r = lerp(16, 8, t); g = lerp(23, 12, t); b = lerp(17, 10, t);
+            var streak = noise2(x * 0.14, y * 0.03) * noise2(x * 0.02 + 9, y * 0.06);
+            if (streak > 0.55) { var k1 = (streak - 0.55) * 2.2; r += 11 * k1; g += 17 * k1; b += 9 * k1; }
+            if (noise2(x * 0.45, y * 0.10) > 0.80) { r += 8; g += 13; b += 6; }
+            if (y > 528 && noise2(x * 0.3, 7.7) > 0.62) { r = 6; g = 9; b = 7; }
+        } else if (y >= SEA_BOTTOM) {
+            r = 13; g = 18; b = 19;
+            var peb = noise2(x * 0.2, y * 0.25);
+            if (peb > 0.7) { var k2 = (peb - 0.7) * 3; r += 14 * k2; g += 12 * k2; b += 9 * k2; }
+        } else if (y >= HORIZON) {
+            t = (y - HORIZON) / (SEA_BOTTOM - HORIZON);
+            r = lerp(44, 15, t); g = lerp(58, 23, t); b = lerp(90, 38, t);
+            var sh = (noise2(x * 0.012, y * 0.16) - 0.5) * 10;
+            r += sh; g += sh; b += sh * 0.6;
+            var w = 20 + (y - HORIZON) * 0.38;
+            var dx = Math.abs(x - (SUN.x + Math.sin((y - HORIZON) * 0.05) * 14));
+            if (dx < w) {
+                var f = Math.pow(1 - dx / w, 1.6) * (1 - t * 0.55) * 0.30;
+                r += 255 * f; g += 170 * f; b += 100 * f;
+            }
+            var sp = noise2(x * 0.9, y * 3.3);
+            var mask = Math.exp(-Math.pow(dx / w, 2) * 2.2) * (1 - t * 0.7);
+            if (sp > 0.74 && mask > 0.05) {
+                var k3 = (sp - 0.74) / 0.26 * mask;
+                r += 210 * k3; g += 175 * k3; b += 120 * k3;
+            }
+        } else {
+            var c = skyColor(y); r = c[0]; g = c[1]; b = c[2];
+            var cl = noise2(x * 0.004, y * 0.02);
+            if (cl > 0.56) { var k4 = (cl - 0.56) * 1.6 * (0.25 + 0.75 * y / HORIZON); r += 26 * k4; g += 14 * k4; b += 6 * k4; }
+            var d = Math.hypot(x - SUN.x, y - SUN.y) / SUN.r;
+            if (d < 5) { var f2 = Math.exp(-d * 1.05) * 0.95; r += 255 * f2; g += 196 * f2; b += 120 * f2; }
+            if (d < 1) { r = 255; g = 244; b = 216; }
+        }
+        if (y >= 300 && x < headlandMargin(y)) {
+            var v = noise2(x * 0.03, y * 0.03);
+            r = 30 + v * 9; g = 34 + v * 9; b = 58 + v * 12;
+            var m = headlandMargin(y);
+            if (y < HORIZON + 3 && x > m - 5) { r += 40; g += 20; b += 4; }
+            if (y >= HORIZON && y < HORIZON + 60 && x < m * 0.9) { r *= 0.5; g *= 0.5; b *= 0.55; }
+        }
+        if (x >= LH.x0 - 3 && x <= LH.x1 + 3) {
+            var cx = (LH.x0 + LH.x1) / 2;
+            if (y >= LH.top - 10 && y < LH.top - 2) {
+                r = 26; g = 26; b = 30;
+                if (Math.abs(x - cx) < 3 && y >= LH.top - 8 && y < LH.top - 4) { r = 255; g = 214; b = 138; }
+            } else if (y >= LH.top - 2 && y < LH.top + 3) {
+                r = 40; g = 42; b = 46;
+            } else if (y >= LH.top + 3 && y < LH.base) {
+                var band = (y >= LH.top + 14 && y < LH.top + 20) || (y >= LH.top + 34 && y < LH.top + 40);
+                if (band) { r = 176; g = 56; b = 48; }
+                else {
+                    var shd = 0.9 + 0.2 * (1 - (x - LH.x0) / (LH.x1 - LH.x0));
+                    r = 232 * shd; g = 229 * shd; b = 221 * shd;
+                }
+                if (Math.abs(x - cx) < 3 && y >= LH.base - 10) { r = 30; g = 28; b = 26; }
+            }
+        }
+        if (y >= 424 && y < 470 && x >= 296) {
+            for (i = 0; i < HOUSES.length; i++) {
+                var hs = HOUSES[i], top = 458 - hs.h;
+                if (x >= hs.x && x < hs.x + hs.w && y >= top && y < 458) {
+                    var shw = 0.86 + 0.28 * (1 - (x - hs.x) / hs.w);
+                    r = 172 * shw; g = 141 * shw; b = 116 * shw;
+                    var wn = noise2(hs.x * 0.7, hs.h);
+                    r += (wn - 0.5) * 18; g += (wn - 0.5) * 14; b += (wn - 0.5) * 10;
+                    if (y < top + 3) { r = 74; g = 52; b = 52; }
+                    var wx = (x - hs.x) % 6, wy = (y - top) % 6;
+                    if (wx >= 2 && wx < 4 && wy >= 2 && wy < 4 && y > top + 3 && y < 456) {
+                        var lit = hash2(hs.x + Math.floor((x - hs.x) / 6), Math.floor((y - top) / 6) * 31 + hs.h) > 0.42;
+                        if (lit) { r = 255; g = 208; b = 132; } else { r = 38; g = 34; b = 34; }
+                    }
+                }
+            }
+        }
+        if (y < 120) {
+            for (var s = 0; s < 46; s++) {
+                var sx = Math.floor(hash2(s, 771) * W), sy = Math.floor(hash2(s, 772) * 115);
+                if (x === sx && y === sy && Math.abs(x - SUN.x) > 150) {
+                    var ks = 0.35 + hash2(s, 773) * 0.65;
+                    r += 190 * ks; g += 200 * ks; b += 235 * ks;
+                }
+            }
+        }
+        var gr = (hash2(x + 1234, y + 5678) - 0.5) * 5;
+        r += gr; g += gr; b += gr;
+        return [clamp(Math.round(r), 0, 255), clamp(Math.round(g), 0, 255), clamp(Math.round(b), 0, 255)];
+    }
+
+    var rgb = new Uint8ClampedArray(W * H * 3);
+    (function () {
+        for (var y = 0; y < H; y++) {
+            for (var x = 0; x < W; x++) {
+                var i = (y * W + x) * 3, p = pixel(x, y);
+                rgb[i] = p[0]; rgb[i + 1] = p[1]; rgb[i + 2] = p[2];
+            }
+        }
+    })();
+    var RAW_BYTES = W * H * 3;
+
+    /* ── color transform + 4:2:0 ── */
+    var Yp = new Float64Array(W * H), CbF = new Float64Array(W * H), CrF = new Float64Array(W * H);
+    (function () {
+        for (var i = 0, p = 0; i < W * H; i++, p += 3) {
+            var r = rgb[p], g = rgb[p + 1], b = rgb[p + 2];
+            Yp[i] = 0.299 * r + 0.587 * g + 0.114 * b;
+            CbF[i] = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
+            CrF[i] = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
+        }
+    })();
+    var cw = W / 2, ch = H / 2;
+    var Cb4 = new Float64Array(cw * ch), Cr4 = new Float64Array(cw * ch);
+    (function () {
+        for (var y = 0; y < ch; y++) for (var x = 0; x < cw; x++) {
+            var sb = 0, sr = 0;
+            for (var dy = 0; dy < 2; dy++) for (var dx = 0; dx < 2; dx++) {
+                var i = (y * 2 + dy) * W + x * 2 + dx; sb += CbF[i]; sr += CrF[i];
+            }
+            Cb4[y * cw + x] = sb / 4; Cr4[y * cw + x] = sr / 4;
+        }
+    })();
+    var rgb420 = new Uint8ClampedArray(W * H * 3), deltaMax = 0, deltaSum = 0;
+    (function () {
+        for (var i = 0; i < W * H; i++) {
+            var x = i % W, y = (i / W) | 0;
+            var cb = Cb4[(y >> 1) * cw + (x >> 1)], cr = Cr4[(y >> 1) * cw + (x >> 1)];
+            var r = clamp(Yp[i] + 1.402 * (cr - 128), 0, 255);
+            var g = clamp(Yp[i] - 0.344136 * (cb - 128) - 0.714136 * (cr - 128), 0, 255);
+            var b = clamp(Yp[i] + 1.772 * (cb - 128), 0, 255);
+            var p = i * 3;
+            rgb420[p] = r; rgb420[p + 1] = g; rgb420[p + 2] = b;
+            deltaMax = Math.max(deltaMax, Math.abs(r - rgb[p]), Math.abs(g - rgb[p + 1]), Math.abs(b - rgb[p + 2]));
+            deltaSum += (Math.abs(r - rgb[p]) + Math.abs(g - rgb[p + 1]) + Math.abs(b - rgb[p + 2])) / 3;
+        }
+    })();
+    var deltaMean = deltaSum / (W * H);
+
+    /* ── DCT machinery ── */
+    var COS = new Float64Array(64), ALPHA = new Float64Array(8);
+    (function () {
+        for (var u = 0; u < 8; u++) for (var x = 0; x < 8; x++) COS[u * 8 + x] = Math.cos((2 * x + 1) * u * Math.PI / 16);
+        for (u = 0; u < 8; u++) ALPHA[u] = u === 0 ? Math.SQRT1_2 : 1;
+    })();
+    function fdct(blk) {
+        var out = new Float64Array(64);
+        for (var v = 0; v < 8; v++) for (var u = 0; u < 8; u++) {
+            var s = 0;
+            for (var y = 0; y < 8; y++) for (var x = 0; x < 8; x++) s += blk[y * 8 + x] * COS[u * 8 + x] * COS[v * 8 + y];
+            out[v * 8 + u] = 0.25 * ALPHA[u] * ALPHA[v] * s;
+        }
+        return out;
+    }
+    function idct(co) {
+        var out = new Float64Array(64);
+        for (var y = 0; y < 8; y++) for (var x = 0; x < 8; x++) {
+            var s = 0;
+            for (var v = 0; v < 8; v++) for (var u = 0; u < 8; u++) s += ALPHA[u] * ALPHA[v] * co[v * 8 + u] * COS[u * 8 + x] * COS[v * 8 + y];
+            out[y * 8 + x] = 0.25 * s;
+        }
+        return out;
+    }
+    /* basis patches: BASIS[z] = the 8×8 pixel pattern of wave z (idct of a
+       unit coefficient — the constant-average pattern for z = 0 included) */
+    var BASIS = [];
+    (function () {
+        for (var z = 0; z < 64; z++) {
+            var co = new Float64Array(64); co[z] = 1;
+            BASIS.push(idct(co));
+        }
+    })();
+
+    var ZIG = [0, 1, 8, 16, 9, 2, 3, 10, 17, 24, 32, 25, 18, 11, 4, 5, 12, 19, 26, 33, 40, 48, 41, 34, 27, 20, 13, 6, 7, 14, 21, 28, 35, 42, 49, 56, 57, 50, 43, 36, 29, 22, 15, 23, 30, 37, 44, 51, 58, 59, 52, 45, 38, 31, 39, 46, 53, 60, 61, 54, 47, 55, 62, 63];
+
+    var BX = W / 8, BY = H / 8, NB = BX * BY;
+    var coefs = new Float64Array(NB * 64);
+    var busiest = 0, busiestE = -1;
+    (function () {
+        var blk = new Float64Array(64);
+        for (var by = 0; by < BY; by++) for (var bx = 0; bx < BX; bx++) {
+            for (var y = 0; y < 8; y++) for (var x = 0; x < 8; x++) blk[y * 8 + x] = Yp[(by * 8 + y) * W + bx * 8 + x] - 128;
+            var co = fdct(blk), e = 0, idx = by * BX + bx;
+            for (var k = 1; k < 64; k++) e += co[k] * co[k];
+            if (e > busiestE) { busiestE = e; busiest = idx; }
+            coefs.set(co, idx * 64);
+        }
+    })();
+    var bbx = busiest % BX, bby = Math.floor(busiest / BX);
+
+    /* ── quantization ── */
+    var QLUM = [16, 11, 10, 16, 24, 40, 51, 61, 12, 12, 14, 19, 26, 58, 60, 55, 14, 13, 16, 24, 40, 57, 69, 56, 14, 17, 22, 29, 51, 87, 80, 62, 18, 22, 37, 56, 68, 109, 103, 77, 24, 35, 55, 64, 81, 104, 113, 92, 49, 64, 78, 87, 103, 121, 120, 101, 72, 92, 95, 98, 112, 100, 103, 99];
+    function scaledTable(base, q) {
+        var s = q < 50 ? 5000 / q : 200 - 2 * q, out = new Array(64);
+        for (var i = 0; i < 64; i++) out[i] = clamp(Math.round(base[i] * s / 100), 1, 255);
+        return out;
+    }
+    function zerosAt(q) {
+        var T = scaledTable(QLUM, q), z = 0;
+        for (var b = 0; b < NB; b++) for (var k = 0; k < 64; k++) {
+            if (Math.round(coefs[b * 64 + ZIG[k]] / T[ZIG[k]]) === 0) z++;
+        }
+        return z / (NB * 64);
+    }
+    var T75 = scaledTable(QLUM, 75);
+    var busySurv = 0;
+    for (var qs = 0; qs < 64; qs++) if (Math.round(coefs[busiest * 64 + ZIG[qs]] / T75[ZIG[qs]]) !== 0) busySurv++;
+    var zeroPct75 = zerosAt(75);
+
+    /* ── offscreen canvases from our arrays ── */
+    function makeCanvas(w, h) {
+        var c = document.createElement('canvas'); c.width = w; c.height = h; return c;
+    }
+    function canvasFromRGB(arr) {
+        var c = makeCanvas(W, H), g = c.getContext('2d'), im = g.createImageData(W, H);
+        for (var i = 0, p = 0; i < W * H; i++, p += 3) {
+            im.data[i * 4] = arr[p]; im.data[i * 4 + 1] = arr[p + 1]; im.data[i * 4 + 2] = arr[p + 2]; im.data[i * 4 + 3] = 255;
+        }
+        g.putImageData(im, 0, 0); return c;
+    }
+    var photoCanvas = canvasFromRGB(rgb);
+    var photo420Canvas = canvasFromRGB(rgb420);
+    var yCanvas = makeCanvas(W, H), cbCanvas = makeCanvas(W, H), crCanvas = makeCanvas(W, H);
+    (function () {
+        var gy = yCanvas.getContext('2d'), gc = cbCanvas.getContext('2d'), gr = crCanvas.getContext('2d');
+        var iy = gy.createImageData(W, H), ic = gc.createImageData(W, H), ir = gr.createImageData(W, H);
+        for (var i = 0; i < W * H; i++) {
+            var y = Yp[i], cb = CbF[i] - 128, cr = CrF[i] - 128;
+            iy.data[i * 4] = iy.data[i * 4 + 1] = iy.data[i * 4 + 2] = clamp(y, 0, 255);
+            ic.data[i * 4] = clamp(128 - 2.2 * cb, 0, 255); ic.data[i * 4 + 1] = clamp(128 - 0.2 * cb, 0, 255); ic.data[i * 4 + 2] = clamp(128 + 2.2 * cb, 0, 255);
+            ir.data[i * 4] = clamp(128 + 2.2 * cr, 0, 255); ir.data[i * 4 + 1] = clamp(128 - 0.6 * cr, 0, 255); ir.data[i * 4 + 2] = clamp(128 - 1.2 * cr, 0, 255);
+            iy.data[i * 4 + 3] = ic.data[i * 4 + 3] = ir.data[i * 4 + 3] = 255;
+        }
+        gy.putImageData(iy, 0, 0); gc.putImageData(ic, 0, 0); gr.putImageData(ir, 0, 0);
+    })();
+    var cb4Canvas = makeCanvas(cw, ch), cr4Canvas = makeCanvas(cw, ch);
+    (function () {
+        var gc = cb4Canvas.getContext('2d'), gr = cr4Canvas.getContext('2d');
+        var ic = gc.createImageData(cw, ch), ir = gr.createImageData(cw, ch);
+        for (var i = 0; i < cw * ch; i++) {
+            var cb = Cb4[i] - 128, cr = Cr4[i] - 128;
+            ic.data[i * 4] = clamp(128 - 2.2 * cb, 0, 255); ic.data[i * 4 + 1] = clamp(128 - 0.2 * cb, 0, 255); ic.data[i * 4 + 2] = clamp(128 + 2.2 * cb, 0, 255);
+            ir.data[i * 4] = clamp(128 + 2.2 * cr, 0, 255); ir.data[i * 4 + 1] = clamp(128 - 0.6 * cr, 0, 255); ir.data[i * 4 + 2] = clamp(128 - 1.2 * cr, 0, 255);
+            ic.data[i * 4 + 3] = ir.data[i * 4 + 3] = 255;
+        }
+        gc.putImageData(ic, 0, 0); gr.putImageData(ir, 0, 0);
+    })();
+
+    var fmtB = function (n) { return n.toLocaleString('en-US'); };
+
+    /* ── rendering helpers ── */
+    var MINT = '#5fe0c0', CORAL = '#ff6b4a', VIOLET = '#b1a6ff', INK = '#ece9e2', MUTED = '#98948b';
+
+    function mono(ctx, size, color, align) {
+        ctx.font = size + 'px "DM Mono", monospace';
+        ctx.fillStyle = color;
+        ctx.textAlign = align || 'left';
+        ctx.textBaseline = 'alphabetic';
+    }
+
+    /* hero: cover-fit the photo */
+    (function () {
+        var cv = document.getElementById('heroCanvas');
+        if (!cv) return;
+        function draw() {
+            var vw = cv.clientWidth || innerWidth, vh = cv.clientHeight || innerHeight;
+            var dpr = Math.min(devicePixelRatio || 1, 1.6);
+            cv.width = Math.round(vw * dpr); cv.height = Math.round(vh * dpr);
+            var g = cv.getContext('2d');
+            var s = Math.max(cv.width / W, cv.height / H);
+            var dw = W * s, dh = H * s;
+            g.drawImage(photoCanvas, (cv.width - dw) / 2, (cv.height - dh) / 2, dw, dh);
+        }
+        draw();
+        addEventListener('resize', function () { draw(); }, { passive: true });
+        cv.classList.add('is-on');
+    })();
+
+    /* ── scene 1 renders ── */
+    var s1 = document.getElementById('s1Canvas');
+    function renderS1(mode) {
+        if (!s1) return;
+        var g = s1.getContext('2d'), w = s1.width, h = s1.height;
+        g.imageSmoothingEnabled = false;
+        g.fillStyle = '#08080a'; g.fillRect(0, 0, w, h);
+        function dim(a) { g.fillStyle = 'rgba(8,8,10,' + a + ')'; g.fillRect(0, 0, w, h); }
+        if (mode === 1) {
+            g.drawImage(photoCanvas, 0, 0, w, h);
+            g.strokeStyle = 'rgba(95,224,192,.16)'; g.lineWidth = 1;
+            for (var x = 0; x <= W; x += 96) { g.beginPath(); g.moveTo(x / W * w, 0); g.lineTo(x / W * w, h); g.stroke(); }
+            for (var y = 0; y <= H; y += 96) { g.beginPath(); g.moveTo(0, y / H * h); g.lineTo(w, y / H * h); g.stroke(); }
+            g.strokeStyle = 'rgba(95,224,192,.5)';
+            g.strokeRect(0.5, 0.5, w - 1, h - 1);
+            mono(g, 17, MINT, 'center'); g.fillText('768', w / 2, h - 14);
+            mono(g, 17, MINT, 'left');
+            g.save(); g.translate(16, h / 2); g.rotate(-Math.PI / 2); g.textAlign = 'center'; g.fillText('576', 0, 0); g.restore();
+        } else if (mode === 2) {
+            g.drawImage(photoCanvas, 48, 314, 96, 72, 0, 0, w, h);
+            g.strokeStyle = 'rgba(255,255,255,.08)'; g.lineWidth = 1;
+            for (var i = 0; i <= 96; i += 8) { var px = i / 96 * w; g.beginPath(); g.moveTo(px, 0); g.lineTo(px, h); g.stroke(); }
+            for (var j = 0; j <= 72; j += 8) { var py = j / 72 * h; g.beginPath(); g.moveTo(0, py); g.lineTo(w, py); g.stroke(); }
+            /* one dot = one solid square: photo (96,350) sits mid-region */
+            g.strokeStyle = MINT; g.lineWidth = 2;
+            g.strokeRect(48 / 96 * w + 1, 36 / 72 * h + 1, w / 96 - 2, h / 72 - 2);
+            mono(g, 16, MINT, 'left'); g.fillText('ONE DOT', 14, 30);
+            mono(g, 16, MINT, 'left'); g.fillText('8×', 14, h - 16);
+        } else if (mode === 3) {
+            g.drawImage(photoCanvas, 88, 344, 16, 12, 0, 0, w, h);
+            /* highlight the center dot: photo coords (96,350) → region (8,6) */
+            var cell = w / 16, celly = h / 12;
+            g.strokeStyle = CORAL; g.lineWidth = 3;
+            g.strokeRect(8 * cell + 2, 6 * celly + 2, cell - 4, celly - 4);
+            var p = (350 * W + 96) * 3;
+            var bg2 = 'rgba(8,8,10,.82)';
+            var bx = 24, by = h - 118, bw = 560, bh = 94;
+            g.fillStyle = bg2; g.fillRect(bx, by, bw, bh);
+            g.strokeStyle = 'rgba(255,255,255,.14)'; g.lineWidth = 1; g.strokeRect(bx, by, bw, bh);
+            mono(g, 34, INK, 'left');
+            g.fillText('R ' + rgb[p], bx + 118, by + 42);
+            g.fillStyle = 'rgb(' + rgb[p] + ',60,60)'; g.fillRect(bx + 22, by + 20, 34, 34); g.strokeStyle = 'rgba(255,255,255,.3)'; g.strokeRect(bx + 22, by + 20, 34, 34);
+            mono(g, 34, INK, 'left');
+            g.fillStyle = INK;
+            g.fillText('G ' + rgb[p + 1], bx + 118 + 168, by + 42);
+            g.fillStyle = 'rgb(60,' + rgb[p + 1] + ',60)'; g.fillRect(bx + 22 + 168, by + 20, 34, 34); g.strokeRect(bx + 22 + 168, by + 20, 34, 34);
+            mono(g, 34, INK, 'left');
+            g.fillStyle = INK;
+            g.fillText('B ' + rgb[p + 2], bx + 118 + 336, by + 42);
+            g.fillStyle = 'rgb(60,60,' + rgb[p + 2] + ')'; g.fillRect(bx + 22 + 336, by + 20, 34, 34); g.strokeRect(bx + 22 + 336, by + 20, 34, 34);
+            mono(g, 15, MUTED, 'left');
+            g.fillText('ONE DOT = 3 BYTES OF 0–255', bx + 24, by + bh - 18);
+        } else if (mode === 4) {
+            g.drawImage(photoCanvas, 0, 0, w, h); dim(0.62);
+        } else {
+            g.drawImage(photoCanvas, 0, 0, w, h); dim(0.78);
+        }
+        var zv = document.getElementById('chipZoomV');
+        if (zv) zv.textContent = mode === 1 ? '1×' : mode === 2 ? '8×' : mode === 3 ? '48×' : '1×';
+        var rc = document.getElementById('chipR'), gc2 = document.getElementById('chipG'), bc = document.getElementById('chipB');
+        if (rc && mode === 3) {
+            var q = (350 * W + 96) * 3;
+            rc.textContent = rgb[q]; gc2.textContent = rgb[q + 1]; bc.textContent = rgb[q + 2];
+        }
+    }
+
+    /* ── scene 2 renders ── */
+    (function () {
+        var cy = document.getElementById('s2y'), cc = document.getElementById('s2cb'), cr = document.getElementById('s2cr');
+        if (!cy) return;
+        [[cy, yCanvas], [cc, cbCanvas], [cr, crCanvas]].forEach(function (pair) {
+            var g = pair[0].getContext('2d');
+            g.imageSmoothingEnabled = false;
+            g.drawImage(pair[1], 0, 0, pair[0].width, pair[0].height);
+        });
+        var cf = document.getElementById('s2Full');
+        var gf = cf.getContext('2d');
+        gf.imageSmoothingEnabled = false;
+        gf.drawImage(photo420Canvas, 0, 0, cf.width, cf.height);
+    })();
+    function s2ChromaMode(mini) {
+        var cc = document.getElementById('s2cb'), cr = document.getElementById('s2cr');
+        if (!cc) return;
+        [[cc, mini ? cb4Canvas : cbCanvas], [cr, mini ? cr4Canvas : crCanvas]].forEach(function (pair) {
+            var g = pair[0].getContext('2d');
+            g.imageSmoothingEnabled = false;
+            g.fillStyle = '#08080a'; g.fillRect(0, 0, pair[0].width, pair[0].height);
+            g.drawImage(pair[1], 0, 0, pair[0].width, pair[0].height);
+        });
+    }
+
+    /* ── scene 3 renders ── */
+    var s3Main = document.getElementById('s3Main');
+    var s3Dict = document.getElementById('s3Dict');
+    var reconCur = null, seTotal = 0, sumRY = 0, sumYY = 0, kCur = 0;
+    function ensureRecon() {
+        if (reconCur) return;
+        reconCur = new Float64Array(W * H);
+        for (var i = 0; i < W * H; i++) { var ys = Yp[i] - 128; sumYY += ys * ys; }
+        kCur = 0;
+    }
+    var grayCanvas = makeCanvas(W, H);
+    var grayCtx = grayCanvas.getContext('2d');
+    var grayIm = grayCtx.createImageData(W, H);
+    /* apply/remove coefficient z on every block, keeping the running
+       energy accumulators exact: MSE = (sumYY + seTotal − 2·sumRY) / N */
+    function applyZ(z, sign) {
+        var pat = BASIS[z];
+        for (var b = 0; b < NB; b++) {
+            var weight = coefs[b * 64 + z] * sign;
+            var bx = b % BX, by = Math.floor(b / BX);
+            for (var y = 0; y < 8; y++) for (var x = 0; x < 8; x++) {
+                var pi = (by * 8 + y) * W + bx * 8 + x;
+                var delta = weight * pat[y * 8 + x];
+                seTotal += 2 * reconCur[pi] * delta + delta * delta;
+                sumRY += delta * (Yp[pi] - 128);
+                reconCur[pi] += delta;
+            }
+        }
+    }
+    function setK(k) {
+        ensureRecon();
+        k = clamp(k, 1, 64);
+        if (k === kCur) return;
+        if (k > kCur) {
+            for (var s = kCur; s < k; s++) applyZ(ZIG[s], 1);
+        } else {
+            for (var s2 = kCur - 1; s2 >= k; s2--) applyZ(ZIG[s2], -1);
+        }
+        kCur = k;
+    }
+    function reconMse() { return (sumYY + seTotal - 2 * sumRY) / (W * H); }
+
+    function drawDict(activeK) {
+        if (!s3Dict) return;
+        var g = s3Dict.getContext('2d'), w = s3Dict.width, cell = w / 8;
+        g.fillStyle = '#08080a'; g.fillRect(0, 0, w, w);
+        for (var v = 0; v < 8; v++) for (var u = 0; u < 8; u++) {
+            var z = v * 8 + u, pat = BASIS[z];
+            var x0 = u * cell, y0 = v * cell;
+            for (var y = 0; y < 8; y++) for (var x = 0; x < 8; x++) {
+                var val = clamp(pat[y * 8 + x] * 0.5 + 0.5, 0, 1);
+                var c = Math.round(30 + val * 150);
+                g.fillStyle = 'rgb(' + c + ',' + (c + 4) + ',' + (c + 8) + ')';
+                g.fillRect(x0 + x / 8 * cell, y0 + y / 8 * cell, cell / 8 + 1, cell / 8 + 1);
+            }
+            var used = false;
+            for (var i = 0; i < activeK; i++) if (ZIG[i] === z) used = true;
+            if (z === 0 && activeK >= 1) used = true;
+            g.strokeStyle = used ? MINT : 'rgba(255,255,255,.10)';
+            g.lineWidth = used ? 3 : 1;
+            g.strokeRect(x0 + 1.5, y0 + 1.5, cell - 3, cell - 3);
+        }
+        mono(g, Math.round(cell * 0.26), MINT, 'center');
+        g.fillText('AVG', cell / 2, cell / 2 + cell * 0.09);
+    }
+
+    function blockPixels(idx) {
+        var bx = idx % BX, by = Math.floor(idx / BX), out = new Float64Array(64);
+        for (var y = 0; y < 8; y++) for (var x = 0; x < 8; x++) out[y * 8 + x] = Yp[(by * 8 + y) * W + bx * 8 + x];
+        return out;
+    }
+    function renderBlockPair(k) {
+        var g = s3Main.getContext('2d'), w = s3Main.width, h = s3Main.height;
+        g.imageSmoothingEnabled = false;
+        g.fillStyle = '#08080a'; g.fillRect(0, 0, w, h);
+        var orig = blockPixels(busiest);
+        var co = new Float64Array(64);
+        for (var i = 0; i < k; i++) { var z = ZIG[i]; co[z] = coefs[busiest * 64 + z]; }
+        var rec = idct(co);
+        var pad = 26, gap = 24, side = Math.min(w - pad * 2 - gap, h - pad * 2 - 84);
+        var x0 = (w - side * 2 - gap) / 2, y0 = (h - side) / 2 - 14;
+        function paint(px0, src) {
+            for (var y = 0; y < 8; y++) for (var x = 0; x < 8; x++) {
+                var c = clamp(src[y * 8 + x], 0, 255);
+                g.fillStyle = 'rgb(' + (c | 0) + ',' + (c | 0) + ',' + (c | 0) + ')';
+                g.fillRect(px0 + x / 8 * side, y0 + y / 8 * side, side / 8 + 1, side / 8 + 1);
+            }
+            g.strokeStyle = 'rgba(255,255,255,.16)'; g.lineWidth = 1;
+            g.strokeRect(px0, y0, side, side);
+        }
+        paint(x0, orig); paint(x0 + side + gap, rec);
+        mono(g, 20, MUTED, 'center');
+        g.fillText('ORIGINAL', x0 + side / 2, y0 + side + 40);
+        mono(g, 20, MINT, 'center');
+        g.fillText(k + (k === 1 ? ' WAVE' : ' WAVES'), x0 + side + gap + side / 2, y0 + side + 40);
+        var e = 0;
+        for (var j = 0; j < 64; j++) { var d = rec[j] + 128 - orig[j]; e += d * d; }
+        return Math.sqrt(e / 64);
+    }
+
+    function renderFullK(k, withGrid) {
+        var g = s3Main.getContext('2d'), w = s3Main.width, h = s3Main.height;
+        setK(k);
+        for (var i = 0; i < W * H; i++) {
+            var c = clamp(reconCur[i] + 128, 0, 255) | 0;
+            grayIm.data[i * 4] = c; grayIm.data[i * 4 + 1] = c; grayIm.data[i * 4 + 2] = c; grayIm.data[i * 4 + 3] = 255;
+        }
+        grayCtx.putImageData(grayIm, 0, 0);
+        g.imageSmoothingEnabled = false;
+        g.fillStyle = '#08080a'; g.fillRect(0, 0, w, h);
+        var dw = w, dh = w * H / W;
+        if (dh > h) { dh = h; dw = h * W / H; }
+        g.drawImage(grayCanvas, (w - dw) / 2, (h - dh) / 2, dw, dh);
+        if (withGrid) {
+            g.strokeStyle = 'rgba(95,224,192,.25)'; g.lineWidth = 1;
+            for (var gx = 0; gx <= W; gx += 64) { g.beginPath(); g.moveTo((w - dw) / 2 + gx / W * dw, (h - dh) / 2); g.lineTo((w - dw) / 2 + gx / W * dw, (h - dh) / 2 + dh); g.stroke(); }
+            for (var gy = 0; gy <= H; gy += 64) { g.beginPath(); g.moveTo((w - dw) / 2, (h - dh) / 2 + gy / H * dh); g.lineTo((w - dw) / 2 + dw, (h - dh) / 2 + gy / H * dh); g.stroke(); }
+            mono(g, 18, MINT, 'left');
+            g.fillText('8 × 8', (w - dw) / 2 + 14, (h - dh) / 2 + 30);
+        }
+    }
+    function renderS3ZoomGrid() {
+        var g = s3Main.getContext('2d'), w = s3Main.width, h = s3Main.height;
+        g.imageSmoothingEnabled = false;
+        g.fillStyle = '#08080a'; g.fillRect(0, 0, w, h);
+        var rx = clamp(bbx * 8 - 56, 0, W - 112), ry = clamp(bby * 8 - 42, 0, H - 84);
+        g.drawImage(yCanvas, rx, ry, 112, 84, 0, 0, w, h);
+        g.strokeStyle = 'rgba(255,255,255,.09)'; g.lineWidth = 1;
+        for (var i = 0; i <= 112; i += 8) { var px = i / 112 * w; g.beginPath(); g.moveTo(px, 0); g.lineTo(px, h); g.stroke(); }
+        for (var j = 0; j <= 84; j += 8) { var py = j / 84 * h; g.beginPath(); g.moveTo(0, py); g.lineTo(w, py); g.stroke(); }
+        var cx = (bbx * 8 + 4 - rx) / 112 * w, cyy = (bby * 8 + 4 - ry) / 84 * h;
+        g.strokeStyle = MINT; g.lineWidth = 3;
+        g.strokeRect(cx - w / 112 * 8, cyy - h / 84 * 8, w / 112 * 8 * 2, h / 84 * 8 * 2);
+        mono(g, 17, MINT, 'left'); g.fillText('64 NUMBERS PER SQUARE', 16, 32);
+    }
+    function s3Readouts(k, rms) {
+        var ke = document.getElementById('s3K'), re = document.getElementById('s3Rms'), ks = document.getElementById('s3KStep');
+        if (ke) ke.textContent = k;
+        if (re) re.textContent = rms.toFixed(1);
+        if (ks) ks.textContent = 'k';
+    }
+
+    /* ── scene 4 renders ── */
+    var s4Wall = document.getElementById('s4Wall');
+    function renderS4(mode) {
+        if (!s4Wall) return;
+        var g = s4Wall.getContext('2d'), w = s4Wall.width, cell = w / 8;
+        g.fillStyle = '#08080a'; g.fillRect(0, 0, w, w);
+        var co = [];
+        for (var i = 0; i < 64; i++) co.push(coefs[busiest * 64 + i]);
+        var quant = [];
+        for (i = 0; i < 64; i++) quant.push(Math.round(co[i] / T75[i]));
+        if (mode <= 3) {
+            for (var v = 0; v < 8; v++) for (var u = 0; u < 8; u++) {
+                var z = v * 8 + u;
+                var x0 = u * cell, y0 = v * cell;
+                g.strokeStyle = 'rgba(255,255,255,.08)'; g.lineWidth = 1;
+                g.strokeRect(x0 + .5, y0 + .5, cell - 1, cell - 1);
+                if (mode === 1) {
+                    var val = co[z];
+                    mono(g, Math.round(cell * 0.26), Math.abs(val) < 3 ? 'rgba(180,178,168,.4)' : val >= 0 ? MINT : CORAL, 'center');
+                    g.fillText(val >= 0.5 || val <= -0.5 ? String(Math.round(val)) : '·', x0 + cell / 2, y0 + cell / 2 + cell * 0.09);
+                    if (z === 0) { mono(g, Math.round(cell * 0.2), MUTED, 'center'); g.fillText('AVG', x0 + cell / 2, y0 + cell - 12); }
+                } else if (mode === 2) {
+                    mono(g, Math.round(cell * 0.24), 'rgba(177,166,255,.9)', 'center');
+                    g.fillText('÷' + T75[z], x0 + cell / 2, y0 + cell / 2 + cell * 0.09);
+                } else {
+                    var q = quant[z];
+                    if (q === 0) {
+                        g.fillStyle = 'rgba(8,8,10,.45)'; g.fillRect(x0 + 1, y0 + 1, cell - 2, cell - 2);
+                        mono(g, Math.round(cell * 0.3), 'rgba(130,128,122,.5)', 'center');
+                        g.fillText('0', x0 + cell / 2, y0 + cell / 2 + cell * 0.1);
+                    } else {
+                        mono(g, Math.round(cell * 0.28), q > 0 ? MINT : CORAL, 'center');
+                        g.fillText(String(q), x0 + cell / 2, y0 + cell / 2 + cell * 0.09);
+                        g.strokeStyle = 'rgba(95,224,192,.35)';
+                        g.strokeRect(x0 + 2.5, y0 + 2.5, cell - 5, cell - 5);
+                    }
+                }
+            }
+            if (mode === 2) {
+                mono(g, 19, 'rgba(177,166,255,.95)', 'left');
+                g.fillText('÷ TABLE (QUALITY 75), THEN ROUND', 12, 26);
+            }
+            if (mode === 3) {
+                mono(g, 19, MUTED, 'left');
+                g.fillText((64 - busySurv) + ' OF 64 → 0', 12, 26);
+            }
+        } else {
+            var orig = blockPixels(busiest);
+            var deq = new Float64Array(64);
+            for (i = 0; i < 64; i++) deq[i] = quant[i] * T75[i];
+            var rec = idct(deq);
+            var pad = 26, gap = 24, side = Math.min(w - pad * 2 - gap, w - pad * 2 - gap);
+            var x0 = (w - side * 2 - gap) / 2, y0 = (w - side) / 2 - 14;
+            function paint(px0, src) {
+                for (var y = 0; y < 8; y++) for (var x = 0; x < 8; x++) {
+                    var c = clamp(src[y * 8 + x], 0, 255) | 0;
+                    g.fillStyle = 'rgb(' + c + ',' + c + ',' + c + ')';
+                    g.fillRect(px0 + x / 8 * side, y0 + y / 8 * side, side / 8 + 1, side / 8 + 1);
+                }
+                g.strokeStyle = 'rgba(255,255,255,.16)'; g.lineWidth = 1;
+                g.strokeRect(px0, y0, side, side);
+            }
+            paint(x0, orig); paint(x0 + side + gap, rec);
+            mono(g, 20, MUTED, 'center'); g.fillText('ORIGINAL', x0 + side / 2, y0 + side + 40);
+            mono(g, 20, CORAL, 'center'); g.fillText('AFTER ROUNDING', x0 + side + gap + side / 2, y0 + side + 40);
+        }
+    }
+
+    /* ── the lab ── */
+    var photoBlobCanvas = photoCanvas;
+    var labTimer = null, labBitmap = null;
+    function drawCrop(cv, src) {
+        var g = cv.getContext('2d');
+        g.imageSmoothingEnabled = false;
+        g.fillStyle = '#08080a'; g.fillRect(0, 0, cv.width, cv.height);
+        if (src) g.drawImage(src, 56, 328, 64, 48, 0, 0, cv.width, cv.height);
+    }
+    function labEncode(q) {
+        photoBlobCanvas.toBlob(function (blob) {
+            if (!blob) return;
+            var bytes = blob.size;
+            var el = document.getElementById('labBytes');
+            if (el) el.textContent = fmtB(bytes);
+            var r = RAW_BYTES / bytes;
+            setTxt('labRatio', Math.round(r) + ' : 1');
+            setTxt('labKeep', (100 * bytes / RAW_BYTES).toFixed(1) + '%');
+            setTxt('finBytes', fmtB(bytes));
+            setTxt('finRatio', Math.round(r) + ' : 1');
+            setTxt('finKeep', (100 * bytes / RAW_BYTES).toFixed(1) + '%');
+            setTxt('finDel', (100 - 100 * bytes / RAW_BYTES).toFixed(1) + '%');
+            var finEnc = document.getElementById('finEnc');
+            if (finEnc && !finEnc._done) {
+                finEnc._done = true;
+                var fg = finEnc.getContext('2d');
+                fg.imageSmoothingEnabled = false;
+                var done = function (bm) { fg.drawImage(bm, 0, 0, finEnc.width, finEnc.height); };
+                if (bmFromBlob(blob, done)) return;
+            }
+            var enc = document.getElementById('labEnc');
+            if (enc) {
+                var g = enc.getContext('2d');
+                g.imageSmoothingEnabled = false;
+                var drawEnc = function (bm) { drawCrop(enc, bm); };
+                if (bmFromBlob(blob, drawEnc)) return;
+            }
+        }, 'image/jpeg', q / 100);
+    }
+    function bmFromBlob(blob, cb) {
+        if (window.createImageBitmap) { createImageBitmap(blob).then(cb); return true; }
+        var url = URL.createObjectURL(blob), im = new Image();
+        im.onload = function () { cb(im); URL.revokeObjectURL(url); };
+        im.src = url;
+        return true;
+    }
+    function setTxt(id, txt) { var el = document.getElementById(id); if (el) el.textContent = txt; }
+    function renderLabTable(q) {
+        var cv = document.getElementById('labTable');
+        if (!cv) return;
+        var T = scaledTable(QLUM, q), g = cv.getContext('2d'), cell = cv.width / 8;
+        for (var v = 0; v < 8; v++) for (var u = 0; u < 8; u++) {
+            var z = v * 8 + u, t = T[z];
+            var heat = clamp((Math.log(t) - Math.log(1)) / (Math.log(255) - Math.log(1)), 0, 1);
+            var rr = Math.round(lerp(30, 255, Math.pow(heat, 1.4)));
+            var gg = Math.round(lerp(120, 107, heat));
+            var bb = Math.round(lerp(104, 74, heat));
+            g.fillStyle = 'rgb(' + rr + ',' + gg + ',' + bb + ')';
+            g.fillRect(u * cell, v * cell, cell - 2, cell - 2);
+            mono(g, Math.round(cell * 0.26), heat > 0.55 ? '#0d0d0f' : '#cfe9df', 'center');
+            g.fillText(String(t), u * cell + cell / 2, v * cell + cell / 2 + cell * 0.09);
+        }
+    }
+    function setLabQ(q) {
+        setTxt('labQv', q); setTxt('labQTag', q);
+        renderLabTable(q);
+        setTxt('labZeros', (zerosAt(q) * 100).toFixed(1) + '%');
+        if (labTimer) clearTimeout(labTimer);
+        labTimer = setTimeout(function () { labEncode(q); }, 140);
+    }
+    (function () {
+        var slider = document.getElementById('labQ');
+        if (!slider) return;
+        slider.addEventListener('input', function () { setLabQ(parseInt(slider.value, 10)); }, { passive: true });
+    })();
+
+    /* ── scene 5 · zigzag loop ── */
+    var zigCanvas = document.getElementById('zigCanvas');
+    var zigSymbols = null;
+    function computeSymbols() {
+        var syms = [], run = 0;
+        for (var i = 0; i < 64; i++) {
+            var v = Math.round(coefs[busiest * 64 + ZIG[i]] / T75[ZIG[i]]);
+            if (v === 0) { run++; continue; }
+            syms.push({ run: run, v: v, at: i });
+            run = 0;
+        }
+        if (run > 0) syms.push({ run: run, v: 0, at: 64, eob: true });
+        else syms.push({ run: 0, v: 0, at: 64, eob: true });
+        return syms;
+    }
+    function renderZig(t) {
+        if (!zigCanvas) return;
+        var g = zigCanvas.getContext('2d'), w = zigCanvas.width;
+        g.fillStyle = '#08080a'; g.fillRect(0, 0, w, w);
+        var cell = w * 0.62 / 8, ox = w * 0.05, oy = w * 0.05;
+        var quant = [];
+        for (var i = 0; i < 64; i++) quant.push(Math.round(coefs[busiest * 64 + i] / T75[i]));
+        var pos = Math.floor(t * 64);
+        for (var v = 0; v < 8; v++) for (var u = 0; u < 8; u++) {
+            var z = v * 8 + u;
+            var order = ZIG.indexOf(z);
+            var passed = order < pos;
+            var q = quant[z];
+            var x0 = ox + u * cell, y0 = oy + v * cell;
+            if (q === 0) {
+                g.fillStyle = passed ? 'rgba(40,40,44,.9)' : 'rgba(74,72,68,.9)';
+                g.fillRect(x0 + 2, y0 + 2, cell - 4, cell - 4);
+                mono(g, cell * 0.34, 'rgba(150,148,142,.6)', 'center');
+                g.fillText('0', x0 + cell / 2, y0 + cell / 2 + cell * 0.12);
+            } else {
+                g.fillStyle = passed ? 'rgba(20,46,40,.95)' : 'rgba(32,40,38,.95)';
+                g.fillRect(x0 + 2, y0 + 2, cell - 4, cell - 4);
+                g.strokeStyle = passed ? MINT : 'rgba(95,224,192,.3)'; g.lineWidth = passed ? 2 : 1;
+                g.strokeRect(x0 + 2.5, y0 + 2.5, cell - 5, cell - 5);
+                mono(g, cell * 0.3, passed ? MINT : 'rgba(95,224,192,.55)', 'center');
+                g.fillText(String(q), x0 + cell / 2, y0 + cell / 2 + cell * 0.11);
+            }
+        }
+        /* zigzag polyline */
+        g.strokeStyle = 'rgba(255,255,255,.14)'; g.lineWidth = 1.5;
+        g.beginPath();
+        for (i = 0; i < 64; i++) {
+            var zz = ZIG[i];
+            var zx = ox + (zz % 8) * cell + cell / 2, zy = oy + Math.floor(zz / 8) * cell + cell / 2;
+            if (i === 0) g.moveTo(zx, zy); else g.lineTo(zx, zy);
+        }
+        g.stroke();
+        /* cursor */
+        if (t < 1) {
+            var cz = ZIG[Math.min(pos, 63)];
+            g.strokeStyle = CORAL; g.lineWidth = 3;
+            g.strokeRect(ox + (cz % 8) * cell + 1, oy + Math.floor(cz / 8) * cell + 1, cell - 2, cell - 2);
+        }
+        /* symbol column */
+        var sx = w * 0.72, sy = w * 0.1, lh2 = w * 0.062;
+        mono(g, w * 0.026, MUTED, 'left');
+        g.fillText('SYMBOLS', sx, sy - w * 0.03);
+        var shown = 0;
+        for (i = 0; i < zigSymbols.length && shown < 11; i++) {
+            if (zigSymbols[i].at > pos && t < 1) break;
+            var s = zigSymbols[i];
+            var txt = s.eob ? 'EOB' : (s.run > 0 ? '0×' + s.run + ' then ' + s.v : String(s.v));
+            mono(g, w * 0.03, s.eob ? CORAL : MINT, 'left');
+            g.fillText(txt, sx, sy + shown * lh2);
+            shown++;
+        }
+        mono(g, w * 0.024, MUTED, 'left');
+        g.fillText(zigSymbols.length + ' SYMBOLS FOR 64 WEIGHTS', ox, oy + 8 * cell + w * 0.045);
+    }
+
+    /* ── initial static renders + step wiring ── */
+    function initialRenders() {
+        renderS1(1);
+        s2ChromaMode(false);
+        drawDict(0);
+        renderS3ZoomGrid();
+        s3Readouts(64, 0);
+        renderS4(1);
+        renderLabTable(75);
+        setTxt('labZeros', (zeroPct75 * 100).toFixed(1) + '%');
+        var zo = document.getElementById('s2Full'); void zo;
+        setTxt('deltaMax', Math.round(deltaMax) + ' LEVELS');
+        setTxt('deltaMean', deltaMean.toFixed(1));
+        setTxt('stepDeltaMax', Math.round(deltaMax) + '');
+        setTxt('stepDeltaMean', deltaMean.toFixed(1));
+        setTxt('s4Surv', busySurv + '');
+        setTxt('s4Zero', (zeroPct75 * 100).toFixed(1) + '%');
+        setTxt('s4GoneStep', (64 - busySurv) + '');
+        setTxt('s4ZeroStep', (zeroPct75 * 100).toFixed(1) + '%');
+        drawCrop(document.getElementById('labOrig'), photoCanvas);
+        labEncode(75);
+    }
+
+    var sweepOn = false;
+    function sweepTick() {
+        if (!sweepOn) return;
+        var scene = document.getElementById('scene3');
+        var step6 = scene.querySelectorAll('[data-step]')[5];
+        var r = step6.getBoundingClientRect();
+        var vh = innerHeight;
+        var p = clamp((vh - r.top) / (vh + r.height * 0.9), 0, 1);
+        var k = 1 + Math.round(p * 63);
+        renderFullK(k, false);
+        s3Readouts(k, Math.sqrt(reconMse()));
+    }
+    function setSweep(on) {
+        if (on === sweepOn) return;
+        sweepOn = on;
+        if (on && !VB.reduceMotion) {
+            addEventListener('scroll', sweepTick, { passive: true });
+            sweepTick();
+        } else {
+            removeEventListener('scroll', sweepTick);
+        }
+    }
+
+    VB.onReady(function () {
+        initialRenders();
+        if (window.VBScene) {
+            window.VBScene.onStep(function (sceneEl, stepEl, idx) {
+                var id = sceneEl.id;
+                if (id === 'scene1') renderS1(idx);
+                if (id === 'scene2') {
+                    s2ChromaMode(idx === 4);
+                    if (idx === 5) {
+                        var cf = document.getElementById('s2Full');
+                        var gf = cf.getContext('2d');
+                        gf.imageSmoothingEnabled = false;
+                        gf.drawImage(photo420Canvas, 0, 0, cf.width, cf.height);
+                    }
+                }
+                if (id === 'scene3') {
+                    var main = document.getElementById('s3Main');
+                    if (idx === 1) { main.classList.remove('is-full'); renderS3ZoomGrid(); drawDict(0); }
+                    if (idx === 2) { drawDict(0); renderS3ZoomGrid(); }
+                    if (idx === 3) { drawDict(6); }
+                    if (idx === 4) { main.classList.remove('is-full'); var r1 = renderBlockPair(1); drawDict(1); s3Readouts(1, r1); }
+                    if (idx === 5) { main.classList.remove('is-full'); var r15 = renderBlockPair(15); drawDict(15); s3Readouts(15, r15); }
+                    if (idx === 6) {
+                        main.classList.add('is-full');
+                        drawDict(64);
+                        if (VB.reduceMotion) { renderFullK(64, false); s3Readouts(64, 0); }
+                        setSweep(true);
+                    } else {
+                        setSweep(false);
+                    }
+                }
+                if (id === 'scene4') renderS4(idx);
+            });
+        }
+        /* zigzag loop — runs only while visible */
+        if (zigCanvas) {
+            zigSymbols = computeSymbols();
+            var zigT0 = null;
+            var visible = false;
+            var io = new IntersectionObserver(function (es) {
+                es.forEach(function (e) { visible = e.isIntersecting; });
+            }, { threshold: 0.2 });
+            io.observe(zigCanvas);
+            function loop(now) {
+                if (visible && !document.hidden) {
+                    if (VB.reduceMotion) { renderZig(1); }
+                    else {
+                        if (zigT0 === null) zigT0 = now;
+                        var t = ((now - zigT0) % 6800) / 6800;
+                        renderZig(t);
+                    }
+                } else {
+                    zigT0 = null;
+                }
+                requestAnimationFrame(loop);
+            }
+            requestAnimationFrame(loop);
+        }
+    });
+})();
+</script>
+
+    <script>
+/* ── Inlined site runtime (trim: skip-link + reveals) ─────────────── */
+(function () {
+    'use strict';
+    var main = document.querySelector('main');
+    if (main && !document.querySelector('.skip-link')) {
+        if (!main.id) main.id = 'main-content';
+        var skip = document.createElement('a');
+        skip.className = 'skip-link';
+        skip.href = '#' + main.id;
+        skip.textContent = 'Skip to content';
+        document.body.insertBefore(skip, document.body.firstChild);
+    }
+    if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (es) {
+            es.forEach(function (e) {
+                if (e.isIntersecting) { e.target.classList.add('seen'); io.unobserve(e.target); }
+            });
+        }, { threshold: .15 });
+        document.querySelectorAll('.reveal').forEach(function (x) { io.observe(x); });
+    } else {
+        document.querySelectorAll('.reveal').forEach(function (x) { x.classList.add('seen'); });
+    }
+})();
+</script>
+
+    <script>
+/* ── Inlined scene runtime (the site's sticky-scene contract) ─────── */
+(function () {
+    'use strict';
+
+    var portraitMob = window.matchMedia('(max-width: 850px) and (min-height: 521px)');
+
+    if (!('IntersectionObserver' in window)) {
+        document.documentElement.classList.remove('js');
+        window.VBScene = { init: function () {}, refresh: function () {}, onStep: function () {} };
+        return;
+    }
+
+    function wireScene(scene) {
+        if (scene.dataset.vbSceneWired === 'true') return;
+        var steps = scene.querySelectorAll('[data-step]');
+        if (!steps.length) return;
+        scene.dataset.vbSceneWired = 'true';
+        var readout = scene.querySelector('[data-readout]');
+        var total = steps.length;
+
+        var band = portraitMob.matches ? '-20% 0px -20% 0px' : '-45% 0px -45% 0px';
+
+        function stagePinned() {
+            var stage = scene.querySelector('.sticky-scene__stage');
+            if (!stage) return false;
+            var rect = stage.getBoundingClientRect();
+            return rect.top <= 1 && rect.bottom >= innerHeight - 1;
+        }
+        var engaged = false;
+        function deactivate() {
+            steps.forEach(function (s) { s.classList.remove('is-active'); });
+            delete scene.dataset.activeStep;
+            if (readout) readout.textContent = '';
+            engaged = false;
+        }
+        function activate(step) {
+            steps.forEach(function (s) { s.classList.remove('is-active'); });
+            step.classList.add('is-active');
+            scene.dataset.activeStep = step.getAttribute('data-step');
+            if (readout) {
+                readout.textContent = 'STEP ' + step.getAttribute('data-step') + ' / ' + total;
+            }
+            var fill = step.querySelector('.step-progress i');
+            if (fill) {
+                var pi = parseInt(step.getAttribute('data-step'), 10) || 1;
+                fill.style.width = (total > 1 ? ((pi - 1) / (total - 1)) * 100 : 100) + '%';
+            }
+            engaged = true;
+            notifyHooks(scene, step, total);
+        }
+
+        var io = new IntersectionObserver(function (es) {
+            es.forEach(function (e) {
+                if (!e.isIntersecting || !stagePinned()) return;
+                activate(e.target);
+            });
+        }, { rootMargin: band });
+
+        var ticking = false;
+        function bootstrap() {
+            if (engaged || !stagePinned()) return;
+            var c = innerHeight / 2;
+            for (var i = 0; i < steps.length; i++) {
+                var r = steps[i].getBoundingClientRect();
+                if (r.top <= c && r.bottom >= c) {
+                    activate(steps[i]);
+                    return;
+                }
+            }
+        }
+        function onScroll() {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(function () {
+                ticking = false;
+                if (!stagePinned()) {
+                    deactivate();
+                    return;
+                }
+                bootstrap();
+            });
+        }
+        addEventListener('scroll', onScroll, { passive: true });
+        addEventListener('resize', onScroll);
+        bootstrap();
+
+        steps.forEach(function (s) {
+            if (!s.querySelector(':scope > .step-card')) {
+                if (!s.querySelector(':scope > .step-k')) {
+                    var label = document.createElement('span');
+                    var number = parseInt(s.getAttribute('data-step'), 10) || 1;
+                    label.className = 'step-k';
+                    label.textContent = 'STEP ' + (number < 10 ? '0' : '') + number + ' / ' +
+                        (total < 10 ? '0' : '') + total;
+                    s.insertBefore(label, s.firstChild);
+                }
+                var card = document.createElement('div');
+                card.className = 'step-card';
+                var prog = document.createElement('div');
+                prog.className = 'step-progress';
+                prog.innerHTML = '<i></i>';
+                card.appendChild(prog);
+                while (s.firstChild) card.appendChild(s.firstChild);
+                s.appendChild(card);
+            }
+            io.observe(s);
+        });
+    }
+
+    function measureCardReserve() {
+        if (!portraitMob.matches) return;
+        document.querySelectorAll('.sticky-scene').forEach(function (scene) {
+            var stage = scene.querySelector('.sticky-scene__stage');
+            if (!stage) return;
+            var max = 0;
+            scene.querySelectorAll('.step-card').forEach(function (c) {
+                var h = c.getBoundingClientRect().height;
+                if (h > max) max = h;
+            });
+            stage.style.setProperty('--card-reserve', (max + 30) + 'px');
+        });
+    }
+
+    var hooks = [];
+    function notifyHooks(scene, step, total) {
+        for (var i = 0; i < hooks.length; i++) {
+            hooks[i](scene, step, parseInt(step.getAttribute('data-step'), 10), total);
+        }
+    }
+
+    function init() {
+        document.querySelectorAll('.sticky-scene').forEach(wireScene);
+        measureCardReserve();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+
+    window.VBScene = {
+        init: init,
+        refresh: measureCardReserve,
+        onStep: function (fn) { if (typeof fn === 'function') hooks.push(fn); }
+    };
+    addEventListener('resize', measureCardReserve);
+    addEventListener('orientationchange', measureCardReserve);
+    addEventListener('load', measureCardReserve);
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', measureCardReserve);
+    }
+})();
+</script>
+
+    <script src="../js/post-progress.js" defer></script>
+    <script src="../js/post-nav.js" defer></script>
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+            navigator.serviceWorker.register('/sw.js').catch(function () {});
+        });
+    }
+    </script>
+</body>
+
+</html>
