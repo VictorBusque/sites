@@ -20,6 +20,15 @@
    JSON so the checker can parse it directly. */
 window.VB_POSTS = [
     {
+        "slug": "blog/how-card-payments-work.html",
+        "no": "14",
+        "title": "How a Card Payment Actually Works",
+        "date": "2026-08",
+        "topic": "Payments · Systems",
+        "tags": ["Card payments", "ISO 8583", "EMV", "Interchange", "Settlement"],
+        "deck": "Follow one €4.50 tap: a two-second message round trip that only holds the money, then clearing and net settlement days later — every fee computed live."
+    },
+    {
         "slug": "blog/how-google-maps-routes.html",
         "no": "12",
         "title": "How Google Maps Finds the Fastest Route",

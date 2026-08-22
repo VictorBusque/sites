@@ -1,0 +1,1301 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>How a Card Payment Actually Works — Víctor Busqué</title>
+  <meta name="description" content="Follow one €4.50 tap: a two-second message round trip that only holds the money, then clearing and net settlement days later — every fee computed live.">
+  <meta name="author" content="Víctor Busqué">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://engineering.victorbusque.com/blog/how-card-payments-work.html">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#101010">
+  <meta name="color-scheme" content="light dark">
+
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Víctor Busqué — Curiosities">
+  <meta property="og:title" content="How a Card Payment Actually Works — Víctor Busqué">
+  <meta property="og:description" content="Follow one €4.50 tap: a two-second message round trip that only holds the money, then clearing and net settlement days later — every fee computed live.">
+  <meta property="og:url" content="https://engineering.victorbusque.com/blog/how-card-payments-work.html">
+  <meta property="og:image" content="https://engineering.victorbusque.com/img/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="en_US">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How a Card Payment Actually Works — Víctor Busqué">
+  <meta name="twitter:description" content="Follow one €4.50 tap: a two-second message round trip that only holds the money, then clearing and net settlement days later — every fee computed live.">
+  <meta name="twitter:image" content="https://engineering.victorbusque.com/img/og.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "How a Card Payment Actually Works",
+    "description": "Follow one €4.50 tap: a two-second message round trip that only holds the money, then clearing and net settlement days later — every fee computed live.",
+    "datePublished": "2026-08",
+    "author": {"@type": "Person", "name": "Víctor Busqué", "url": "https://engineering.victorbusque.com/"},
+    "publisher": {"@type": "Person", "name": "Víctor Busqué"},
+    "image": "https://engineering.victorbusque.com/img/og.png",
+    "url": "https://engineering.victorbusque.com/blog/how-card-payments-work.html",
+    "mainEntityOfPage": "https://engineering.victorbusque.com/blog/how-card-payments-work.html",
+    "inLanguage": "en",
+    "keywords": ["card payments", "ISO 8583", "EMV", "interchange", "settlement"],
+    "articleSection": "Payments · Systems"
+  }
+  </script>
+
+  <script>document.documentElement.className = 'js';</script>
+  <link rel="stylesheet" href="../css/post-progress.css">
+  <link rel="stylesheet" href="../css/post-nav.css">
+  <style>
+    /* ══════════════════════════════════════════════════════════════════
+       HOW A CARD PAYMENT ACTUALLY WORKS
+       Aesthetic: thermal receipt + transit wayfinding. The banking world
+       is paper — receipts, message stubs, ledger slips on warm paper.
+       The network world is dark: metro-line diagrams on a gridded stage.
+       The split between the two is the story: documents vs wires.
+       Semantics: acid = moving/settled funds and answers, blue = the
+       message under examination, orange = the hold and the tolls.
+       Dashed = pending, solid = posted — stated in the legend, used
+       everywhere. Every stage state is keyed off data-active-step; the
+       no-JS document shows each scene's full resolved state.
+       ══════════════════════════════════════════════════════════════════ */
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Unbounded:wght@400;500;600;700&display=swap');
+
+    :root {
+      --ink: #101010;
+      --paper: #f2f0e9;
+      --paper-2: #ece9de;
+      --rcpt: #fbfaf5;
+      --acid: #c7ff3d;
+      --blue: #546cff;
+      --orange: #ff6b2c;
+      --muted: #716f68;
+      --line: #111111;
+      --stage: #121212;
+      --grid: #ffffff0d;
+
+      --ease-out: cubic-bezier(.16, 1, .3, 1);
+      --ease-in: cubic-bezier(.55, 0, .85, .36);
+      --ease-swift: cubic-bezier(.4, 0, .2, 1);
+      --t-fast: 180ms;
+      --t-med: 400ms;
+      --t-slow: 800ms;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Newsreader", Georgia, serif;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    ::selection { background: var(--acid); color: var(--ink); }
+    a { color: inherit; text-decoration: none; }
+    :focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+    .mono { font-family: "DM Mono", monospace; }
+    .skip {
+      position: fixed; left: max(16px, env(safe-area-inset-left, 0px));
+      top: max(12px, env(safe-area-inset-top, 0px)); z-index: 100;
+      padding: 10px 14px; background: var(--acid); color: var(--ink);
+      font: 10px "DM Mono"; letter-spacing: .12em; text-transform: uppercase;
+      transform: translateY(-200%); transition: transform var(--t-fast) var(--ease-out);
+    }
+    .skip:focus { transform: none; }
+
+    /* ── reveal utilities ── */
+    .reveal { opacity: 0; transform: translateY(26px);
+      transition: opacity var(--t-slow) var(--ease-out), transform var(--t-slow) var(--ease-out);
+      transition-delay: var(--d, 0s); }
+    .reveal.seen { opacity: 1; transform: none; }
+
+    /* ── hero ── */
+    .hero {
+      border-bottom: 1px solid var(--line);
+      padding: 10vh 4vw 8vh;
+      position: relative; overflow: hidden;
+    }
+    .hero .ghost {
+      position: absolute; right: -1vw; top: 1vh;
+      font: italic 170px/1 "Instrument Serif"; color: #1111110d;
+      pointer-events: none;
+      animation: floaty 9s var(--ease-swift) infinite;
+    }
+    .crumb {
+      font: 10px "DM Mono"; letter-spacing: .18em; text-transform: uppercase;
+      color: #777; margin-bottom: 36px;
+    }
+    .crumb a { border-bottom: 1px solid #777; padding-bottom: 2px;
+      transition: color var(--t-fast) var(--ease-swift), border-color var(--t-fast) var(--ease-swift); }
+    .crumb a:hover { color: var(--ink); border-color: var(--ink); }
+    .hero h1 {
+      font-family: "Unbounded", sans-serif; font-weight: 500;
+      font-size: clamp(42px, 7.2vw, 110px);
+      letter-spacing: -.07em; line-height: .88; margin: 0 0 32px; max-width: 12em;
+    }
+    .hero h1 em { font-family: "Instrument Serif"; font-style: italic; font-weight: 400; letter-spacing: -.04em; }
+    .h-line { display: block; overflow: hidden; padding-bottom: .08em; margin-bottom: -.08em; }
+    .h-line > span { display: block; transform: translateY(112%);
+      animation: rise 1100ms var(--ease-out) both; }
+    .h-line:nth-child(1) > span { animation-delay: .1s; }
+    .h-line:nth-child(2) > span { animation-delay: .22s; }
+    .h-line:nth-child(3) > span { animation-delay: .34s; }
+    .hero .dek {
+      font-size: 18px; line-height: 1.6; max-width: 640px; color: #45433f;
+      opacity: 0; transform: translateY(20px);
+      animation: fade-rise var(--t-slow) var(--ease-out) .55s both;
+    }
+    .post-meta {
+      margin-top: 38px; display: flex; gap: 26px; flex-wrap: wrap;
+      font: 10px "DM Mono"; letter-spacing: .14em; text-transform: uppercase; color: #777;
+    }
+    .post-meta b { color: var(--ink); font-weight: 500; }
+    @keyframes rise { to { transform: translateY(0); } }
+    @keyframes fade-rise { to { opacity: 1; transform: none; } }
+    @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+
+    /* ── prose sections ── */
+    .prose { max-width: 700px; margin: 0 auto; padding: 9vh 4vw 0; }
+    .prose h2 {
+      font-family: "Unbounded", sans-serif; font-weight: 500;
+      font-size: clamp(24px, 3.4vw, 38px); letter-spacing: -.045em; line-height: 1.08;
+      margin: 0 0 22px; display: flex; align-items: baseline; gap: 18px;
+    }
+    .prose h2 .sec-no { font: 10px "DM Mono"; letter-spacing: .14em; color: var(--orange); align-self: center; }
+    .prose p { font-size: 18px; line-height: 1.74; color: #33322e; margin-bottom: 1.5em; }
+    .prose p strong { font-weight: 600; }
+    .callout {
+      border-left: 4px solid var(--acid); background: var(--paper-2);
+      padding: 22px 26px; margin: 5vh 0; font: italic 22px/1.45 "Instrument Serif";
+    }
+    .callout em { font-style: normal; }
+    .aside {
+      font: 11px/1.7 "DM Mono"; color: #777;
+      border-top: 1px solid #d8d4c6; padding-top: 12px; margin: 6vh 0 0;
+    }
+    .caption {
+      font-size: 13.5px; line-height: 1.65; color: var(--muted); max-width: 760px; margin-top: 14px;
+    }
+    .caption b {
+      font-family: "DM Mono"; font-size: 9.5px; letter-spacing: .16em; text-transform: uppercase;
+      color: var(--orange); font-weight: 500; margin-right: 8px;
+    }
+
+    /* ── split scenes ── */
+    .split {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6vw; align-items: center;
+      max-width: 1240px; margin: 0 auto; padding: 9vh 4vw;
+    }
+    .split .copy h2 {
+      font-family: "Unbounded", sans-serif; font-weight: 500;
+      font-size: clamp(24px, 3.4vw, 38px); letter-spacing: -.045em; line-height: 1.08;
+      margin: 0 0 20px; display: flex; align-items: baseline; gap: 18px;
+    }
+    .split .copy h2 .sec-no { font: 10px "DM Mono"; letter-spacing: .14em; color: var(--orange); align-self: center; }
+    .split .copy p { font-size: 17px; line-height: 1.7; color: #33322e; margin-bottom: 1.2em; }
+    .split .visual { display: grid; place-items: center; }
+
+    /* ── receipts (paper documents) ── */
+    .rcpt {
+      background: var(--rcpt); border: 1px solid var(--line);
+      box-shadow: 6px 8px 0 #11111114;
+      font-family: "DM Mono", monospace; color: var(--ink);
+      width: min(330px, 100%); padding: 20px 18px 26px; position: relative;
+    }
+    .rcpt::after {
+      content: ""; position: absolute; left: 0; right: 0; bottom: -7px; height: 7px;
+      background: linear-gradient(-45deg, var(--rcpt) 5px, transparent 0),
+                  linear-gradient(45deg, var(--rcpt) 5px, transparent 0);
+      background-size: 10px 7px; background-repeat: repeat-x;
+    }
+    .rcpt-head { text-align: center; font-size: 11px; letter-spacing: .18em; padding-bottom: 10px;
+      border-bottom: 1px dashed #c9c2ad; }
+    .rcpt-head b { display: block; font-weight: 500; }
+    .rcpt-head span { color: var(--muted); font-size: 9.5px; }
+    .r-row { display: flex; justify-content: space-between; gap: 10px;
+      font-size: 11px; line-height: 1.5; padding: 4.5px 0; border-bottom: 1px dashed #ddd6c2; }
+    .r-row:last-of-type { border-bottom: 0; }
+    .r-row .f { color: var(--muted); }
+    .r-row .v { text-align: right; }
+    .r-row .v b { font-weight: 500; }
+    .r-accent .v { color: #9c3d00; }
+    .rcpt-sep { text-align: center; color: #b9b29a; font-size: 10px; letter-spacing: .3em; padding: 8px 0; }
+
+    /* ── five parties map ── */
+    .parties { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px 10px; width: 100%; max-width: 560px; }
+    .pbox { border: 1px solid var(--line); background: var(--paper-2); padding: 12px 14px; }
+    .pbox .tag { display: block; font: 10px "DM Mono"; letter-spacing: .16em; }
+    .pbox .sub { display: block; font: italic 13px "Instrument Serif"; color: var(--muted); margin-top: 4px; }
+    .pbox.p-net { background: var(--ink); color: var(--paper); }
+    .pbox.p-net .sub { color: #aaa; }
+    .plink-v { display: grid; place-items: center; border-left: 1px dashed #999; margin-left: 24px; }
+    .plink-lab { font: 9px "DM Mono"; letter-spacing: .14em; color: var(--muted);
+      writing-mode: vertical-rl; text-orientation: mixed; padding: 6px 0; background: var(--paper); }
+    .ptap { align-self: center; justify-self: center; display: flex; align-items: center; gap: 8px;
+      font: 9.5px "DM Mono"; letter-spacing: .12em; color: var(--muted); white-space: nowrap; }
+    .ptap i { display: block; width: 26px; height: 1px; background: var(--ink); position: relative; }
+    .ptap i::after { content: ""; position: absolute; right: 0; top: -2.5px;
+      border-left: 6px solid var(--ink); border-top: 3px solid transparent; border-bottom: 3px solid transparent; }
+    .pmsg { display: flex; justify-content: center; gap: 8px; margin-top: 4px; grid-column: 1 / -1;
+      font: 9px "DM Mono"; letter-spacing: .14em; color: var(--muted); }
+    .pmsg i { display: block; flex: 1; max-width: 90px; border-top: 1px dashed #999; margin-top: 6px; }
+
+    /* ── sticky scene system ── */
+    .sticky-scene { position: relative; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin: 10vh 0; }
+    .js .sticky-scene { padding-bottom: 100vh; padding-bottom: 100svh; padding-bottom: 100dvh; }
+    .sticky-scene__stage {
+      background-color: var(--stage);
+      background-image: linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 32px 32px;
+      color: #fff; position: relative; overflow: hidden; min-height: 60vh;
+    }
+    .js .sticky-scene__stage {
+      position: sticky; top: 0;
+      height: 100vh; height: 100svh; height: 100dvh; min-height: 0;
+    }
+    .sticky-scene__stage::after {
+      content: ""; position: absolute; width: 200px; height: 200px;
+      border: 1px solid #ffffff12; border-radius: 50%;
+      right: -100px; bottom: -100px; pointer-events: none;
+    }
+    .scene-title { position: absolute; clip: rect(0 0 0 0); }
+    .scene-head {
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      border-bottom: 1px solid #ffffff1a; padding: 12px 4vw; position: relative; z-index: 2;
+    }
+    .scene-no { font: 10px "DM Mono"; letter-spacing: .14em; color: var(--orange); }
+    .scene-name { font: 10px "DM Mono"; letter-spacing: .18em; }
+    .scene-readout { font: 10px "DM Mono"; color: #777; margin-left: auto; }
+    .scene-legend { font: 9px "DM Mono"; letter-spacing: .12em; color: #888; position: absolute;
+      right: 4vw; bottom: 14px; z-index: 2; text-align: right; line-height: 1.9; }
+    .scene-legend i { font-style: normal; color: #bbb; }
+    .scene-legend .lg-acid { color: var(--acid); }
+    .scene-legend .lg-blue { color: #9ba4ff; }
+    .scene-legend .lg-orange { color: #ff9c6e; }
+
+    .js .sticky-scene__steps {
+      position: relative; margin-top: -100vh; margin-top: -100svh; margin-top: -100dvh;
+      pointer-events: none; z-index: 1;
+    }
+    .js .sticky-scene__steps > .step {
+      min-height: 100vh; min-height: 100svh; min-height: 100dvh;
+      display: flex; align-items: center; padding: 0 4vw;
+    }
+    .step { max-width: 420px; background: var(--paper); border: 1px solid var(--line); padding: 26px 28px; color: var(--ink); }
+    .js .step { background: none; border: 0; padding: 0; max-width: none; pointer-events: none; }
+    .js .step.is-active { pointer-events: auto; }
+    .step-card {
+      width: 100%; max-width: 420px; background: var(--paper);
+      border: 1px solid var(--line); padding: 26px 28px; color: var(--ink);
+      opacity: 0; transform: translateY(26px);
+      transition: opacity var(--t-slow) var(--ease-out), transform var(--t-slow) var(--ease-out);
+    }
+    .js .step.is-active .step-card { opacity: 1; transform: none; }
+    .step-progress { display: none; }
+    .step-k { font: 9px "DM Mono"; letter-spacing: .16em; color: var(--orange); display: block; margin-bottom: 10px; }
+    .step p { font-size: 16.5px; line-height: 1.6; color: #33322e; }
+    .step p + p { margin-top: .8em; }
+
+    /* ── S01 · the authorization loop ── */
+    .loop-stage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 40px 4vw 90px; }
+    .loop { position: relative; width: min(880px, 100%); display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; align-items: start; }
+    .lnode {
+      border: 1px solid #ffffff2e; padding: 10px 8px 9px; text-align: center; border-radius: 10px;
+      background: #ffffff08; position: relative; z-index: 2;
+      transition: border-color .5s var(--ease-out), box-shadow .5s var(--ease-out);
+    }
+    .ln-tag { display: block; font: 10.5px "DM Mono"; letter-spacing: .14em; }
+    .ln-sub { display: block; font: italic 12.5px "Instrument Serif"; color: #8f8f89; margin-top: 3px; }
+    .l-rail { position: absolute; left: 6%; right: 6%; top: 72px; height: 2px; background: #ffffff22; z-index: 1; }
+    .l-rail i { position: absolute; top: 0; height: 100%; width: 0; background: var(--blue);
+      transition: width .55s var(--ease-out); }
+    .l-rail .rg1 { left: 0; } .l-rail .rg2 { left: 33.33%; } .l-rail .rg3 { left: 66.66%; }
+    .env {
+      position: absolute; top: 56px; left: 12.5%; transform: translateX(-50%); z-index: 3;
+      transition: left .7s var(--ease-out), background .3s var(--ease-swift), box-shadow .3s var(--ease-swift);
+      background: var(--ink); border: 1px solid var(--blue); box-shadow: 0 0 16px #546cff55;
+    }
+    .env .env-tag { display: block; font: 10px "DM Mono"; letter-spacing: .1em; padding: 7px 10px; color: #cfd4ff; white-space: nowrap; }
+    .env .env-ret { display: none; color: var(--acid); }
+    .env .env-out { display: block; }
+    .checks {
+      position: absolute; right: 0; top: 96px; display: flex; flex-direction: column; gap: 6px; z-index: 2;
+    }
+    .chk { font: 9.5px "DM Mono"; letter-spacing: .12em; padding: 6px 10px; border: 1px dashed #ffffff2e; color: #777;
+      opacity: 0; transform: translateX(10px); transition: opacity .4s var(--ease-out), transform .4s var(--ease-out); }
+    .chk.on { opacity: 1; transform: none; border-style: solid; border-color: #9ba4ff66; color: #cfd4ff; }
+    .hold-badge {
+      position: absolute; right: -6px; top: 158px; z-index: 3;
+      font: 10px "DM Mono"; letter-spacing: .1em; padding: 8px 12px;
+      background: #2a1508; border: 1px solid var(--orange); color: #ffb489;
+      opacity: 0; transform: translateY(8px) scale(.94);
+      transition: opacity .45s var(--ease-out), transform .45s var(--ease-out);
+    }
+    .hold-badge.on { opacity: 1; transform: none; }
+    .loop-ms { grid-column: 1 / -1; margin-top: 152px; text-align: center; font: italic 26px "Instrument Serif"; color: #9a9a93;
+      transition: color .4s var(--ease-out); }
+    .loop-ms b { font-style: normal; font-family: "DM Mono"; font-size: 15px; letter-spacing: .08em; color: inherit; font-weight: 400; }
+
+    /* loop per-step states (desktop coordinates) */
+    .sticky-scene[data-active-step="1"] .env { left: 12.5%; }
+    .sticky-scene[data-active-step="2"] .env { left: 37.5%; }
+    .sticky-scene[data-active-step="3"] .env { left: 62.5%; }
+    .sticky-scene[data-active-step="4"] .env, .sticky-scene[data-active-step="5"] .env { left: 87.5%; }
+    .sticky-scene[data-active-step="6"] .env { left: 12.5%; border-color: var(--acid); box-shadow: 0 0 18px #c7ff3d44; }
+    .sticky-scene[data-active-step="6"] .env .env-out { display: none; }
+    .sticky-scene[data-active-step="6"] .env .env-ret { display: block; }
+
+    .sticky-scene[data-active-step="1"] .l-rail i { width: 0; }
+    .sticky-scene[data-active-step="2"] .l-rail .rg1 { width: 100%; }
+    .sticky-scene[data-active-step="3"] .l-rail .rg1, .sticky-scene[data-active-step="3"] .l-rail .rg2 { width: 100%; }
+    .sticky-scene[data-active-step="4"] .l-rail i, .sticky-scene[data-active-step="5"] .l-rail i { width: 100%; }
+    .sticky-scene[data-active-step="6"] .l-rail i { width: 100%; background: var(--acid); }
+
+    .sticky-scene[data-active-step="2"] .n-acq { border-color: #9ba4ff; box-shadow: 0 0 14px #546cff33; }
+    .sticky-scene[data-active-step="3"] .n-net { border-color: #9ba4ff; box-shadow: 0 0 14px #546cff33; }
+    .sticky-scene[data-active-step="4"] .n-iss, .sticky-scene[data-active-step="5"] .n-iss { border-color: #9ba4ff; box-shadow: 0 0 14px #546cff33; }
+    .sticky-scene[data-active-step="6"] .n-term { border-color: var(--acid); box-shadow: 0 0 14px #c7ff3d33; }
+
+    .sticky-scene[data-active-step="4"] .chk, .sticky-scene[data-active-step="5"] .chk,
+    .sticky-scene[data-active-step="6"] .chk { opacity: 1; transform: none; border-style: solid; border-color: #9ba4ff66; color: #cfd4ff; }
+    .sticky-scene[data-active-step="4"] .chk.c1, .sticky-scene[data-active-step="5"] .chk.c1, .sticky-scene[data-active-step="6"] .chk.c1 { transition-delay: 0s; }
+    .sticky-scene[data-active-step="4"] .chk.c2, .sticky-scene[data-active-step="5"] .chk.c2, .sticky-scene[data-active-step="6"] .chk.c2 { transition-delay: .12s; }
+    .sticky-scene[data-active-step="4"] .chk.c3, .sticky-scene[data-active-step="5"] .chk.c3, .sticky-scene[data-active-step="6"] .chk.c3 { transition-delay: .24s; }
+    .sticky-scene[data-active-step="5"] .hold-badge, .sticky-scene[data-active-step="6"] .hold-badge { opacity: 1; transform: none; }
+    .sticky-scene[data-active-step="5"] .loop-ms, .sticky-scene[data-active-step="6"] .loop-ms { color: #e8e8e2; }
+
+    /* ── S04 · settlement timeline + ledgers ── */
+    .settle-stage { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center;
+      gap: 26px; padding: 56px 4vw 70px; }
+    .tl { width: min(860px, 100%); margin: 0 auto; }
+    .tl-bar { position: relative; height: 2px; background: #ffffff22; }
+    .tl-bar .tl-fill { position: absolute; left: 0; top: 0; height: 100%; width: 0; background: var(--acid);
+      transition: width .6s var(--ease-out); }
+    .tl-stop { position: absolute; top: -6px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .tl-stop i { display: block; width: 14px; height: 14px; border-radius: 50%; background: var(--stage);
+      border: 1px solid #ffffff3a; transition: border-color .4s var(--ease-out), box-shadow .4s var(--ease-out); }
+    .tl-stop b { font: 9.5px "DM Mono"; letter-spacing: .14em; color: #8f8f89; transition: color .4s var(--ease-out); white-space: nowrap; }
+    .tl-stop em { font: italic 11px "Instrument Serif"; color: #666; }
+    .tl-stop.st1 { left: 12.5%; } .tl-stop.st2 { left: 37.5%; }
+    .tl-stop.st3 { left: 62.5%; } .tl-stop.st4 { left: 87.5%; }
+    .sticky-scene[data-active-step="1"] .tl-fill { width: 12.5%; }
+    .sticky-scene[data-active-step="2"] .tl-fill { width: 37.5%; }
+    .sticky-scene[data-active-step="3"] .tl-fill { width: 62.5%; }
+    .sticky-scene[data-active-step="4"] .tl-fill { width: 87.5%; }
+    .sticky-scene[data-active-step="5"] .tl-fill { width: 100%; }
+    .sticky-scene[data-active-step="1"] .st1 i, .sticky-scene[data-active-step="2"] .st1 i,
+    .sticky-scene[data-active-step="3"] .st1 i, .sticky-scene[data-active-step="4"] .st1 i,
+    .sticky-scene[data-active-step="5"] .st1 i { border-color: var(--acid); box-shadow: 0 0 12px #c7ff3d44; }
+    .sticky-scene[data-active-step="2"] .st2 i, .sticky-scene[data-active-step="3"] .st2 i,
+    .sticky-scene[data-active-step="4"] .st2 i, .sticky-scene[data-active-step="5"] .st2 i { border-color: var(--acid); box-shadow: 0 0 12px #c7ff3d44; }
+    .sticky-scene[data-active-step="3"] .st3 i, .sticky-scene[data-active-step="4"] .st3 i,
+    .sticky-scene[data-active-step="5"] .st3 i { border-color: var(--acid); box-shadow: 0 0 12px #c7ff3d44; }
+    .sticky-scene[data-active-step="4"] .st4 i, .sticky-scene[data-active-step="5"] .st4 i { border-color: var(--acid); box-shadow: 0 0 12px #c7ff3d44; }
+    .sticky-scene[data-active-step="1"] .st1 b, .sticky-scene[data-active-step="2"] .st2 b,
+    .sticky-scene[data-active-step="3"] .st3 b, .sticky-scene[data-active-step="4"] .st4 b { color: #fff; }
+    .sticky-scene[data-active-step="5"] .tl-stop b { color: #fff; }
+
+    .ledgers { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; width: min(860px, 100%); margin: 0 auto; }
+    .ledger { border: 1px solid #ffffff26; background: #ffffff07; padding: 14px 16px 16px; border-radius: 10px; }
+    .ledger h4 { font: 10px "DM Mono"; letter-spacing: .16em; color: #9a9a93; margin-bottom: 10px; }
+    .lr { display: flex; justify-content: space-between; gap: 8px; font: 11px "DM Mono";
+      padding: 7px 9px; margin-top: 5px; border: 1px dashed #ffffff26; color: #6f6f69;
+      opacity: 0; transform: translateY(6px);
+      transition: opacity .45s var(--ease-out), transform .45s var(--ease-out), border-color .45s var(--ease-out); }
+    .lr span { color: #8f8f89; letter-spacing: .08em; font-size: 9.5px; white-space: nowrap; }
+    .lr.on { opacity: 1; transform: none; }
+    .lr.posted { border-style: solid; border-color: #ffffff38; color: #e8e8e2; }
+    .lr.spent { opacity: .38; text-decoration: line-through; text-decoration-color: #ffffff55; }
+    .lr.toll { border-color: #ff6b2c55; }
+    .lr.toll span { color: #ff9c6e; }
+
+    .sticky-scene[data-active-step="1"] .r-hold, .sticky-scene[data-active-step="1"] .r-claim { opacity: 1; transform: none; }
+    .sticky-scene[data-active-step="2"] .r-hold, .sticky-scene[data-active-step="2"] .r-claim,
+    .sticky-scene[data-active-step="2"] .r-fees { opacity: 1; transform: none; }
+    .sticky-scene[data-active-step="3"] .r-hold, .sticky-scene[data-active-step="3"] .r-claim,
+    .sticky-scene[data-active-step="3"] .r-fees, .sticky-scene[data-active-step="3"] .r-send { opacity: 1; transform: none; }
+    .sticky-scene[data-active-step="4"] .lr, .sticky-scene[data-active-step="5"] .lr { opacity: 1; transform: none; }
+    .sticky-scene[data-active-step="4"] .r-debit, .sticky-scene[data-active-step="5"] .r-debit,
+    .sticky-scene[data-active-step="4"] .r-pay, .sticky-scene[data-active-step="5"] .r-pay { border-style: solid; border-color: #c7ff3d66; color: var(--acid); }
+    .sticky-scene[data-active-step="4"] .r-hold, .sticky-scene[data-active-step="5"] .r-hold { opacity: .38; text-decoration: line-through; text-decoration-color: #ffffff55; }
+    .sticky-scene[data-active-step="5"] .r-send, .sticky-scene[data-active-step="5"] .r-recv { border-style: solid; border-color: #c7ff3d66; color: var(--acid); }
+
+    .net-tag { text-align: center; font: italic 22px "Instrument Serif"; color: #9a9a93; transition: color .4s var(--ease-out); }
+    .net-tag b { font-style: normal; font-family: "DM Mono"; font-size: 13px; letter-spacing: .1em; color: inherit; font-weight: 400; }
+    .sticky-scene[data-active-step="5"] .net-tag { color: var(--acid); }
+
+    /* ── S03 · cryptogram taps ── */
+    .crypto-wrap { display: grid; gap: 16px; justify-items: center; width: 100%; }
+    .crypto-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: min(560px, 100%); }
+    .ctap { background: var(--rcpt); border: 1px solid var(--line); box-shadow: 5px 6px 0 #11111112;
+      padding: 14px 14px 16px; font-family: "DM Mono"; }
+    .ctap .c-k { font: 9px "DM Mono"; letter-spacing: .16em; color: var(--muted); display: block; margin-bottom: 8px; }
+    .ctap .c-row { display: flex; justify-content: space-between; font-size: 10.5px; padding: 4px 0; border-bottom: 1px dashed #ddd6c2; }
+    .ctap .c-mac { margin-top: 10px; font-size: 13px; letter-spacing: .06em; color: #24408f; word-break: break-all; }
+    .ctap.is-fresh .c-mac { animation: mac-in .28s var(--ease-out); }
+    @keyframes mac-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    .btn {
+      display: inline-block; font: 10px "DM Mono"; letter-spacing: .16em; text-transform: uppercase;
+      border: 1px solid var(--line); padding: 12px 18px; background: transparent; cursor: pointer;
+      transition: background var(--t-fast) var(--ease-swift), color var(--t-fast) var(--ease-swift);
+    }
+    .btn:hover { background: var(--ink); color: var(--paper); }
+    .crypto-note { font: 10px "DM Mono"; color: var(--muted); letter-spacing: .08em; text-align: center; }
+
+    /* ── S05 · fee split ── */
+    .fees-wrap { width: min(620px, 100%); }
+    .fee-bars { display: grid; gap: 22px; }
+    .fbar-k { font: 10px "DM Mono"; letter-spacing: .14em; color: var(--muted); display: block; margin-bottom: 8px; }
+    .fbar { display: flex; height: 44px; border: 1px solid var(--line); overflow: hidden; background: var(--paper-2); }
+    .fseg { transition: width .5s var(--ease-out); position: relative; }
+    .fs-keep { background: var(--ink); color: var(--paper); display: flex; align-items: center; padding: 0 12px;
+      font: 11px "DM Mono"; white-space: nowrap; }
+    .fs-tolls { background: var(--orange); }
+    .fs-tolls .fs-lab { color: #fff; }
+    .fbar-b { height: 40px; }
+    .fbar-b .fseg { display: flex; align-items: center; justify-content: center;
+      font: 10px "DM Mono"; white-space: nowrap; overflow: hidden; }
+    .fs-int { background: var(--orange); color: #fff; }
+    .fs-sch { background: var(--blue); color: #fff; }
+    .fs-mk { background: #2e2c26; color: #ddd; }
+    .fee-vals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+    .fv { border: 1px solid #d8d4c6; padding: 8px 10px; font-family: "DM Mono"; }
+    .fv i { display: block; font-style: normal; font-size: 8.5px; letter-spacing: .12em; color: var(--muted); margin-bottom: 4px; }
+    .fv b { font-size: 14px; font-weight: 500; }
+    .fv.f-int b { color: #b34a12; } .fv.f-sch b { color: #33419c; } .fv.f-mk b { color: #55524a; }
+    .fee-toggle { display: inline-flex; border: 1px solid var(--line); }
+    .fee-toggle button {
+      appearance: none; border: 0; background: transparent; cursor: pointer;
+      font: 10px "DM Mono"; letter-spacing: .14em; padding: 11px 16px; min-width: 96px; min-height: 44px;
+      transition: background var(--t-fast) var(--ease-swift), color var(--t-fast) var(--ease-swift);
+    }
+    .fee-toggle button[aria-pressed="true"] { background: var(--ink); color: var(--acid); }
+    .blended {
+      margin-top: 20px; border: 1px dashed var(--line); padding: 14px 16px;
+      display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+      font-family: "DM Mono"; background: var(--paper-2);
+    }
+    .blended .b-k { font-size: 9px; letter-spacing: .14em; color: var(--muted); }
+    .blended .b-v { font-size: 15px; }
+    .blended .b-v b { font-weight: 500; }
+
+    /* ── metrics ── */
+    .metrics-scene { display: grid; grid-template-columns: auto 1fr; gap: 5vw; align-items: center;
+      max-width: 1240px; margin: 0 auto; padding: 0 4vw; }
+    .metrics-scene .metric { font: italic clamp(84px, 13vw, 180px)/.9 "Instrument Serif"; letter-spacing: -.04em; }
+    .metrics-scene p { font-size: 17px; line-height: 1.7; color: #33322e; max-width: 560px; }
+    .m-evidence { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .ev-chip { border: 1px solid var(--line); padding: 10px 16px; font: 12px "DM Mono"; color: var(--muted); }
+    .m-note { font: 10px "DM Mono"; letter-spacing: .14em; color: var(--muted); margin-top: 14px; }
+
+    /* ── breather / end ── */
+    .breather { padding: 14vh 4vw; text-align: center; }
+    .breather .breather-line { font: italic clamp(30px, 4.6vw, 54px)/1.25 "Instrument Serif"; max-width: 720px; margin: 0 auto; }
+    .end { background: var(--ink); color: var(--paper); padding: 12vh 4vw 8vh; }
+    .end-inner { max-width: 700px; margin: 0 auto; }
+    .end .kicker { font: 10px "DM Mono"; letter-spacing: .18em; text-transform: uppercase; color: #999; margin-bottom: 22px; }
+    .end h2 { font-family: "Unbounded", sans-serif; font-weight: 500; font-size: clamp(26px, 3.6vw, 42px);
+      letter-spacing: -.045em; line-height: 1.08; margin: 0 0 26px; }
+    .end h2 em { font-family: "Instrument Serif"; font-style: italic; font-weight: 400; }
+    .end p { font-size: 17.5px; line-height: 1.74; color: #d9d6cc; margin-bottom: 1.5em; }
+    .end p a { border-bottom: 1px solid #888; transition: border-color var(--t-fast) var(--ease-swift); }
+    .end p a:hover { border-color: var(--acid); }
+    .end .rcpt { margin: 6vh auto 0; }
+    .end .rcpt .r-row .v { color: inherit; }
+    .end .rcpt-head { color: inherit; border-color: #444; }
+    .end .footer { margin-top: 80px; padding-top: 18px; border-top: 1px solid #555;
+      display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+      font: 10px "DM Mono"; color: #999; }
+    .end .footer a:hover { color: var(--acid); }
+
+    /* ── responsive ── */
+    @media (max-width: 850px) {
+      .split { grid-template-columns: 1fr; gap: 5vh; }
+      .metrics-scene { grid-template-columns: 1fr; gap: 4vh; }
+      .scene-head { flex-wrap: wrap; gap: 6px 14px; padding: 10px 4vw; }
+      .scene-readout { margin-left: 0; }
+      .scene-legend { position: static; text-align: left; padding: 10px 4vw 0; line-height: 2; }
+
+      /* loop verticalizes */
+      .loop-stage { align-items: flex-start; padding-top: 24px; }
+      .loop { grid-template-columns: 1fr; gap: 16px; padding-left: 64px; width: min(420px, 100%); }
+      .lnode { text-align: left; padding: 9px 12px; border-radius: 9px; }
+      .ln-sub { margin-top: 2px; }
+      .l-rail { left: 27px; right: auto; top: 22px; bottom: auto; width: 2px; height: 196px; }
+      .l-rail i { top: auto; left: 0; height: 0; width: 100%; transition: height .55s var(--ease-out); }
+      .l-rail .rg1 { top: 0; } .l-rail .rg2 { top: 46%; } .l-rail .rg3 { top: 80%; }
+      .sticky-scene[data-active-step="1"] .l-rail i { height: 0; }
+      .sticky-scene[data-active-step="2"] .l-rail .rg1 { height: 46%; }
+      .sticky-scene[data-active-step="3"] .l-rail .rg1 { height: 46%; }
+      .sticky-scene[data-active-step="3"] .l-rail .rg2 { height: 34%; }
+      .sticky-scene[data-active-step="4"] .l-rail .rg1, .sticky-scene[data-active-step="5"] .l-rail .rg1 { height: 46%; }
+      .sticky-scene[data-active-step="4"] .l-rail .rg2, .sticky-scene[data-active-step="5"] .l-rail .rg2 { height: 34%; }
+      .sticky-scene[data-active-step="4"] .l-rail .rg3, .sticky-scene[data-active-step="5"] .l-rail .rg3 { height: 20%; }
+      .sticky-scene[data-active-step="6"] .l-rail .rg1 { height: 46%; }
+      .sticky-scene[data-active-step="6"] .l-rail .rg2 { height: 34%; }
+      .sticky-scene[data-active-step="6"] .l-rail .rg3 { height: 20%; background: var(--acid); }
+      .env { top: 6px; left: 27px; transform: translate(-50%, 0);
+        transition: top .7s var(--ease-out), background .3s var(--ease-swift), box-shadow .3s var(--ease-swift); }
+      .sticky-scene[data-active-step="1"] .env { top: 6px; }
+      .sticky-scene[data-active-step="2"] .env { top: 72px; }
+      .sticky-scene[data-active-step="3"] .env { top: 138px; }
+      .sticky-scene[data-active-step="4"] .env, .sticky-scene[data-active-step="5"] .env { top: 204px; }
+      .sticky-scene[data-active-step="6"] .env { top: 6px; }
+      .checks { position: static; flex-direction: row; flex-wrap: wrap; margin-top: 4px; }
+      .hold-badge { position: static; display: inline-block; margin-top: 10px; }
+      .loop-ms { margin-top: 18px; font-size: 21px; text-align: left; }
+
+      /* steps dock at the bottom */
+      .js .sticky-scene__steps > .step { align-items: flex-end; justify-content: center; padding: 0 5vw; }
+      .step-card { position: sticky; bottom: max(18px, env(safe-area-inset-bottom, 0px)); max-width: 560px; }
+
+      .settle-stage { justify-content: flex-start; padding-top: 24px; }
+      .ledgers { grid-template-columns: 1fr; }
+      .tl-stop b { font-size: 8.5px; }
+      .tl-stop.em-hide em { display: none; }
+      .hero .ghost { font-size: 100px; }
+    }
+
+    @media (max-width: 850px) and (min-height: 521px) {
+      .js .sticky-scene__stage { display: flex; flex-direction: column; padding-top: 64px; }
+      .js .sticky-scene__stage .scene-head { flex: 0 0 auto; width: 100%; padding: 8px 4vw; }
+      .js .sticky-scene__stage > :not(.scene-head) {
+        position: static !important; flex: 1 1 auto; width: 100%; min-height: 0;
+        justify-content: flex-start !important;
+        padding: 10px 4vw calc(var(--card-reserve, 34vh) + 4px) !important;
+      }
+      .js .step-card {
+        width: 100%; max-width: 560px; border-radius: 18px 18px 14px 14px;
+        box-shadow: 0 20px 44px -24px rgba(0,0,0,.55); padding: 12px 20px 18px;
+        max-height: 44vh; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+        opacity: 0; transform: translateY(52px); transform-origin: 50% 100%;
+        transition: opacity .16s var(--ease-in), transform .2s var(--ease-in);
+      }
+      .js .step.is-active .step-card {
+        opacity: 1; transform: none;
+        transition: opacity .36s var(--ease-out) .2s, transform .44s var(--ease-out) .2s;
+      }
+      .step-progress { display: block; height: 3px; border-radius: 3px;
+        background: rgba(127,127,127,.28); overflow: hidden; margin: 0 0 12px; }
+      .step-progress i { display: block; height: 100%; width: 0; border-radius: 3px;
+        background: var(--acid); transition: width .5s var(--ease-out) .2s; }
+      @media (prefers-reduced-motion: no-preference) {
+        .js .step-card .step-k, .js .step-card p {
+          opacity: 0; transform: translateY(10px);
+          transition: opacity .14s var(--ease-in), transform .16s var(--ease-in);
+        }
+        .js .step.is-active .step-card .step-k {
+          opacity: 1; transform: none;
+          transition: opacity .3s var(--ease-out) .24s, transform .32s var(--ease-out) .24s;
+        }
+        .js .step.is-active .step-card p {
+          opacity: 1; transform: none;
+          transition: opacity .3s var(--ease-out) .3s, transform .32s var(--ease-out) .3s;
+        }
+      }
+    }
+
+    /* short landscape: card docks right */
+    @media (max-height: 520px) and (max-width: 960px) {
+      .js .sticky-scene__steps > .step { flex-direction: row; align-items: center; justify-content: flex-end; padding: 0 3vw; }
+      .step-card { position: sticky; right: max(14px, env(safe-area-inset-right, 0px));
+        bottom: max(12px, env(safe-area-inset-bottom, 0px)); max-width: 300px; }
+      .loop-stage, .settle-stage { padding-right: 46%; }
+    }
+
+    @media (max-width: 480px) {
+      .prose > p { font-size: 17px; }
+      .prose .callout { font-size: 20px; padding: 18px 20px; }
+      .metrics-scene .metric { font-size: clamp(70px, 25vw, 96px); }
+      .step-card { padding: 20px 22px; }
+      .step-card p { font-size: 15.5px; }
+      .breather .breather-line { font-size: clamp(26px, 8vw, 34px); }
+      .crypto-pair { grid-template-columns: 1fr; }
+      .fee-vals { grid-template-columns: repeat(2, 1fr); }
+      .ln-tag { font-size: 10px; }
+      .fbar { height: 36px; }
+      .fbar-b { height: 34px; }
+      .fs-keep span { display: none; }
+      .fs-keep::after { content: "MERCHANT"; font-size: 9px; letter-spacing: .12em; padding-left: 10px; }
+    }
+    @media (max-width: 380px) {
+      .step-card { padding: 16px 18px; }
+      .step-card p { font-size: 14.5px; }
+    }
+
+    /* ── reduced motion: plain document ── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important; animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important; scroll-behavior: auto !important;
+      }
+      .reveal, .h-line > span, .hero .dek { opacity: 1 !important; transform: none !important; }
+      .js .sticky-scene__stage { position: relative; height: auto; min-height: 50vh; }
+      .js .sticky-scene { padding-bottom: 0; }
+      .js .sticky-scene__steps { margin-top: 0; }
+      .js .sticky-scene__steps > .step { min-height: auto; display: block; padding: 0 4vw; }
+      .js .step { opacity: 1 !important; transform: none !important; max-width: none;
+        background: none; border: 0; padding: 30px 0; pointer-events: auto; }
+      .js .step-card { opacity: 1 !important; transform: none !important; background: none;
+        border: 0; padding: 0; max-width: none; border-radius: 0 !important; box-shadow: none !important; overflow: visible !important; }
+      .step-progress { display: none !important; }
+      /* stages resolve to their final state so the static document shows the finished figure */
+      .env { left: 12.5% !important; border-color: var(--acid) !important; }
+      .env .env-out { display: none; } .env .env-ret { display: block; }
+      .l-rail i { width: 100% !important; background: var(--acid) !important; }
+      .chk { opacity: 1 !important; transform: none !important; border-style: solid; border-color: #9ba4ff66 !important; color: #cfd4ff !important; }
+      .hold-badge { opacity: 1 !important; transform: none !important; }
+      .loop-ms { color: #e8e8e2 !important; }
+      .tl-fill { width: 100% !important; }
+      .tl-stop i { border-color: var(--acid) !important; }
+      .lr { opacity: 1 !important; transform: none !important; }
+      .r-debit, .r-pay, .r-send, .r-recv { border-style: solid; border-color: #c7ff3d66 !important; color: var(--acid) !important; }
+      .r-hold { opacity: .38 !important; text-decoration: line-through; }
+      .net-tag { color: var(--acid) !important; }
+    }
+  </style>
+</head>
+
+<body data-vb-progress-start="#c7ff3d" data-vb-progress-mid="#546cff" data-vb-progress-end="#ff6b2c">
+  <a class="skip" href="#article">Skip to content</a>
+
+  <!-- ════ ACT 0 · hook ════ -->
+  <header class="hero">
+    <div class="ghost" aria-hidden="true">€</div>
+    <div class="crumb"><a href="../index.html">Notebook</a> / POST 14 · PAYMENTS</div>
+    <h1>
+      <span class="h-line"><span>How a card</span></span>
+      <span class="h-line"><span>payment <em>actually</em></span></span>
+      <span class="h-line"><span>works</span></span>
+    </h1>
+    <p class="dek">You tap, it beeps, the receipt prints. About two seconds — and in them no money moves at all.
+      What you watched was a question, an answer, and a promise. The money arrives days later, minus three tolls.</p>
+    <div class="post-meta"><span>AUG <b>2026</b></span><span>~<b>11</b> MIN</span><span><b>6</b> SCENES</span><span>MODE: <b>FOLLOW ONE PAYMENT</b></span></div>
+  </header>
+
+  <main id="article">
+    <section class="prose" aria-labelledby="hook-title">
+      <h2 id="hook-title"><span class="sec-no">01</span>Two seconds, and no money moved</h2>
+      <p>One coffee, <span class="mono">€4.50</span>, a café counter at 19:42. You hold your card near the reader,
+        it beeps, the barista glances at the green light. In about two seconds, five companies exchanged several
+        messages, a chip produced a cryptographic signature, and your bank made a legal promise to a bank it will
+        never talk to directly. The coffee is paid for.</p>
+      <p>Here is the part almost nobody pictures: <strong>at that moment, no money has moved.</strong> Your account
+        shows a pending hold. The café's account shows nothing at all. The funds themselves will not budge for
+        another one to three business days, when millions of small promises like this one are batched together,
+        reconciled, and moved as a handful of net transfers between banks.</p>
+      <p>That gap between <em>approved</em> and <em>paid</em> is not an imperfection. It is the design. The two
+        seconds buy certainty — a guarantee the coffee is covered — and the days buy efficiency: settling every
+        €4.50 promise one by one would drown the banking system in its own transfers. This page follows one
+        payment through both timelines.</p>
+    </section>
+
+    <!-- ════ ACT 1 · the cast of five ════ -->
+    <section class="split" aria-labelledby="cast-title">
+      <div class="copy">
+        <h2 id="cast-title"><span class="sec-no">02</span>The cast of five</h2>
+        <p>A card payment is not a conversation between you and the shop. It is a relay between
+          <strong>five parties</strong>. On your side: you, and the bank that issued your card — the
+          <strong>issuer</strong>, which holds your account and decides whether to answer yes. On the shop's side:
+          the merchant, and its bank for card payments — the <strong>acquirer</strong>, which collects the shop's
+          card receipts and pays them out.</p>
+        <p>Between the two banks sits the <strong>card network</strong> — Visa, Mastercard. Its job surprises
+          people: it routes standardized messages and enforces a rulebook. It is not a bank. It holds no consumer
+          deposits, lends nothing, and at no point in our story does the money pass through it.</p>
+        <div class="callout">The network is a <em>messenger with a rulebook</em> — not a place where money lives.</div>
+      </div>
+      <div class="visual">
+        <div class="parties" role="img" aria-label="Diagram: you and your issuing bank on the left, the shop and its acquiring bank on the right, the card network between the two banks.">
+          <div class="pbox"><span class="tag">YOU</span><span class="sub">cardholder</span></div>
+          <div class="ptap"><i aria-hidden="true"></i>TAP · €4.50</div>
+          <div class="pbox"><span class="tag">SHOP</span><span class="sub">merchant</span></div>
+          <div class="plink-v"><span class="plink-lab">YOUR ACCOUNT</span></div>
+          <div class="ptap" aria-hidden="true"></div>
+          <div class="plink-v"><span class="plink-lab">ITS BANK</span></div>
+          <div class="pbox"><span class="tag">ISSUER</span><span class="sub">your bank</span></div>
+          <div class="pbox p-net"><span class="tag">NETWORK</span><span class="sub">Visa · Mastercard</span></div>
+          <div class="pbox"><span class="tag">ACQUIRER</span><span class="sub">merchant's bank</span></div>
+          <div class="pmsg"><i aria-hidden="true"></i>MESSAGES · 0100 OUT, 0110 BACK<i aria-hidden="true"></i></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ ACT 2 · S01 — the authorization round trip ════ -->
+    <section class="sticky-scene" id="sceneAuth" data-scene aria-labelledby="auth-title">
+      <h2 class="scene-title" id="auth-title">Act 03 — Two seconds, five stops: the authorization round trip</h2>
+      <div class="sticky-scene__stage" aria-hidden="true">
+        <div class="scene-head">
+          <span class="scene-no">ACT 03</span>
+          <span class="scene-name">THE AUTHORIZATION ROUND TRIP</span>
+          <span class="scene-readout" data-readout>STEP 1 / 6</span>
+        </div>
+        <div class="loop-stage">
+          <div class="loop">
+            <div class="l-rail"><i class="rg1"></i><i class="rg2"></i><i class="rg3"></i></div>
+            <div class="lnode n-term"><span class="ln-tag">TERMINAL</span><span class="ln-sub">café counter</span></div>
+            <div class="lnode n-acq"><span class="ln-tag">ACQUIRER</span><span class="ln-sub">merchant's bank</span></div>
+            <div class="lnode n-net"><span class="ln-tag">NETWORK</span><span class="ln-sub">Visa · Mastercard</span></div>
+            <div class="lnode n-iss"><span class="ln-tag">ISSUER</span><span class="ln-sub">your bank</span></div>
+            <div class="env">
+              <span class="env-tag env-out">0100 · AUTH REQ</span>
+              <span class="env-tag env-ret">0110 · RC 00</span>
+            </div>
+            <div class="checks">
+              <span class="chk c1">CARD ACTIVE · OK</span>
+              <span class="chk c2">FUNDS · OK</span>
+              <span class="chk c3">FRAUD SCORE · OK</span>
+            </div>
+            <div class="hold-badge">HOLD −€4.50 · NOT A TRANSFER</div>
+            <p class="loop-ms">T+0 ms<b> — the question is built</b></p>
+          </div>
+        </div>
+        <p class="scene-legend">
+          <span class="lg-blue">■</span> <i>MESSAGE UNDER WAY</i> &nbsp;
+          <span class="lg-orange">■</span> <i>THE HOLD</i> &nbsp;
+          <span class="lg-acid">■</span> <i>THE ANSWER RETURNING</i>
+        </p>
+      </div>
+      <div class="sticky-scene__steps">
+        <article class="step" data-step="1">
+          <p>The terminal already knows the amount, the merchant, and — from the chip in your card — who is
+            paying. Now it packs one standardized question: <span class="mono">0100</span>, an authorization
+            request. Not magic: a formatted message, built to a spec older than the web.</p>
+        </article>
+        <article class="step" data-step="2">
+          <p>The question leaves over the internet to the merchant's bank side — the processor and acquirer —
+            which relays it onward. Your bank has not seen it yet; the message is still climbing toward it.</p>
+        </article>
+        <article class="step" data-step="3">
+          <p>The network reads the card number's prefix and routes the message to your bank, wherever it is.
+            This is the network's real job: a router with a rulebook, connecting two banks that have no direct
+            relationship.</p>
+        </article>
+        <article class="step" data-step="4">
+          <p>Now your bank decides. Three checks, in milliseconds: is the card valid? Are funds available?
+            Does the fraud score look right? If any answer is no, the payment dies here with a decline code.</p>
+        </article>
+        <article class="step" data-step="5">
+          <p>Approved. Your bank answers <span class="mono">0110</span> with response code <span class="mono">00</span>
+            — and places a <strong>hold</strong> on €4.50: a reservation, not a transfer. The promise is made.</p>
+        </article>
+        <article class="step" data-step="6">
+          <p>The answer retraces the whole path — network, acquirer, terminal — and the reader beeps at roughly
+            T+2,000 ms. Two promises now exist, and zero money has moved. The moving part comes days later.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ════ S02 — the message is a document ════ -->
+    <section class="split" aria-labelledby="msg-title">
+      <div class="copy">
+        <h2 id="msg-title"><span class="sec-no">04</span>The question has a format</h2>
+        <p>The message that races around that loop is not proprietary. It is <strong>ISO 8583</strong>, an
+          international standard for card-transaction messages, first published in 1987. Every hop — terminal,
+          acquirer, network, issuer — parses the same envelope: a message type, a bitmap saying which fields are
+          present, and numbered data elements.</p>
+        <p>The request <span class="mono">0100</span> and its answer <span class="mono">0110</span> carry the
+          amount, the merchant, the card number, the timestamp — and the chip's cryptogram, which we get to next.
+          Forty years on, this 1987 envelope still carries trillions of euros a year.</p>
+        <p class="aside">FIELD NUMBERS ARE REAL ISO 8583 POSITIONS (F2 CARD NUMBER, F4 AMOUNT, F41 TERMINAL,
+          F55 CHIP DATA). VALUES ON THIS STUB ARE ILLUSTRATIVE.</p>
+      </div>
+      <div class="visual">
+        <figure>
+          <div class="rcpt" role="img" aria-label="A receipt-style rendering of the ISO 8583 authorization request and its answer.">
+            <div class="rcpt-head"><b>AUTH REQUEST · MTI 0100</b><span>ISO 8583 · BORN 1987</span></div>
+            <div class="r-row"><span class="f">F2 · CARD</span><span class="v">5413 •••• •••• 0031</span></div>
+            <div class="r-row"><span class="f">F3 · PROCESSING</span><span class="v">000000 · PURCHASE</span></div>
+            <div class="r-row"><span class="f">F4 · AMOUNT</span><span class="v"><b>EUR 4.50</b></span></div>
+            <div class="r-row"><span class="f">F7 · DATE / TIME</span><span class="v">0822 194207</span></div>
+            <div class="r-row"><span class="f">F41 · TERMINAL</span><span class="v">CAFE-0017</span></div>
+            <div class="r-row"><span class="f">F43 · MERCHANT</span><span class="v">CAFE NOVA · BARCELONA</span></div>
+            <div class="r-row r-accent"><span class="f">F55 · CHIP DATA</span><span class="v">ARQC · 8 BYTES</span></div>
+            <div class="rcpt-sep">✂ ✂ ✂</div>
+            <div class="rcpt-head"><b>RESPONSE · MTI 0110</b><span>FROM YOUR BANK</span></div>
+            <div class="r-row"><span class="f">F39 · RESPONSE CODE</span><span class="v"><b>00 · APPROVED</b></span></div>
+            <div class="r-row"><span class="f">ACTION</span><span class="v">HOLD €4.50</span></div>
+          </div>
+          <figcaption class="caption"><b>What to watch</b>F55 carries the chip's one-time cryptogram — the reason
+            this message cannot be replayed by a copycat. Response code 00 is the two-second verdict.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ════ ACT 3 · the chip signs once ════ -->
+    <section class="prose" aria-labelledby="chip-title">
+      <h2 id="chip-title"><span class="sec-no">05</span>The chip signs once</h2>
+      <p>Anyone who reads your card number can type it somewhere. What they cannot do is produce the next
+        <strong>ARQC</strong> — the Authorization Request Cryptogram your chip generates for exactly one
+        transaction. Inside the chip sits a secret key that never leaves it. For each payment, the chip mixes
+        that key with a transaction counter and signs the amount, the merchant, and the date, producing an
+        8-byte value. Your bank verifies it in the same milliseconds that check your funds.</p>
+      <p>Tap the same card twice and the two signatures share nothing — the counter moved. That is the whole
+        reason a cloned chip card is worthless: a copy of yesterday's signature is refused today, and only your
+        chip can mint tomorrow's.</p>
+
+      <figure class="crypto-wrap" style="margin: 5vh auto;">
+        <div class="crypto-pair">
+          <div class="ctap" id="tapA">
+            <span class="c-k">TAP ONE · COUNTER 0847</span>
+            <div class="c-row"><span>INPUT</span><span>€4.50 · CAFE NOVA · 19:42</span></div>
+            <div class="c-row"><span>ALGORITHM</span><span>KEYED MAC · 8 BYTES</span></div>
+            <div class="c-mac" id="macA">—</div>
+          </div>
+          <div class="ctap is-fresh" id="tapB">
+            <span class="c-k" id="tapBk">TAP TWO · COUNTER 0848</span>
+            <div class="c-row"><span>INPUT</span><span>€4.50 · CAFE NOVA · 19:42</span></div>
+            <div class="c-row"><span>ALGORITHM</span><span>KEYED MAC · 8 BYTES</span></div>
+            <div class="c-mac" id="macB">—</div>
+          </div>
+        </div>
+        <button class="btn" type="button" id="tapAgain">Tap again — counter +1</button>
+        <p class="crypto-note">SAME CARD, SAME AMOUNT, SAME SHOP. SIGNATURES SHARE NOTHING.</p>
+      </figure>
+      <p class="aside" id="cryptoAside">THIS FIGURE COMPUTES A SIMPLIFIED ILLUSTRATIVE MAC (A KEYED HASH OF
+        AMOUNT · MERCHANT · TIME · COUNTER) SO YOU CAN WATCH IT CHANGE. A REAL ARQC USES THE CHIP'S SESSION
+        KEY; THE PROPERTY SHOWN — ONE-TIME, VERIFIABLE — IS THE SAME.</p>
+
+      <p>Online there is no chip to tap, so European rules lean on your bank instead. Since September 2019,
+        PSD2's <strong>Strong Customer Authentication</strong> requires two independent factors — something you
+        know, something you have, something you are — before an online payment is sent. In practice that is
+        <strong>3-D Secure 2</strong>: the checkout hands you to your bank's app, you approve with a fingerprint,
+        and only then does the familiar <span class="mono">0100</span> go out with proof attached. Small payments
+        under €30 can skip it, up to a limit.</p>
+    </section>
+
+    <!-- ════ ACT 4 · S04 — the second timeline ════ -->
+    <section class="sticky-scene" id="sceneSettle" data-scene aria-labelledby="settle-title">
+      <h2 class="scene-title" id="settle-title">Act 06 — The money moves later: capture, clearing, settlement, payout</h2>
+      <div class="sticky-scene__stage" aria-hidden="true">
+        <div class="scene-head">
+          <span class="scene-no">ACT 06</span>
+          <span class="scene-name">THE SECOND TIMELINE</span>
+          <span class="scene-readout" data-readout>STEP 1 / 5</span>
+        </div>
+        <div class="settle-stage">
+          <div class="tl">
+            <div class="tl-bar">
+              <i class="tl-fill"></i>
+              <span class="tl-stop st1"><i></i><b>CAPTURE</b><em>day 0 · 22:14</em></span>
+              <span class="tl-stop st2"><i></i><b>CLEARING</b><em>day 1</em></span>
+              <span class="tl-stop st3"><i></i><b>SETTLEMENT</b><em>day 1</em></span>
+              <span class="tl-stop st4"><i></i><b>PAYOUT</b><em>day 2</em></span>
+            </div>
+          </div>
+          <div class="ledgers">
+            <div class="ledger">
+              <h4>YOUR BANK · ISSUER</h4>
+              <div class="lr r-hold">HOLD −€4.50 <span>PENDING</span></div>
+              <div class="lr r-debit">CARD DEBIT −€4.50 <span>POSTED</span></div>
+              <div class="lr r-send">SEND NET −€4.41 <span>SETTLEMENT</span></div>
+            </div>
+            <div class="ledger">
+              <h4>MERCHANT'S BANK · ACQUIRER</h4>
+              <div class="lr r-claim">CAPTURE CLAIM +€4.50 <span>DAY 0</span></div>
+              <div class="lr r-fees toll">FEES −€0.09 <span>3 TOLLS</span></div>
+              <div class="lr r-pay">PAYOUT +€4.41 <span>TO CAFÉ</span></div>
+            </div>
+          </div>
+          <p class="net-tag">Money finally moves: <b>NET €4.41 · TOLLS €0.09</b></p>
+        </div>
+        <p class="scene-legend"><i>DASHED = PENDING · SOLID = POSTED</i> &nbsp; <span class="lg-acid">■</span> <i>SETTLED FUNDS</i></p>
+      </div>
+      <div class="sticky-scene__steps">
+        <article class="step" data-step="1">
+          <p>22:14, closing time. The café's systems submit the day's completed sales — <strong>capture</strong>.
+            The two-second promise is now a formal claim: this payment really happened; pay it.</p>
+        </article>
+        <article class="step" data-step="2">
+          <p><strong>Clearing.</strong> Through the network, the two banks exchange the day's captured
+            transactions and compute who owes whom, item by item — and the fees come due on each one.</p>
+        </article>
+        <article class="step" data-step="3">
+          <p><strong>Settlement.</strong> Across thousands of merchants and millions of payments, the banks owe
+            each other nearly offsetting amounts — so only <strong>net positions</strong> move, often through
+            central-bank accounts. This is the moment money actually moves.</p>
+        </article>
+        <article class="step" data-step="4">
+          <p>Day two: the acquirer credits the café <span class="mono">€4.41</span> — the claim minus the tolls,
+            typically one to three business days after the beep. On your side, the hold quietly became a posted
+            debit.</p>
+        </article>
+        <article class="step" data-step="5">
+          <p>The finished state: your bank debited you once, the café's bank credited it once, and the 9-cent
+            difference went to three tolls. Nothing about this was instant except the promises.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="prose" aria-labelledby="ledger-title">
+      <h2 id="ledger-title"><span class="sec-no">07</span>The day-by-day ledger</h2>
+      <p>The whole second timeline, as the two banks would book it. The hold from the two-second act becomes a
+        real debit only at settlement; the café's money arrives after the net transfer, tolls already subtracted.</p>
+      <figure class="rcpt" role="img" aria-label="Ledger receipt: day 0 hold and capture, day 1 clearing and settlement, day 2 payout of €4.41." style="margin: 4vh auto 0;">
+        <div class="rcpt-head"><b>ONE PAYMENT · TWO TIMELINES</b><span>€4.50 · CAFE NOVA</span></div>
+        <div class="r-row"><span class="f">DAY 0 · 19:42:07</span><span class="v">APPROVED IN 2.0 S</span></div>
+        <div class="r-row"><span class="f">DAY 0 · 22:14</span><span class="v">CAPTURED</span></div>
+        <div class="r-row"><span class="f">DAY 1</span><span class="v">CLEARED · FEES DUE</span></div>
+        <div class="r-row"><span class="f">DAY 1</span><span class="v">SETTLED NET €4.41</span></div>
+        <div class="r-row"><span class="f">DAY 2</span><span class="v"><b>PAID OUT €4.41</b></span></div>
+        <div class="rcpt-sep">✂ ✂ ✂</div>
+        <div class="r-row r-accent"><span class="f">APPROVED → PAID</span><span class="v">≈ 32 HOURS</span></div>
+      </figure>
+      <p class="aside">TIMESTAMPS ARE ILLUSTRATIVE. THE FEE MODEL (€0.09 ON €4.50) IS A CARD-PRESENT ILLUSTRATION
+        CONSISTENT WITH THE RATES IN THE NEXT SECTION.</p>
+    </section>
+
+    <!-- ════ ACT 5 · follow €50 ════ -->
+    <section class="split" aria-labelledby="fees-title">
+      <div class="copy">
+        <h2 id="fees-title"><span class="sec-no">08</span>Three tolls</h2>
+        <p>Every card payment pays three tolls between the beep and the payout. <strong>Interchange</strong> goes
+          to the issuer — the price of its guarantee. In the EEA it is capped by law at 0.2% of the amount for
+          consumer debit cards and 0.3% for credit. The <strong>scheme fee</strong> goes to the network for
+          routing and rules. The <strong>acquirer's markup</strong> pays the processor that runs the merchant's
+          side.</p>
+        <p>Merchants rarely see three numbers; they see one blended price. One published example: Stripe's
+          standard EU rate for EEA cards, 1.5% + €0.25 per online payment — €1.00 of a €50 sale. Card-present
+          tolls run lower, as below.</p>
+        <div class="fee-toggle" role="group" aria-label="Card type" style="margin-top: 3vh;">
+          <button type="button" id="feeDebit" aria-pressed="true">DEBIT · 0.2%</button>
+          <button type="button" id="feeCredit" aria-pressed="false">CREDIT · 0.3%</button>
+        </div>
+      </div>
+      <div class="visual">
+        <div class="fees-wrap">
+          <figure class="fee-bars" id="feeBars">
+            <div>
+              <span class="fbar-k">A €50 PAYMENT, AT SCALE</span>
+              <div class="fbar" id="barA">
+                <div class="fseg fs-keep" id="segKeep"><span id="keepLab">MERCHANT KEEPS €49.65</span></div>
+                <div class="fseg fs-tolls" id="segTolls"><span class="fs-lab"></span></div>
+              </div>
+            </div>
+            <div>
+              <span class="fbar-k">THE TOLLS · MAGNIFIED ×20</span>
+              <div class="fbar fbar-b" id="barB">
+                <div class="fseg fs-int" id="segInt"></div>
+                <div class="fseg fs-sch" id="segSch"></div>
+                <div class="fseg fs-mk" id="segMk"></div>
+              </div>
+            </div>
+            <div class="fee-vals">
+              <div class="fv f-int"><i>INTERCHANGE · CAPPED</i><b id="vInt">€0.10</b></div>
+              <div class="fv f-sch"><i>SCHEME FEE</i><b id="vSch">€0.06</b></div>
+              <div class="fv f-mk"><i>ACQUIRER MARKUP</i><b id="vMk">€0.19</b></div>
+              <div class="fv"><i>MERCHANT KEEPS</i><b id="vKeep">€49.65</b></div>
+            </div>
+          </figure>
+          <div class="blended">
+            <span class="b-k">ONE PUBLISHED BLENDED PRICE · STRIPE EU ONLINE · 1.5% + €0.25</span>
+            <span class="b-v">€50 → <b>€1.00</b></span>
+          </div>
+          <figcaption class="caption"><b>What to watch</b>Interchange is computed from the legal EEA caps; the
+            scheme fee and markup are illustrative shares of a typical card-present price. The blended ticket is
+            computed from Stripe's published EU online rate. Every cent here is arithmetic on the printed rates.</figcaption>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ ACT 6 · scale ════ -->
+    <section class="metrics-scene" aria-labelledby="scale-title">
+      <div class="metric reveal">65,000</div>
+      <div>
+        <h2 id="scale-title" style="position:absolute; clip:rect(0 0 0 0);">The scale of the loop</h2>
+        <p>Transaction messages <em>per second</em> — the stated capacity of Visa's network. The loop you just
+          scrolled through ran billions of times last year: in fiscal 2025, 329 billion transactions carried Visa
+          brands, 258 billion of them processed on Visa's own networks, moving about $17 trillion between
+          people and shops.</p>
+        <div class="m-evidence">
+          <span class="ev-chip">258B PROCESSED · FY2025</span>
+          <span class="ev-chip">$17T VOLUME</span>
+          <span class="ev-chip">175M+ LOCATIONS</span>
+          <span class="ev-chip">14,500 BANKS</span>
+        </div>
+        <p class="m-note">CAPACITY, NOT AVERAGE LOAD — THE FIGURE IS VISA'S OWN STRESS-TEST NUMBER.</p>
+      </div>
+    </section>
+
+    <section class="breather">
+      <p class="breather-line reveal">Approved. <em>Not paid.</em> The beep was only the vote of confidence.</p>
+    </section>
+
+    <!-- ════ ACT 7 · conclusion ════ -->
+    <section class="end" aria-labelledby="end-title">
+      <div class="end-inner">
+        <p class="kicker">The whole idea</p>
+        <h2 id="end-title">A card payment is <em>two promises</em> and a reconciliation.</h2>
+        <p>In the two seconds, five parties agree that €4.50 is owed: your bank checks, signs off, and reserves
+          the money. In the days after, millions of those promises are captured, cleared, and settled as net
+          transfers between banks — and the merchant finally gets paid, minus three tolls. The speed you feel is
+          in the messages; the money itself is patient.</p>
+        <p>Once you see the two timelines, ordinary mysteries resolve. The pending charge on your account is a
+          hold waiting for capture. The fuel pump that pre-approves €120 is only asking for a bigger promise. The
+          café that prefers cash is avoiding the tolls. And the guarantee-before-transfer shape is not unique to
+          cards — it is the same instinct that makes databases write a
+          <a href="../write-ahead-log.html">log before they move data</a>.</p>
+        <div class="rcpt">
+          <div class="rcpt-head"><b>FINAL RECEIPT</b><span>THE WHOLE STORY</span></div>
+          <div class="r-row"><span class="f">TAP</span><span class="v">19:42:07 · €4.50</span></div>
+          <div class="r-row"><span class="f">QUESTION + ANSWER</span><span class="v">0100 → 0110 · 2.0 S</span></div>
+          <div class="r-row"><span class="f">PROMISES MADE</span><span class="v">HOLD + GUARANTEE</span></div>
+          <div class="r-row"><span class="f">MONEY MOVED</span><span class="v">DAY 1 · NET</span></div>
+          <div class="r-row"><span class="f">CAFÉ PAID</span><span class="v"><b>DAY 2 · €4.41</b></span></div>
+          <div class="rcpt-sep">✂ ✂ ✂</div>
+          <div class="r-row r-accent"><span class="f">THANK YOU</span><span class="v">PLEASE SCROLL AGAIN</span></div>
+        </div>
+        <footer class="footer"><span>CARD PAYMENTS · VISUAL EDITION</span><a href="/">engineering.victorbusque.com</a></footer>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    /* ══════════════════════════════════════════════════════════════════
+       Page runtime — this file's own engine.
+       1. Sticky scenes: step activation sets data-active-step (single
+          source of truth for every stage state), fills the STEP k / n
+          readout, and measures --card-reserve so the mobile diagram
+          centers above the bottom-docked sheet.
+       2. The cryptogram figure: a deterministic illustrative keyed MAC
+          over amount · merchant · time · counter — honestly computed,
+          visibly labeled as a simplified model.
+       3. The fee split: pure arithmetic on printed public rates.
+       Without IntersectionObserver-capable JS the .js gate is removed
+       upstream and the page remains the complete static document.
+       ══════════════════════════════════════════════════════════════════ */
+    (function () {
+      'use strict';
+      var portraitMob = window.matchMedia('(max-width: 850px) and (min-height: 521px)');
+      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      /* ── 1 · sticky scenes ───────────────────────────────────────── */
+      var READOUTS = {
+        sceneAuth: {
+          1: 'T+0 MS · THE QUESTION IS BUILT',
+          2: 'T+300 MS · CLIMBING TO THE ACQUIRER',
+          3: 'T+700 MS · ROUTED THROUGH THE NETWORK',
+          4: 'T+1,200 MS · THREE CHECKS RUN',
+          5: 'T+1,450 MS · APPROVED · HOLD PLACED',
+          6: 'T+2,000 MS · ANSWER HOME · NOTHING MOVED'
+        },
+        sceneSettle: {
+          1: 'DAY 0 · 22:14 · CAPTURE',
+          2: 'DAY 1 · CLEARING',
+          3: 'DAY 1 · SETTLEMENT · NET MOVES',
+          4: 'DAY 2 · PAYOUT',
+          5: 'SETTLED · TWO ENTRIES, THREE TOLLS'
+        }
+      };
+
+      function wireScene(scene) {
+        var steps = [].slice.call(scene.querySelectorAll('.step[data-step]'));
+        if (!steps.length) return;
+        var stage = scene.querySelector('.sticky-scene__stage');
+        var readout = scene.querySelector('[data-readout]');
+        var labels = READOUTS[scene.id] || {};
+        var total = steps.length;
+
+        steps.forEach(function (s, idx) {
+          if (s.querySelector(':scope > .step-card')) return;
+          if (!s.querySelector(':scope > .step-k')) {
+            var label = document.createElement('span');
+            var n = idx + 1;
+            label.className = 'step-k';
+            label.textContent = 'STEP ' + (n < 10 ? '0' : '') + n + ' / ' + (total < 10 ? '0' : '') + total;
+            s.insertBefore(label, s.firstChild);
+          }
+          var card = document.createElement('div');
+          card.className = 'step-card';
+          var prog = document.createElement('div');
+          prog.className = 'step-progress';
+          prog.innerHTML = '<i></i>';
+          card.appendChild(prog);
+          while (s.firstChild) card.appendChild(s.firstChild);
+          s.appendChild(card);
+        });
+
+        function pinned() {
+          if (!stage) return false;
+          var r = stage.getBoundingClientRect();
+          return r.top <= 1 && r.bottom >= innerHeight - 131;
+        }
+        var engaged = false;
+        function deactivate() {
+          steps.forEach(function (s) { s.classList.remove('is-active'); });
+          scene.removeAttribute('data-active-step');
+          if (readout) readout.textContent = '';
+          engaged = false;
+        }
+        function activate(step) {
+          steps.forEach(function (s) { s.classList.remove('is-active'); });
+          step.classList.add('is-active');
+          var n = step.getAttribute('data-step');
+          scene.setAttribute('data-active-step', n);
+          if (readout) readout.textContent = labels[n] || ('STEP ' + n + ' / ' + total);
+          var fill = step.querySelector('.step-progress i');
+          if (fill) {
+            var k = parseInt(n, 10) || 1;
+            fill.style.width = (total > 1 ? ((k - 1) / (total - 1)) * 100 : 100) + '%';
+          }
+          engaged = true;
+        }
+        function tick() {
+          if (!pinned()) { if (engaged) deactivate(); return; }
+          var c = innerHeight / 2;
+          for (var i = 0; i < steps.length; i++) {
+            var r = steps[i].getBoundingClientRect();
+            if (r.top <= c && r.bottom >= c) {
+              if (!steps[i].classList.contains('is-active')) activate(steps[i]);
+              return;
+            }
+          }
+        }
+        var queued = false;
+        function onScroll() {
+          if (queued) return;
+          queued = true;
+          requestAnimationFrame(function () { queued = false; tick(); });
+        }
+        addEventListener('scroll', onScroll, { passive: true });
+        addEventListener('resize', onScroll);
+        tick();
+      }
+      [].slice.call(document.querySelectorAll('.sticky-scene[data-scene]')).forEach(wireScene);
+
+      function measureCards() {
+        if (!portraitMob.matches) return;
+        document.querySelectorAll('.sticky-scene').forEach(function (scene) {
+          var stage = scene.querySelector('.sticky-scene__stage');
+          if (!stage) return;
+          var max = 0;
+          scene.querySelectorAll('.step-card').forEach(function (c) {
+            var h = c.getBoundingClientRect().height;
+            if (h > max) max = h;
+          });
+          stage.style.setProperty('--card-reserve', (max + 30) + 'px');
+        });
+      }
+      addEventListener('resize', measureCards);
+      addEventListener('orientationchange', measureCards);
+      addEventListener('load', measureCards);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(measureCards);
+      measureCards();
+
+      /* ── 2 · cryptogram figure ───────────────────────────────────── */
+      /* Two-lane FNV-style keyed hash → 16 hex chars (8 bytes).
+         Illustrative model of an ARQC, computed honestly. */
+      function mac16(str) {
+        var k1 = 0x811c9dc5, k2 = 0x5bd1e995 ^ 0x5a5a5a5a;
+        for (var i = 0; i < str.length; i++) {
+          var c = str.charCodeAt(i);
+          k1 ^= c;            k1 = Math.imul(k1, 0x01000193) >>> 0;
+          k2 ^= (c << 3) & 0xff | (c >>> 5); k2 = Math.imul(k2, 0x85ebca6b) >>> 0;
+        }
+        var a = k1.toString(16), b = k2.toString(16);
+        while (a.length < 8) a = '0' + a;
+        while (b.length < 8) b = '0' + b;
+        return (a + b).toUpperCase().match(/.{1,4}/g).join(' ');
+      }
+      function tapInput(counter) {
+        return 'EUR4.50|CAFE NOVA|2026-08-22T19:42|ATC ' + counter;
+      }
+      var macA = document.getElementById('macA');
+      var macB = document.getElementById('macB');
+      var tapBk = document.getElementById('tapBk');
+      var tapB = document.getElementById('tapB');
+      var counterB = 848;
+      function renderTaps() {
+        if (macA) macA.textContent = mac16(tapInput(847));
+        if (macB) macB.textContent = mac16(tapInput(counterB));
+        if (tapBk) tapBk.textContent = 'TAP TWO · COUNTER 0' + counterB;
+      }
+      renderTaps();
+      var again = document.getElementById('tapAgain');
+      if (again) {
+        again.addEventListener('click', function () {
+          counterB += 1;
+          if (tapB && !reduceMotion) {
+            tapB.classList.remove('is-fresh');
+            void tapB.offsetWidth;
+            tapB.classList.add('is-fresh');
+          }
+          renderTaps();
+        });
+      }
+
+      /* ── 3 · fee split ───────────────────────────────────────────── */
+      var AMT = 50;
+      var SCHEME = 0.06;   /* illustrative: 0.12% of €50 */
+      var MARKUP = 0.19;   /* illustrative acquirer markup on €50   */
+      var mode = 'debit';
+      function euro(v) { return '€' + v.toFixed(2); }
+      function renderFees() {
+        var intRate = mode === 'debit' ? 0.002 : 0.003;
+        var int = AMT * intRate;
+        var tolls = int + SCHEME + MARKUP;
+        var keep = AMT - tolls;
+        var set = function (id, val) {
+          var el = document.getElementById(id);
+          if (el) el.textContent = val;
+        };
+        var segKeep = document.getElementById('segKeep');
+        var segTolls = document.getElementById('segTolls');
+        if (segKeep) segKeep.style.width = (keep / AMT * 100) + '%';
+        if (segTolls) segTolls.style.width = (tolls / AMT * 100) + '%';
+        set('keepLab', 'MERCHANT KEEPS ' + euro(keep));
+        var si = document.getElementById('segInt');
+        var ss = document.getElementById('segSch');
+        var sm = document.getElementById('segMk');
+        if (si) si.style.width = (int / tolls * 100) + '%';
+        if (ss) ss.style.width = (SCHEME / tolls * 100) + '%';
+        if (sm) sm.style.width = (MARKUP / tolls * 100) + '%';
+        set('vInt', euro(int));
+        set('vSch', euro(SCHEME));
+        set('vMk', euro(MARKUP));
+        set('vKeep', euro(keep));
+      }
+      function wireToggle(btnId, m) {
+        var btn = document.getElementById(btnId);
+        if (!btn) return;
+        btn.addEventListener('click', function () {
+          mode = m;
+          document.getElementById('feeDebit').setAttribute('aria-pressed', String(m === 'debit'));
+          document.getElementById('feeCredit').setAttribute('aria-pressed', String(m === 'credit'));
+          renderFees();
+        });
+      }
+      wireToggle('feeDebit', 'debit');
+      wireToggle('feeCredit', 'credit');
+      renderFees();
+
+      /* ── reveals ─────────────────────────────────────────────────── */
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) {
+            if (e.isIntersecting) { e.target.classList.add('seen'); io.unobserve(e.target); }
+          });
+        }, { threshold: .15 });
+        document.querySelectorAll('.reveal').forEach(function (x) { io.observe(x); });
+      } else {
+        document.querySelectorAll('.reveal').forEach(function (x) { x.classList.add('seen'); });
+      }
+    })();
+  </script>
+  <script src="../js/post-progress.js" defer></script>
+  <script src="../js/post-nav.js" defer></script>
+  <script>
+    /* Offline library: load the notebook fresh when online, fall back to
+       the last known copy when not. See /sw.js. */
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').catch(function () {});
+      });
+    }
+  </script>
+</body>
+</html>

@@ -19,7 +19,7 @@
 - [x] How does Google Maps calculate the best route?
 - [ ] How does Kubernetes work?
 - [ ] How does Kafka scale to trillions of messages?
-- [ ] How does an online payment actually happen?
+- [x] How does an online payment actually happen? -> Followed one card payment: auth round trip + settlement.
 - [x] How does JPEG make a 10 MB photo become 500 KB?
 - [x] How does a QR code work?
 - [x] How can one IP address represent millions of machines?
