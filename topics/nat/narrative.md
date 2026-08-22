@@ -5,6 +5,7 @@ language: en
 source_context: topics/nat/context.md
 created: 2026-08-22
 updated: 2026-08-22
+revision: 2 — shipped skin replaced (airmail postal ledger) and story restructured to be mainly visual (scarcity and port wall became animated sticky scenes; interstitial prose cut ~40%)
 intended_slug: how-nat-works
 ---
 
@@ -400,15 +401,16 @@ loud) → hole punch (kinetic) → quiet ending.
 
 ### Chosen aesthetic
 
-- **Named style / theme:** night-sorting-office ledger — the house
-  editorial system (paper, ink, dark stage, acid/blue/orange semantics)
-  with a postal-clerk motif: mono ledger slips, stamp-set rows, envelope
-  packet cards.
+- **Named style / theme:** airmail sorting office — cream and manila
+  paper, postal navy ink, wax-red stamps, stamp-teal seals; light
+  ruled-ledger stages with a red margin rule instead of dark grids;
+  Fraunces (voice) + IBM Plex Mono (anything an address is printed on).
+  Deliberately unlike the house skin, per author request.
 - **Why this style fits this subject:** the mechanism IS clerical —
-  rewriting addresses, stamping rows, expiring records. The aesthetic
-  makes the table the protagonist instead of decorating around it.
-- **Emotional register:** precise, calm, quietly astonished at the scale.
-- **Avoid:** padlocks/shields (no security-theater), globe tropes, speed
+  rewriting envelopes, stamping ledger rows, expiring records. The
+  aesthetic makes the table the protagonist.
+- **Emotional register:** warm, precise, quietly astonished at the scale.
+- **Avoid:** house dark-stage look, padlocks/shields, globe tropes, speed
   lines, any implication the demo is live traffic.
 
 ### Design tokens and composition
