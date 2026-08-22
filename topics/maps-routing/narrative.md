@@ -4,7 +4,7 @@ status: built
 language: en
 source_context: topics/maps-routing/context.md
 created: 2026-08-21
-updated: 2026-08-21
+updated: 2026-08-22
 intended_slug: how-google-maps-routes
 ---
 
@@ -471,17 +471,20 @@ scene → quiet synthesis. Prose carries every conclusion in DOM order.
 
 ### Chosen aesthetic
 
-- **Named style:** transit-wayfinding cartography meets the house editorial
-  system — a dark instrument-panel map room: near-black stage, hairline
-  streets, mono labels like a control room, acid route line like a metro
-  line, blue/blue-grey examination states.
-- **Why it fits:** the subject *is* a map; cartographic restraint keeps the
-  data legible and honest, and the site's semantic stage colors map cleanly
-  (acid = settled/route, blue = examining, orange = watch).
+- **Named style (as built, revised 2026-08-22):** the Google Maps skin —
+  the article wears its subject. Light map canvases (#f1f3f4) with white
+  roads and classic Maps-yellow arterials, the Maps-blue route line, a red
+  destination pin and blue origin dot, traffic-red jams, Roboto + Roboto
+  Mono on white Material cards. (First build used the house dark
+  instrument-panel map room; it read too close to the QR post's blueprint
+  stages, so the skin was replaced before the redesign shipped.)
+- **Why it fits:** the subject is a navigation app; dressing the explainer
+  in the app's own visual language makes every state instantly legible and
+  one of a kind on the shelf.
 - **Emotional register:** calm, precise, quietly amazed at scale.
-- **Avoid:** Google-Maps-brand palette mimicry, skeuomorphic road textures,
-  3D tilts, satellite imagery, decorative vehicles; no red/green traffic
-  clichés for the jam (orange suffices).
+- **Avoid:** skeuomorphic road textures, 3D tilts, satellite imagery,
+  decorative vehicles, fake UI chrome that implies product features the
+  data cannot support.
 
 ### Design tokens and composition
 

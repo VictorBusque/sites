@@ -116,12 +116,13 @@
 
     <style>
 /* ════════════════════════════════════════════════════════════════════
-   THE FLOOD AND THE ARROW — the map-room instrument panel.
-   Paper prose sections; dark cartography stages carrying a real street
-   graph; hairline streets and mono chips are the only ornament. Skeleton
-   contracts (sticky scenes, step cards, mobile bottom sheet,
-   reduced-motion collapse) follow the site's scaffold; the skin is this
-   article's alone.
+   THE FLOOD AND THE ARROW — the Google Maps skin.
+   The subject is a navigation app, so the article wears one: light map
+   canvases with white roads and yellow arterials, the Maps-blue route,
+   a red destination pin and a blue origin dot, traffic-red jams, and
+   Roboto on Material cards. Skeleton contracts (sticky scenes, step
+   cards, mobile bottom sheet, reduced-motion collapse) follow the
+   site's scaffold; the skin is this article's alone.
 
    Map coordinates are integers on a ~1 m grid (1e-5°), viewBox width
    ~3,200–4,100 units. Stroke widths below are in those units: at desktop
@@ -129,22 +130,38 @@
    blocks below rescale them.
    ════════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Unbounded:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Roboto+Mono:wght@400;500&display=swap');
 
-/* ── tokens ── */
+/* ── tokens — the Google palette, scoped to this page ── */
 :root {
-    --ink: #101010;
-    --paper: #f2f0e9;
-    --paper-2: #eae7dc;
-    --blue: #546cff;
-    --acid: #c7ff3d;
-    --orange: #ff6b2c;
-    --muted: #716f68;
-    --line: #111111;
+    --g-blue: #4285f4;
+    --g-blue-dark: #1967d2;
+    --g-blue-ink: #174ea6;
+    --g-blue-deep: #0b39a0;
+    --g-red: #ea4335;
+    --g-red-deep: #d93025;
+    --g-yellow: #fbbc04;
+    --g-yellow-deep: #f9ab00;
+    --g-green: #34a853;
+    --g-green-deep: #188038;
+    --g-ink: #202124;
+    --g-ink-2: #3c4043;
+    --g-ink-3: #5f6368;
+    --g-ink-4: #80868b;
+    --g-gray-1: #f8f9fa;
+    --g-gray-2: #f1f3f4;
+    --g-gray-3: #e8eaed;
+    --g-line: #dadce0;
 
-    --stage: #0d0f14;
-    --stage-2: #14171e;
-    --grid: #ffffff0a;
+    --ink: #202124;
+    --paper: #ffffff;
+    --paper-2: #f8f9fa;
+    --muted: #5f6368;
+    --line: #dadce0;
+
+    --stage: #f1f3f4;
+    --stage-2: #f8f9fa;
+    --grid: #2021240a;
 
     --ease-out: cubic-bezier(.16, 1, .3, 1);
     --ease-in: cubic-bezier(.55, 0, .85, .36);
@@ -152,25 +169,28 @@
     --t-fast: 180ms;
     --t-med: 400ms;
     --t-slow: 800ms;
+
+    --shadow-1: 0 1px 2px rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.12);
+    --shadow-2: 0 1px 3px rgba(60,64,67,.3), 0 4px 12px 2px rgba(60,64,67,.15);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 body {
-    background: var(--paper);
-    color: var(--ink);
-    font: 18px/1.74 "Newsreader", Georgia, serif;
+    background: var(--g-gray-1);
+    color: var(--g-ink);
+    font: 17px/1.72 "Roboto", Arial, Helvetica, sans-serif;
     -webkit-font-smoothing: antialiased;
 }
-::selection { background: var(--acid); color: var(--ink); }
-a { color: inherit; }
-.mono, code { font-family: "DM Mono", monospace; }
+::selection { background: var(--g-blue); color: #fff; }
+a { color: var(--g-blue-dark); }
+.mono, code { font-family: "Roboto Mono", monospace; }
 
 .skip-link {
     position: fixed; left: 12px; top: -60px; z-index: 300;
-    background: var(--ink); color: var(--acid);
-    font: 11px "DM Mono"; letter-spacing: .12em;
-    padding: 10px 16px; text-decoration: none;
+    background: var(--g-ink); color: #fff;
+    font: 11px "Roboto Mono"; letter-spacing: .1em;
+    padding: 10px 16px; text-decoration: none; border-radius: 8px;
     transition: top var(--t-fast) var(--ease-out);
 }
 .skip-link:focus { top: 12px; }
@@ -179,183 +199,191 @@ a { color: inherit; }
 .reveal { opacity: 0; transform: translateY(22px); transition: opacity .9s var(--ease-out), transform .9s var(--ease-out); }
 .reveal.seen { opacity: 1; transform: none; }
 
-/* ── hero — the control room with the finished route ── */
+/* ── hero — the app opens on the route ── */
 .hero {
     min-height: 100svh; position: relative; overflow: hidden;
     background:
-        radial-gradient(1200px 700px at 78% 30%, #1b202b 0%, transparent 60%),
+        radial-gradient(1200px 700px at 78% 26%, #e8f0fe 0%, transparent 60%),
         linear-gradient(var(--grid) 1px, transparent 1px),
         linear-gradient(90deg, var(--grid) 1px, transparent 1px),
-        var(--stage);
+        var(--g-gray-1);
     background-size: auto, 32px 32px, 32px 32px, auto;
-    color: #fff;
+    color: var(--g-ink);
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+    grid-template-columns: minmax(0, 1.12fr) minmax(0, .88fr);
     align-items: center;
     gap: 4vw;
     padding: 12vh 6vw 10vh;
 }
-.hero-kicker { font: 10px "DM Mono"; letter-spacing: .22em; color: var(--acid); margin-bottom: 26px; }
-.hero h1 {
-    font-family: "Unbounded", sans-serif;
-    font-weight: 500;
-    font-size: clamp(30px, 4.6vw, 58px);
-    line-height: 1.04;
-    letter-spacing: -.04em;
+.hero-kicker {
+    display: inline-block;
+    font: 10px "Roboto Mono"; letter-spacing: .18em; color: var(--g-ink-3);
+    background: #fff; border: 1px solid var(--g-line); border-radius: 999px;
+    padding: 9px 16px; margin-bottom: 30px; box-shadow: var(--shadow-1);
 }
-.hero h1 em { font-family: "Instrument Serif", serif; font-style: italic; font-weight: 400; color: var(--acid); }
+.hero h1 {
+    font-family: "Roboto", sans-serif;
+    font-weight: 600;
+    font-size: clamp(32px, 4.8vw, 60px);
+    line-height: 1.08;
+    letter-spacing: -.02em;
+    color: var(--g-ink);
+}
+.hero h1 em { font-style: normal; color: var(--g-blue); }
 .hero .h-line { display: block; overflow: hidden; }
 .hero .h-line > span { display: inline-block; transform: translateY(110%); animation: rise 1s var(--ease-out) forwards; }
 .hero .h-line:nth-child(2) > span { animation-delay: .12s; }
 .hero .h-line:nth-child(3) > span { animation-delay: .24s; }
 @keyframes rise { to { transform: translateY(0); } }
 .hero .dek {
-    max-width: 54ch; margin-top: 28px;
-    font-size: 19px; line-height: 1.6; color: #c9c6bd;
+    max-width: 54ch; margin-top: 26px;
+    font-size: 18px; line-height: 1.65; color: var(--g-ink-3);
     opacity: 0; animation: fade-rise .9s var(--ease-out) .5s forwards;
 }
 .hero-meta {
-    display: flex; gap: 26px; flex-wrap: wrap; margin-top: 34px;
-    font: 10px "DM Mono"; letter-spacing: .16em; color: #8a8790;
+    display: flex; gap: 12px 26px; flex-wrap: wrap; margin-top: 32px;
+    font: 10px "Roboto Mono"; letter-spacing: .14em; color: var(--g-ink-4);
     opacity: 0; animation: fade-rise .9s var(--ease-out) .7s forwards;
 }
-.hero-meta b { color: #fff; font-weight: 500; }
+.hero-meta b { color: var(--g-ink); font-weight: 500; }
 @keyframes fade-rise { to { opacity: 1; } }
 
-/* the hero map plate — the corridor, route settled, as a framed plate */
+/* the hero map plate — a Maps card with the route settled */
 .hero-spec {
     position: relative; justify-self: center;
-    width: min(34vw, 420px); aspect-ratio: 4/3;
-    background: var(--stage);
-    border: 1px solid #ffffff1f;
-    box-shadow: 0 30px 80px -30px rgba(0,0,0,.8), 0 0 0 1px #ffffff14;
+    width: min(34vw, 430px); aspect-ratio: 4/3;
+    background: var(--g-gray-2);
+    border-radius: 18px; overflow: hidden;
+    border: 1px solid var(--g-line);
+    box-shadow: var(--shadow-2);
     opacity: 0; transform: scale(.96); animation: spec-in 1.1s var(--ease-out) .35s forwards;
 }
 @keyframes spec-in { to { opacity: 1; transform: none; } }
 .hero-spec svg { display: block; width: 100%; height: 100%; }
-.hero-spec::before, .hero-spec::after,
-.hero-spec .mark-b::before, .hero-spec .mark-b::after {
-    content: ""; position: absolute; width: 18px; height: 18px;
-    border: 1px solid var(--acid);
-}
-.hero-spec::before { top: -9px; left: -9px; border-width: 1px 0 0 1px; }
-.hero-spec::after { top: -9px; right: -9px; border-width: 1px 1px 0 0; }
-.hero-spec .mark-b::before { bottom: -9px; left: -9px; border-width: 0 0 1px 1px; }
-.hero-spec .mark-b::after { bottom: -9px; right: -9px; border-width: 0 1px 1px 0; }
 .hero-spec-label {
-    position: absolute; left: 50%; bottom: -44px; transform: translateX(-50%);
+    position: absolute; left: 50%; bottom: -42px; transform: translateX(-50%);
     white-space: nowrap;
-    font: 9px "DM Mono"; letter-spacing: .18em; color: #8a8790;
+    font: 9px "Roboto Mono"; letter-spacing: .16em; color: var(--g-ink-3);
 }
-.hero-spec-label b { color: var(--acid); font-weight: 500; }
+.hero-spec-label b { color: var(--g-blue-dark); font-weight: 500; }
 .hero-cue {
     position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
-    width: 1px; height: 44px; background: linear-gradient(#fff0, #ffffff88);
+    width: 1px; height: 44px; background: linear-gradient(#5f636800, #5f636880);
     animation: cue 2.2s var(--ease-swift) infinite;
 }
 @keyframes cue { 0% { transform: translateX(-50%) scaleY(.4); transform-origin: top; } 55% { transform: translateX(-50%) scaleY(1); } 100% { transform: translateX(-50%) scaleY(.4); } }
 
 /* ── prose ── */
 .prose { max-width: 720px; margin: 0 auto; padding: 12vh 4vw 0; }
-.prose > p { font-size: 18px; line-height: 1.74; color: #33322e; margin-bottom: 1.5em; }
-.prose > p strong { font-weight: 600; }
+.prose > p { font-size: 17px; line-height: 1.74; color: var(--g-ink-2); margin-bottom: 1.5em; }
+.prose > p strong { font-weight: 600; color: var(--g-ink); }
 .prose h2 {
-    font-family: "Unbounded", sans-serif; font-weight: 500;
-    font-size: clamp(25px, 3.4vw, 38px); letter-spacing: -.045em; line-height: 1.05;
-    margin: 11vh 0 20px; display: flex; align-items: baseline; gap: 18px;
+    font-family: "Roboto", sans-serif; font-weight: 600;
+    font-size: clamp(24px, 3.2vw, 34px); letter-spacing: -.015em; line-height: 1.15;
+    color: var(--g-ink);
+    margin: 11vh 0 20px; display: flex; align-items: baseline; gap: 16px;
 }
-.prose h2 .sec-no { font: 10px "DM Mono"; letter-spacing: .14em; color: var(--orange); align-self: center; }
+.prose h2 .sec-no { font: 10px "Roboto Mono"; letter-spacing: .14em; color: var(--g-red); align-self: center; }
 .prose .callout {
-    border-left: 4px solid var(--acid); background: var(--paper-2);
-    padding: 22px 26px; margin: 5vh 0; font: italic 23px/1.45 "Instrument Serif";
+    border-left: 4px solid var(--g-blue);
+    background: #e8f0fe;
+    border-radius: 4px 14px 14px 4px;
+    padding: 22px 26px; margin: 5vh 0;
+    font: 500 19px/1.55 "Roboto";
+    color: var(--g-blue-ink);
 }
-.prose .callout em { font-style: normal; }
+.prose .callout em { font-style: normal; color: var(--g-blue-deep); }
 .prose .aside {
-    font: 11px/1.7 "DM Mono"; color: #777;
-    border-top: 1px solid #d8d4c6; padding-top: 12px; margin: 6vh 0;
+    font: 10.5px/1.75 "Roboto Mono"; color: var(--g-ink-4);
+    border-top: 1px solid var(--g-line); padding-top: 14px; margin: 6vh 0;
 }
-.prose .aside a { color: var(--blue); }
+.prose .aside a { color: var(--g-blue-dark); }
 
-/* ── sticky scenes — the site contract ── */
-.sticky-scene { position: relative; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-top: 10vh; }
+/* ── sticky scenes — the site contract, in a Maps skin ── */
+.sticky-scene { position: relative; border-top: 1px solid var(--g-line); border-bottom: 1px solid var(--g-line); margin-top: 10vh; }
 .js .sticky-scene { padding-bottom: 100vh; padding-bottom: 100svh; }
 .sticky-scene__stage {
     background-color: var(--stage);
     background-image: linear-gradient(var(--grid) 1px, transparent 1px),
         linear-gradient(90deg, var(--grid) 1px, transparent 1px);
     background-size: 32px 32px;
-    color: #fff; position: relative; overflow: hidden; min-height: 60vh;
+    color: var(--g-ink); position: relative; overflow: hidden; min-height: 60vh;
 }
 .js .sticky-scene__stage { position: sticky; top: 0; height: 100vh; height: 100svh; min-height: 0; }
-.sticky-scene__stage::after {
-    content: ""; position: absolute; width: 200px; height: 200px;
-    border: 1px solid #ffffff12; border-radius: 50%;
-    right: -100px; bottom: -100px; pointer-events: none;
-}
 .scene-head {
     display: flex; align-items: center; gap: 16px;
-    border-bottom: 1px solid #ffffff1a; padding: 12px 4vw;
+    border-bottom: 1px solid var(--g-line); padding: 12px 4vw;
     position: relative; z-index: 5;
-    background: #0d0f14cc;
+    background: #fffffff2;
 }
-.scene-no { font: 10px "DM Mono"; letter-spacing: .14em; color: var(--orange); }
-.scene-name { font: 10px "DM Mono"; letter-spacing: .18em; }
-.scene-readout { font: 10px "DM Mono"; color: #777; margin-left: auto; }
+.scene-no { font: 10px "Roboto Mono"; letter-spacing: .14em; color: var(--g-red); }
+.scene-name { font: 10px "Roboto Mono"; letter-spacing: .18em; color: var(--g-ink-2); }
+.scene-readout { font: 10px "Roboto Mono"; color: var(--g-ink-4); margin-left: auto; }
 .js .sticky-scene__steps { position: relative; margin-top: -100vh; margin-top: -100svh; pointer-events: none; z-index: 1; }
 .js .sticky-scene__steps > * { min-height: 100vh; min-height: 100svh; display: flex; align-items: center; padding: 0 4vw; }
-.step { max-width: 420px; background: var(--paper); border: 1px solid var(--line); padding: 26px 28px; color: var(--ink); }
+.step { max-width: 420px; background: #fff; border: 1px solid var(--g-line); border-radius: 16px; padding: 24px 26px; color: var(--g-ink); }
 .js .step { background: none; border: 0; padding: 0; max-width: none; pointer-events: none; }
 .js .step.is-active { pointer-events: auto; }
 .step-card {
-    width: 100%; max-width: 420px; background: var(--paper);
-    border: 1px solid var(--line); padding: 26px 28px; color: var(--ink);
+    width: 100%; max-width: 420px; background: #fff;
+    border: 1px solid var(--g-line); border-radius: 16px; padding: 24px 26px;
+    color: var(--g-ink); box-shadow: var(--shadow-2);
     opacity: 0; transform: translateY(26px);
     transition: opacity var(--t-slow) var(--ease-out), transform var(--t-slow) var(--ease-out);
 }
 .js .step.is-active .step-card { opacity: 1; transform: none; }
 .step-progress { display: none; }
-.step-k { font: 9px "DM Mono"; letter-spacing: .16em; color: var(--orange); display: block; margin-bottom: 10px; }
-.step p { font-size: 16.5px; line-height: 1.6; color: #33322e; }
+.step-k { font: 9px "Roboto Mono"; letter-spacing: .16em; color: var(--g-red); display: block; margin-bottom: 10px; }
+.step p { font-size: 15.5px; line-height: 1.62; color: var(--g-ink-2); }
 .step p + p { margin-top: .8em; }
-.step p b { font-weight: 600; }
-.step .mono { font-size: 13.5px; }
+.step p b { font-weight: 600; color: var(--g-ink); }
+.step .mono { font-size: 13px; }
 
-/* stage internals — this article's diagram grammar */
+/* stage internals — the article's diagram grammar, in map colors */
 .map-stage {
     position: absolute; inset: 0;
     display: flex; align-items: center; justify-content: center;
     padding: 66px 2vw 3vh;
 }
 .map-svg { width: 100%; height: 100%; display: block; }
-.map-svg .st-loc { stroke: #ffffff12; stroke-width: 2; fill: none; }
-.map-svg .st-ter { stroke: #ffffff1c; stroke-width: 2.8; fill: none; }
-.map-svg .st-art { stroke: #ffffff2b; stroke-width: 3.6; fill: none; }
+/* roads on the light map canvas: locals white hairlines, avenues white,
+   arterials the classic Maps yellow */
+.map-svg .st-loc { stroke: #ffffff; stroke-width: 2.6; fill: none; }
+.map-svg .st-ter { stroke: #ffffff; stroke-width: 3.8; fill: none; }
+.map-svg .st-art { stroke: #fdd663; stroke-width: 4.6; fill: none; }
 .map-svg .st-loc, .map-svg .st-ter, .map-svg .st-art { transition: opacity var(--t-slow) var(--ease-out), stroke var(--t-slow) var(--ease-out); }
 
 /* dots: search state, drawn as round-capped stroked points.
-   frontier = bright blue; settled = dim blue; ghost = pale */
-.map-svg .dots { stroke: #546cff59; stroke-width: 6; fill: none; stroke-linecap: round; transition: opacity var(--t-slow) var(--ease-out), stroke var(--t-med) var(--ease-swift); }
-.map-svg .dots.frontier { stroke: #9db0ff; }
-.map-svg .dots.ghost { stroke: #ffffff17; stroke-width: 3.6; }
+   frontier = deep blue; settled = light blue; ghost = gray */
+.map-svg .dots { stroke: #4285f442; stroke-width: 6; fill: none; stroke-linecap: round; transition: opacity var(--t-slow) var(--ease-out), stroke var(--t-med) var(--ease-swift); }
+.map-svg .dots.frontier { stroke: var(--g-blue-dark); }
+.map-svg .dots.ghost { stroke: #9aa0a638; stroke-width: 3.6; }
+/* the route: the Maps blue line */
 .map-svg .route {
-    stroke: var(--acid); stroke-width: 6; fill: none;
+    stroke: var(--g-blue); stroke-width: 6.5; fill: none;
     stroke-linecap: round; stroke-linejoin: round;
 }
-.map-svg .route-glow { stroke: #c7ff3d24; stroke-width: 13; fill: none; stroke-linecap: round; }
-.map-svg .route-old { stroke: #c7ff3d38; stroke-width: 4; fill: none; stroke-dasharray: 10 12; }
-.map-svg .jam-street { stroke: var(--orange); stroke-width: 5.4; fill: none; }
-.map-svg .pin { fill: var(--orange); }
-.map-svg .pin-ring { stroke: var(--orange); stroke-width: 1.6; fill: none; }
+.map-svg .route-glow { stroke: #4285f42e; stroke-width: 14; fill: none; stroke-linecap: round; }
+.map-svg .route-old { stroke: #4285f470; stroke-width: 4; fill: none; stroke-dasharray: 10 12; }
+/* the jammed street: traffic red */
+.map-svg .jam-street { stroke: var(--g-red-deep); stroke-width: 5.6; fill: none; }
+/* pins: blue origin dot, red destination pin */
+.map-svg .pin { fill: var(--g-red); }
+.map-svg .pin-o { fill: var(--g-blue-dark); }
+.map-svg .pin-d { fill: var(--g-red); }
+.map-svg .pin-ring { stroke: var(--g-red); stroke-width: 1.6; fill: none; }
+.map-svg .pin-ring.ring-o { stroke: var(--g-blue-dark); }
 .map-svg .mlab {
-    font: 30px "DM Mono"; letter-spacing: .18em; fill: #c9c6bd;
-    paint-order: stroke; stroke: #0d0f14; stroke-width: 7px;
+    font: 30px "Roboto Mono"; letter-spacing: .18em; fill: var(--g-ink-2);
+    paint-order: stroke; stroke: #fffffff5; stroke-width: 7px;
 }
-.map-svg .mlab.lab-o { fill: var(--orange); }
-.map-svg .mlab.lab-d { fill: var(--acid); }
+.map-svg .mlab.lab-o { fill: var(--g-blue-dark); }
+.map-svg .mlab.lab-d { fill: var(--g-red-deep); }
+.map-svg .mlab.mlab-ros { fill: var(--g-red-deep); }
 .map-svg .mlab { transition: opacity var(--t-med) var(--ease-out); }
-.ring { stroke: #9db0ff59; stroke-width: 1.6; fill: #546cff0d; stroke-dasharray: 8 10; }
+.ring { stroke: #4285f466; stroke-width: 1.6; fill: #4285f40d; stroke-dasharray: 8 10; }
 
-/* chips — mono readouts pinned to the stage; JS rewrites the values it
+/* chips — Maps-style pills pinned to the stage; JS rewrites the values it
    can compute, the authored values are the verified build-time ones */
 .chips {
     position: absolute; top: 62px; right: 3vw; z-index: 4;
@@ -363,32 +391,33 @@ a { color: inherit; }
     pointer-events: none;
 }
 .chip {
-    font: 10px "DM Mono"; letter-spacing: .14em; color: #c9c6bd;
-    background: #0d0f14d9; border: 1px solid #ffffff22; padding: 7px 11px;
+    font: 10px "Roboto Mono"; letter-spacing: .12em; color: var(--g-ink-2);
+    background: #fffffff2; border: 1px solid var(--g-line); border-radius: 999px;
+    padding: 7px 13px; box-shadow: var(--shadow-1);
     opacity: 0; transform: translateY(-6px);
     transition: opacity var(--t-med) var(--ease-out), transform var(--t-med) var(--ease-out);
 }
-.chip b { color: var(--acid); font-weight: 500; }
-.chip.c-blue b { color: #9db0ff; }
-.chip.c-orange b { color: var(--orange); }
+.chip b { color: var(--g-green-deep); font-weight: 500; }
+.chip.c-blue b { color: var(--g-blue-dark); }
+.chip.c-orange b { color: var(--g-red-deep); }
 
 /* no-JS static stage content */
 .stage-static { padding: 60px 4vw 40px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
 .js .stage-static { display: none; }
-.static-svg { width: min(52vh, 84vw); height: auto; border: 1px solid #ffffff1a; background: var(--stage-2); }
-.static-note { font: 10px/1.7 "DM Mono"; letter-spacing: .1em; color: #8a8790; text-align: center; max-width: 60ch; }
-.static-note b { color: var(--acid); font-weight: 500; }
+.static-svg { width: min(52vh, 84vw); height: auto; border: 1px solid var(--g-line); border-radius: 12px; background: var(--g-gray-2); }
+.static-note { font: 10px/1.7 "Roboto Mono"; letter-spacing: .1em; color: var(--g-ink-3); text-align: center; max-width: 60ch; }
+.static-note b { color: var(--g-blue-dark); font-weight: 500; }
 
 /* ── S01 · layer states (data-active-step keys everything) ── */
-#scene1 .dots-v { opacity: 0; }
+#scene1 .dots-v { opacity: 0; stroke: #5f636866; }
 #scene1[data-active-step="2"] .dots-v, #scene1[data-active-step="3"] .dots-v,
 #scene1[data-active-step="4"] .dots-v, #scene1[data-active-step="5"] .dots-v { opacity: 1; }
-#scene1 .ex-edge { stroke: var(--orange); stroke-width: 6.5; fill: none; opacity: 0; }
+#scene1 .ex-edge { stroke: var(--g-blue-dark); stroke-width: 7; fill: none; opacity: 0; }
 #scene1[data-active-step="3"] .ex-edge, #scene1[data-active-step="4"] .ex-edge,
 #scene1[data-active-step="5"] .ex-edge { opacity: 1; }
-#scene1[data-active-step="4"] .st-loc { stroke: #ffffff26; }
-#scene1[data-active-step="4"] .st-art { stroke: #c7ff3d3d; }
-#scene1[data-active-step="4"] .st-ter { stroke: #9db0ff38; }
+#scene1[data-active-step="4"] .st-loc { stroke: #f8f9fa; }
+#scene1[data-active-step="4"] .st-art { stroke: var(--g-yellow-deep); }
+#scene1[data-active-step="4"] .st-ter { stroke: #aecbfa; }
 #scene1 .pin-o, #scene1 .pin-d, #scene1 .pin-ring, #scene1 .mlab { opacity: 0; }
 #scene1[data-active-step="1"] .pin-o,
 #scene1[data-active-step="5"] .pin-o, #scene1[data-active-step="5"] .pin-d,
@@ -406,11 +435,11 @@ a { color: inherit; }
 #scene2[data-active-step="2"] .dj-s1, #scene2[data-active-step="3"] .dj-s1, #scene2[data-active-step="4"] .dj-s1, #scene2[data-active-step="5"] .dj-s1,
 #scene2[data-active-step="3"] .dj-s2, #scene2[data-active-step="4"] .dj-s2, #scene2[data-active-step="5"] .dj-s2,
 #scene2[data-active-step="4"] .dj-s3, #scene2[data-active-step="5"] .dj-s3 { opacity: 1; }
-#scene2[data-active-step="2"] .dj-s1 { stroke: #9db0ff; }
-#scene2[data-active-step="3"] .dj-s1, #scene2[data-active-step="4"] .dj-s2, #scene2[data-active-step="5"] .dj-s2 { stroke: #546cff59; }
-#scene2[data-active-step="3"] .dj-s2, #scene2[data-active-step="4"] .dj-s3 { stroke: #9db0ff; }
-#scene2[data-active-step="5"] .dj-s3 { stroke: #546cff38; }
-#scene2 .st-loc, #scene2 .st-ter, #scene2 .st-art { opacity: .55; }
+#scene2[data-active-step="2"] .dj-s1 { stroke: var(--g-blue-dark); }
+#scene2[data-active-step="3"] .dj-s1, #scene2[data-active-step="4"] .dj-s2, #scene2[data-active-step="5"] .dj-s2 { stroke: #4285f442; }
+#scene2[data-active-step="3"] .dj-s2, #scene2[data-active-step="4"] .dj-s3 { stroke: var(--g-blue-dark); }
+#scene2[data-active-step="5"] .dj-s3 { stroke: #4285f42e; }
+#scene2 .st-loc, #scene2 .st-ter, #scene2 .st-art { opacity: .8; }
 #scene2 .route, #scene2 .route-glow { opacity: 0; }
 #scene2[data-active-step="5"] .route, #scene2[data-active-step="5"] .route-glow { opacity: 1; }
 #scene2 .route { stroke-dasharray: 3600; stroke-dashoffset: 3600; }
@@ -427,16 +456,16 @@ a { color: inherit; }
 #scene3[data-active-step="2"] .as-s1, #scene3[data-active-step="3"] .as-s1, #scene3[data-active-step="4"] .as-s1, #scene3[data-active-step="5"] .as-s1,
 #scene3[data-active-step="3"] .as-s2, #scene3[data-active-step="4"] .as-s2, #scene3[data-active-step="5"] .as-s2,
 #scene3[data-active-step="4"] .as-s3, #scene3[data-active-step="5"] .as-s3 { opacity: 1; }
-#scene3[data-active-step="2"] .as-s1 { stroke: #9db0ff; }
-#scene3[data-active-step="3"] .as-s1, #scene3[data-active-step="4"] .as-s2, #scene3[data-active-step="5"] .as-s2 { stroke: #546cff59; }
-#scene3[data-active-step="3"] .as-s2, #scene3[data-active-step="4"] .as-s3 { stroke: #9db0ff; }
-#scene3[data-active-step="5"] .as-s3 { stroke: #546cff38; }
+#scene3[data-active-step="2"] .as-s1 { stroke: var(--g-blue-dark); }
+#scene3[data-active-step="3"] .as-s1, #scene3[data-active-step="4"] .as-s2, #scene3[data-active-step="5"] .as-s2 { stroke: #4285f442; }
+#scene3[data-active-step="3"] .as-s2, #scene3[data-active-step="4"] .as-s3 { stroke: var(--g-blue-dark); }
+#scene3[data-active-step="5"] .as-s3 { stroke: #4285f42e; }
 #scene3 .ghost { opacity: 0; }
 #scene3[data-active-step="3"] .ghost, #scene3[data-active-step="4"] .ghost, #scene3[data-active-step="5"] .ghost { opacity: 1; }
 #scene3 .route, #scene3 .route-glow { opacity: 0; }
 #scene3[data-active-step="4"] .route, #scene3[data-active-step="4"] .route-glow,
 #scene3[data-active-step="5"] .route, #scene3[data-active-step="5"] .route-glow { opacity: 1; }
-#scene3 .st-loc, #scene3 .st-ter, #scene3 .st-art { opacity: .5; }
+#scene3 .st-loc, #scene3 .st-ter, #scene3 .st-art { opacity: .8; }
 #scene3[data-active-step="1"] .chip.c1, #scene3[data-active-step="2"] .chip.c2,
 #scene3[data-active-step="3"] .chip.c3, #scene3[data-active-step="4"] .chip.c4,
 #scene3[data-active-step="5"] .chip.c5 { opacity: 1; transform: none; }
@@ -445,34 +474,35 @@ a { color: inherit; }
 #scene4 .ring, #scene4 .dots-h { opacity: 0; }
 #scene4[data-active-step="3"] .ring, #scene4[data-active-step="4"] .ring, #scene4[data-active-step="5"] .ring,
 #scene4[data-active-step="3"] .dots-h, #scene4[data-active-step="4"] .dots-h, #scene4[data-active-step="5"] .dots-h { opacity: 1; }
-#scene4[data-active-step="3"] .st-loc, #scene4[data-active-step="4"] .st-loc, #scene4[data-active-step="5"] .st-loc { opacity: .16; }
-#scene4[data-active-step="3"] .st-art, #scene4[data-active-step="4"] .st-art, #scene4[data-active-step="5"] .st-art { stroke: #c7ff3d52; }
+#scene4[data-active-step="3"] .st-loc, #scene4[data-active-step="4"] .st-loc, #scene4[data-active-step="5"] .st-loc { opacity: .22; }
+#scene4[data-active-step="3"] .st-art, #scene4[data-active-step="4"] .st-art, #scene4[data-active-step="5"] .st-art { stroke: var(--g-yellow-deep); stroke-width: 6; }
 #scene4[data-active-step="3"] .st-ter, #scene4[data-active-step="4"] .st-ter, #scene4[data-active-step="5"] .st-ter { opacity: .3; }
 #scene4 .route { opacity: 0; }
 #scene4[data-active-step="1"] .route, #scene4[data-active-step="5"] .route { opacity: 1; }
 #scene4[data-active-step="1"] .chip.c1, #scene4[data-active-step="2"] .chip.c2,
 #scene4[data-active-step="3"] .chip.c3, #scene4[data-active-step="4"] .chip.c4,
 #scene4[data-active-step="5"] .chip.c5 { opacity: 1; transform: none; }
-/* the contraction inset */
+/* the contraction inset — a Material card */
 .inset {
     position: absolute; top: 62px; right: 3vw; z-index: 4;
     width: min(300px, 30vw);
-    background: #0d0f14e0; border: 1px solid #ffffff22; padding: 12px 14px 10px;
+    background: #fffffff5; border: 1px solid var(--g-line); border-radius: 14px;
+    padding: 12px 14px 10px; box-shadow: var(--shadow-2);
     opacity: 0; transform: translateY(-8px);
     transition: opacity var(--t-med) var(--ease-out), transform var(--t-med) var(--ease-out);
     pointer-events: none;
 }
 #scene4[data-active-step="4"] .inset, #scene4[data-active-step="5"] .inset { opacity: 1; transform: none; }
-.inset-cap { font: 9px "DM Mono"; letter-spacing: .16em; color: #8a8790; margin-top: 6px; }
-.inset-cap b { color: var(--acid); font-weight: 500; }
+.inset-cap { font: 9px "Roboto Mono"; letter-spacing: .16em; color: var(--g-ink-3); margin-top: 6px; }
+.inset-cap b { color: var(--g-green-deep); font-weight: 500; }
 .inset svg { width: 100%; height: auto; display: block; }
-.inset .node { fill: #14171e; stroke: #9db0ff; stroke-width: 1.6; }
-.inset .edge { stroke: #ffffff52; stroke-width: 1.6; fill: none; }
-.inset .shortcut { stroke: var(--acid); stroke-width: 2.4; fill: none; stroke-dasharray: 260; stroke-dashoffset: 260; }
+.inset .node { fill: #fff; stroke: var(--g-blue-dark); stroke-width: 1.6; }
+.inset .edge { stroke: #9aa0a6; stroke-width: 1.6; fill: none; }
+.inset .shortcut { stroke: var(--g-green-deep); stroke-width: 2.4; fill: none; stroke-dasharray: 260; stroke-dashoffset: 260; }
 #scene4[data-active-step="4"] .shortcut, #scene4[data-active-step="5"] .shortcut { animation: draw .7s var(--ease-out) forwards; }
 .inset .vnode { transition: opacity var(--t-med) var(--ease-swift); }
 #scene4[data-active-step="4"] .vnode, #scene4[data-active-step="5"] .vnode { opacity: .12; }
-.inset .nlab { font: 10px "DM Mono"; fill: #c9c6bd; }
+.inset .nlab { font: 10px "Roboto Mono"; fill: var(--g-ink-2); }
 
 /* ── S05 · the price of a street ── */
 #scene5 .jam-street { opacity: 0; }
@@ -486,14 +516,14 @@ a { color: inherit; }
 #scene5[data-active-step="3"] .route, #scene5[data-active-step="3"] .route-glow,
 #scene5[data-active-step="4"] .route, #scene5[data-active-step="4"] .route-glow,
 #scene5[data-active-step="5"] .route, #scene5[data-active-step="5"] .route-glow { opacity: 1; }
-#scene5 .dots-j { opacity: 0; stroke: #546cff3d; }
+#scene5 .dots-j { opacity: 0; stroke: #4285f438; }
 #scene5[data-active-step="4"] .dots-j, #scene5[data-active-step="5"] .dots-j { opacity: 1; }
 #scene5 .mlab { opacity: 0; }
 #scene5[data-active-step="1"] .mlab-ros, #scene5[data-active-step="2"] .mlab-ros,
 #scene5[data-active-step="3"] .mlab-ros, #scene5[data-active-step="4"] .mlab-ros,
 #scene5[data-active-step="5"] .mlab-ros { opacity: 1; }
 #scene5[data-active-step="3"] .mlab-val, #scene5[data-active-step="4"] .mlab-val, #scene5[data-active-step="5"] .mlab-val { opacity: 1; }
-#scene5 .st-loc, #scene5 .st-ter, #scene5 .st-art { opacity: .5; }
+#scene5 .st-loc, #scene5 .st-ter, #scene5 .st-art { opacity: .8; }
 #scene5[data-active-step="1"] .chip.c1, #scene5[data-active-step="2"] .chip.c2,
 #scene5[data-active-step="3"] .chip.c3, #scene5[data-active-step="4"] .chip.c4,
 #scene5[data-active-step="5"] .chip.c5 { opacity: 1; transform: none; }
@@ -503,59 +533,59 @@ a { color: inherit; }
     #scene4 .chips { top: auto; bottom: 26px; right: auto; left: 3vw; align-items: flex-start; }
 }
 
-/* ── scoreboard ── */
+/* ── scoreboard — the Google Cloud console table ── */
 .board {
-    margin-top: 10vh; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
-    background-color: var(--stage);
+    margin-top: 10vh; border-top: 1px solid var(--g-line); border-bottom: 1px solid var(--g-line);
+    background-color: #fff;
     background-image: linear-gradient(var(--grid) 1px, transparent 1px),
         linear-gradient(90deg, var(--grid) 1px, transparent 1px);
     background-size: 32px 32px;
-    color: #fff; padding: 70px 4vw 60px;
+    color: var(--g-ink); padding: 70px 4vw 60px;
 }
 .board-inner { max-width: 1000px; margin: 0 auto; }
-.board-head { display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #ffffff1a; padding-bottom: 12px; margin-bottom: 38px; }
+.board-head { display: flex; align-items: center; gap: 16px; border-bottom: 1px solid var(--g-line); padding-bottom: 12px; margin-bottom: 38px; }
 .board-duel {
     display: grid; grid-template-columns: 1fr auto 1fr; gap: 4vw; align-items: center;
     margin-bottom: 46px;
 }
-.duel-num { font: italic clamp(44px, 7.2vw, 96px)/1 "Instrument Serif"; letter-spacing: -.02em; }
-.duel-num.d-big { color: #9db0ff; }
-.duel-num.d-small { color: var(--acid); }
-.duel-mid { font: 10px/1.9 "DM Mono"; letter-spacing: .16em; color: #8a8790; text-align: center; }
-.duel-mid .arr { font-size: 22px; color: #fff; display: block; }
-.duel-cap { font: 9.5px "DM Mono"; letter-spacing: .15em; color: #8a8790; margin-top: 10px; }
-.duel-cap b { color: #fff; font-weight: 500; }
-.board table { width: 100%; border-collapse: collapse; font: 12px "DM Mono"; }
-.board th, .board td { border: 1px solid #ffffff1f; padding: 9px 12px; text-align: left; color: #c9c6bd; }
-.board th { color: #8a8790; font-size: 9px; letter-spacing: .15em; background: #ffffff08; }
-.board td b { color: #fff; font-weight: 500; }
-.board tr.hl td { border-color: #c7ff3d55; }
-.board tr.hl td b { color: var(--acid); }
+.duel-num { font: 600 clamp(42px, 6.8vw, 90px)/1 "Roboto"; letter-spacing: -.02em; }
+.duel-num.d-big { color: var(--g-red-deep); }
+.duel-num.d-small { color: var(--g-green-deep); }
+.duel-mid { font: 10px/1.9 "Roboto Mono"; letter-spacing: .16em; color: var(--g-ink-4); text-align: center; }
+.duel-mid .arr { font-size: 22px; color: var(--g-ink-2); display: block; }
+.duel-cap { font: 9.5px "Roboto Mono"; letter-spacing: .14em; color: var(--g-ink-4); margin-top: 10px; }
+.duel-cap b { color: var(--g-ink); font-weight: 500; }
+.board table { width: 100%; border-collapse: collapse; font: 12px "Roboto Mono"; }
+.board th, .board td { border: 1px solid var(--g-gray-3); padding: 9px 12px; text-align: left; color: var(--g-ink-2); }
+.board th { color: var(--g-ink-3); font-size: 9px; letter-spacing: .15em; background: var(--g-gray-1); }
+.board td b { color: var(--g-ink); font-weight: 500; }
+.board tr.hl td { border-color: #34a85366; background: #e6f4ea66; }
+.board tr.hl td b { color: var(--g-green-deep); }
 .board .ratio-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
 .ratio {
-    font: 11px "DM Mono"; letter-spacing: .12em; color: var(--acid);
-    border: 1px solid #c7ff3d4d; padding: 9px 14px; background: #c7ff3d0d;
+    font: 11px "Roboto Mono"; letter-spacing: .1em; color: var(--g-green-deep);
+    border: 1px solid #34a85366; border-radius: 999px; padding: 9px 15px; background: #e6f4ea;
 }
-.board-note { font: 10px/1.8 "DM Mono"; letter-spacing: .08em; color: #8a8790; margin-top: 28px; }
-.board-note b { color: #c9c6bd; font-weight: 500; }
+.board-note { font: 10px/1.8 "Roboto Mono"; letter-spacing: .08em; color: var(--g-ink-3); margin-top: 28px; }
+.board-note b { color: var(--g-ink-2); font-weight: 500; }
 
 /* ── breather ── */
 .breather { padding: 16vh 4vw; text-align: center; }
-.breather-line { font: italic clamp(26px, 3.6vw, 40px)/1.3 "Instrument Serif"; max-width: 22ch; margin: 0 auto; }
-.breather-line em { color: var(--blue); font-style: italic; }
+.breather-line { font: 300 clamp(26px, 3.6vw, 40px)/1.35 "Roboto"; max-width: 24ch; margin: 0 auto; color: var(--g-ink); }
+.breather-line em { color: var(--g-blue-dark); font-style: normal; font-weight: 500; }
 
 /* ── footer ── */
 .foot {
-    margin-top: 10vh; padding: 5vh 4vw 4vh; border-top: 1px solid var(--line);
+    margin-top: 10vh; padding: 5vh 4vw 4vh; border-top: 1px solid var(--g-line);
     display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap;
-    font: 10px "DM Mono"; color: var(--muted);
+    font: 10px "Roboto Mono"; color: var(--g-ink-4);
 }
-.foot a { color: var(--blue); text-decoration: none; }
+.foot a { color: var(--g-blue-dark); text-decoration: none; }
 
 /* ── hero plate scales (small svg → thicker strokes, bigger pins) ── */
-.hero-spec .st-loc { stroke-width: 3.4; }
-.hero-spec .st-ter { stroke-width: 4.4; }
-.hero-spec .st-art { stroke-width: 5.6; }
+.hero-spec .st-loc { stroke-width: 4; }
+.hero-spec .st-ter { stroke-width: 5.6; }
+.hero-spec .st-art { stroke-width: 6.6; }
 .hero-spec .route { stroke-width: 16; }
 .hero-spec .route-glow { stroke-width: 30; }
 .hero-spec .pin { transform: scale(3.4); transform-box: fill-box; transform-origin: center; }
@@ -571,35 +601,34 @@ a { color: inherit; }
     }
     .js .sticky-scene__steps > * { min-height: 100vh; min-height: 100svh; align-items: flex-end; }
     .js .step-card {
-        width: 100%; max-width: 560px; border-radius: 18px 18px 14px 14px;
-        box-shadow: 0 20px 44px -24px rgba(0,0,0,.55);
+        width: 100%; max-width: 560px; border-radius: 20px 20px 16px 16px;
         padding: 12px 20px 18px; max-height: 44vh; overflow-y: auto;
         overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
         opacity: 0; transform: translateY(52px);
     }
     .js .step.is-active .step-card { opacity: 1; transform: none; }
-    .step-progress { display: block; height: 3px; background: #ffffff22; border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
-    .step-progress i { display: block; height: 100%; width: 0; background: var(--orange); transition: width var(--t-med) var(--ease-swift); }
+    .step-progress { display: block; height: 3px; background: var(--g-gray-3); border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
+    .step-progress i { display: block; height: 100%; width: 0; background: var(--g-blue); transition: width var(--t-med) var(--ease-swift); }
 }
 @media (max-width: 850px) {
     .hero { grid-template-columns: 1fr; gap: 8vh; padding-top: 16vh; }
     .hero-spec { width: min(78vw, 360px); }
     .hero-cue { display: none; }
     /* map strokes rescale for contain-mode framing (~0.1 px/unit) */
-    .map-svg .st-loc { stroke-width: 8; }
-    .map-svg .st-ter { stroke-width: 11; }
-    .map-svg .st-art { stroke-width: 14; }
+    .map-svg .st-loc { stroke-width: 9; }
+    .map-svg .st-ter { stroke-width: 13; }
+    .map-svg .st-art { stroke-width: 16; }
     .map-svg .dots { stroke-width: 20; }
     .map-svg .dots.ghost { stroke-width: 13; }
-    .map-svg .route { stroke-width: 22; }
-    .map-svg .route-glow { stroke-width: 40; }
+    .map-svg .route { stroke-width: 23; }
+    .map-svg .route-glow { stroke-width: 42; }
     .map-svg .route-old { stroke-width: 16; stroke-dasharray: 34 40; }
-    .map-svg .jam-street { stroke-width: 20; }
+    .map-svg .jam-street { stroke-width: 21; }
     .map-svg .ring { stroke-width: 6; stroke-dasharray: 26 32; }
     .map-svg .pin { transform: scale(2.6); transform-box: fill-box; transform-origin: center; }
     .map-svg .pin-ring { transform: scale(2.6); transform-box: fill-box; transform-origin: center; stroke-width: .8; }
     .map-svg .mlab { font-size: 84px; stroke-width: 18px; }
-    .map-svg .ex-edge { stroke-width: 22; }
+    .map-svg .ex-edge { stroke-width: 23; }
     .chips { top: 56px; max-width: 52vw; }
     /* scene 4: the inset owns the top-right corner on phones */
     #scene4 .chips { top: 56px; bottom: auto; right: auto; left: 3vw; align-items: flex-start; max-width: 44vw; }
@@ -609,8 +638,8 @@ a { color: inherit; }
 }
 @media (max-width: 480px) {
     .chips { max-width: 62vw; }
-    .chip { font-size: 9px; padding: 6px 9px; }
-    .hero h1 { font-size: clamp(26px, 8.4vw, 34px); }
+    .chip { font-size: 9px; padding: 6px 10px; }
+    .hero h1 { font-size: clamp(28px, 8.6vw, 36px); }
     .board { padding: 56px 4vw 44px; }
     .board table { font-size: 10.5px; }
     .board th, .board td { padding: 7px 8px; }
@@ -642,23 +671,23 @@ a { color: inherit; }
     #scene1 .dots-v, #scene1 .ex-edge, #scene1 .pin-o, #scene1 .pin-d, #scene1 .pin-ring, #scene1 .mlab { opacity: 1 !important; }
     #scene1 .pin-ring { animation: none !important; opacity: .5 !important; }
     #scene2 .dj, #scene2 .route, #scene2 .route-glow { opacity: 1 !important; }
-    #scene2 .dj { stroke: #546cff42 !important; }
+    #scene2 .dj { stroke: #4285f438 !important; }
     #scene2 .route, #scene2 .route-glow { stroke-dashoffset: 0 !important; }
     #scene3 .as, #scene3 .ghost, #scene3 .route, #scene3 .route-glow { opacity: 1 !important; }
-    #scene3 .as { stroke: #546cff66 !important; }
+    #scene3 .as { stroke: #4285f45c !important; }
     #scene4 .ring, #scene4 .dots-h, #scene4 .route { opacity: 1 !important; }
-    #scene4 .st-loc { opacity: .16 !important; }
-    #scene4 .st-art { stroke: #c7ff3d52 !important; }
+    #scene4 .st-loc { opacity: .22 !important; }
+    #scene4 .st-art { stroke: var(--g-yellow-deep) !important; }
     #scene4 .st-ter { opacity: .3 !important; }
     #scene4 .inset { opacity: 1 !important; }
     #scene4 .shortcut { stroke-dashoffset: 0 !important; }
     #scene5 .jam-street, #scene5 .route-old, #scene5 .route, #scene5 .route-glow, #scene5 .dots-j, #scene5 .mlab { opacity: 1 !important; }
     .chip { opacity: 1 !important; transform: none !important; }
 }
-    </style>
+</style>
 </head>
 
-<body data-vb-progress-start="#c7ff3d" data-vb-progress-mid="#546cff" data-vb-progress-end="#ff6b2c">
+<body data-vb-progress-start="#4285f4" data-vb-progress-mid="#ea4335" data-vb-progress-end="#fbbc04">
 
     <!-- the shared street geometry: one real Eixample slice, used by every
          scene and by the hero plate. © OpenStreetMap contributors. -->
@@ -688,15 +717,15 @@ a { color: inherit; }
             </div>
         </div>
         <div class="hero-spec">
-            <span class="mark-b" aria-hidden="true"></span>
+            
             <svg viewBox="383 -297 3200 2050" role="img" aria-label="The settled route across Barcelona's Eixample, from Carrer de Còrsega to Carrer de Sardenya">
                 <use href="#stLoc" class="st-loc"/>
                 <use href="#stTer" class="st-ter"/>
                 <use href="#stArt" class="st-art"/>
                 <path class="route-glow" d="M853 1408L831 1426L817 1437L772 1473L768 1476L766 1477L757 1484L742 1493M742 1493L719 1477L717 1475L695 1459L681 1449M681 1449L654 1429L652 1427L645 1423M645 1423L643 1400M643 1400L644 1398L646 1397M646 1397L652 1392L701 1356M701 1356L714 1346L722 1341L742 1326M742 1326L760 1313L765 1308L807 1277L808 1276M808 1276L833 1257L836 1255L858 1238M858 1238L874 1227L878 1224L912 1198M912 1198L947 1173L950 1171L968 1158L971 1155M971 1155L992 1140L1039 1106M1039 1106L1061 1089L1064 1087L1085 1071M1085 1071L1077 1064L1065 1055L1040 1036L1002 1008M1002 1008L978 990L977 989L972 986L967 982M967 982L954 973L951 970L943 964M943 964L941 963L935 958L931 955M931 955L930 955M930 955L951 949L957 948L1105 910L1110 909L1115 907L1120 906L1250 873L1253 872L1271 868M1271 868L1292 863L1298 861L1302 860L1332 852M1332 852L1343 849M1366 844L1361 845L1352 847L1349 848L1343 849M1387 839L1366 844M1700 760L1696 761L1633 776L1495 811L1490 812L1396 836L1390 838L1387 839M1700 760L1707 759L1732 757L1737 756M1737 756L1743 756M1743 756L1753 755L1762 753M1762 753L1771 750M1771 750L1785 744L1797 740L1801 738L1804 738L1829 730L1835 727L1839 725L1843 723M1843 723L1846 722M1846 722L1863 718L1908 707L1923 704L1931 702L1943 698M1943 698L1957 695L1962 694L2031 676M2031 676L2071 665M2071 665L2088 651L2094 645M2094 645L2098 642M2098 642L2124 624L2127 622L2168 591M2168 591L2170 589L2188 576L2210 559M2210 559L2232 542L2302 491L2304 489L2319 477L2321 476L2325 473M2325 473L2339 462L2345 458L2382 430M2382 430L2413 406L2416 404L2438 387M2438 387L2459 372L2503 340L2514 331L2516 330L2534 317M2534 317L2538 314L2547 307L2551 304L2565 294L2568 292M2568 292L2587 277L2645 234L2647 232L2667 217M2667 217L2686 203L2725 174M2725 174L2756 150L2758 149L2776 135M2776 135L2781 131L2799 117L2824 97L2829 94L2856 73L2868 64L2871 63L2890 48M2890 48L2910 33L2982 -20L2984 -21L3005 -37M3005 -37L3026 -21L3063 7M3063 7L3087 26L3089 28L3093 31L3117 50M3117 50L3122 53L3135 64M3135 64L3138 65L3166 87L3176 94L3201 113L3206 117L3209 119L3230 135M3230 135L3235 139L3255 153L3320 201L3323 203"/>
                 <path class="route" d="M853 1408L831 1426L817 1437L772 1473L768 1476L766 1477L757 1484L742 1493M742 1493L719 1477L717 1475L695 1459L681 1449M681 1449L654 1429L652 1427L645 1423M645 1423L643 1400M643 1400L644 1398L646 1397M646 1397L652 1392L701 1356M701 1356L714 1346L722 1341L742 1326M742 1326L760 1313L765 1308L807 1277L808 1276M808 1276L833 1257L836 1255L858 1238M858 1238L874 1227L878 1224L912 1198M912 1198L947 1173L950 1171L968 1158L971 1155M971 1155L992 1140L1039 1106M1039 1106L1061 1089L1064 1087L1085 1071M1085 1071L1077 1064L1065 1055L1040 1036L1002 1008M1002 1008L978 990L977 989L972 986L967 982M967 982L954 973L951 970L943 964M943 964L941 963L935 958L931 955M931 955L930 955M930 955L951 949L957 948L1105 910L1110 909L1115 907L1120 906L1250 873L1253 872L1271 868M1271 868L1292 863L1298 861L1302 860L1332 852M1332 852L1343 849M1366 844L1361 845L1352 847L1349 848L1343 849M1387 839L1366 844M1700 760L1696 761L1633 776L1495 811L1490 812L1396 836L1390 838L1387 839M1700 760L1707 759L1732 757L1737 756M1737 756L1743 756M1743 756L1753 755L1762 753M1762 753L1771 750M1771 750L1785 744L1797 740L1801 738L1804 738L1829 730L1835 727L1839 725L1843 723M1843 723L1846 722M1846 722L1863 718L1908 707L1923 704L1931 702L1943 698M1943 698L1957 695L1962 694L2031 676M2031 676L2071 665M2071 665L2088 651L2094 645M2094 645L2098 642M2098 642L2124 624L2127 622L2168 591M2168 591L2170 589L2188 576L2210 559M2210 559L2232 542L2302 491L2304 489L2319 477L2321 476L2325 473M2325 473L2339 462L2345 458L2382 430M2382 430L2413 406L2416 404L2438 387M2438 387L2459 372L2503 340L2514 331L2516 330L2534 317M2534 317L2538 314L2547 307L2551 304L2565 294L2568 292M2568 292L2587 277L2645 234L2647 232L2667 217M2667 217L2686 203L2725 174M2725 174L2756 150L2758 149L2776 135M2776 135L2781 131L2799 117L2824 97L2829 94L2856 73L2868 64L2871 63L2890 48M2890 48L2910 33L2982 -20L2984 -21L3005 -37M3005 -37L3026 -21L3063 7M3063 7L3087 26L3089 28L3093 31L3117 50M3117 50L3122 53L3135 64M3135 64L3138 65L3166 87L3176 94L3201 113L3206 117L3209 119L3230 135M3230 135L3235 139L3255 153L3320 201L3323 203"/>
-                <circle class="pin" cx="853" cy="1408" r="7"/>
-                <circle class="pin" cx="3323" cy="203" r="7"/>
+                <circle class="pin pin-o" cx="853" cy="1408" r="7"/>
+                <circle class="pin pin-d" cx="3323" cy="203" r="7"/>
             </svg>
             <div class="hero-spec-label">CÒRSEGA → SARDENYA · <b>3,464 M · 53 JUNCTIONS</b></div>
         </div>
@@ -749,7 +778,7 @@ a { color: inherit; }
                         <path class="dots dots-v" id="dotsAll" d="M513 1666l1 0M402 1749l1 0M291 1836l1 0M400 1584l1 0M516 1497l1 0M619 1419l1 0M858 1238l1 0M741 1152l1 0M704 1125l1 0M629 1069l1 0M1201 1491l1 0M1101 1393l1 0M971 1320l1 0M2209 726l1 0M2097 813l1 0M2550 -36l1 0M2664 50l1 0M2720 92l1 0M2776 135l1 0M2101 131l1 0M2143 164l1 0M3644 1470l1 0M3555 1401l1 0M2892 388l1 0M2834 431l1 0M209 1269l1 0M281 1320l1 0M288 1496l1 0M435 1093l1 0M515 1153l1 0M855 1578l1 0M728 1675l1 0M628 1752l1 0M517 1837l1 0M240 1361l1 0M254 1342l1 0M1309 1237l1 0M1423 1152l1 0M1536 1069l1 0M2098 642l1 0M2168 591l1 0M1880 638l1 0M1881 642l1 0M1891 657l1 0M1675 517l1 0M1627 547l1 0M1515 310l1 0M1467 265l1 0M1577 868l1 0M1563 879l1 0M1422 982l1 0M1310 1068l1 0M1196 1152l1 0M150 863l1 0M205 905l1 0M260 949l1 0M372 1036l1 0M210 978l1 0M312 918l1 0M410 860l1 0M505 803l1 0M517 797l1 0M-99 597l1 0M16 688l1 0M90 747l1 0M147 791l1 0M658 1011l1 0M549 921l1 0M668 633l1 0M598 675l1 0M556 699l1 0M449 762l1 0M355 816l1 0M255 875l1 0M155 935l1 0M200 833l1 0M300 774l1 0M394 718l1 0M507 651l1 0M547 628l1 0M598 597l1 0M678 552l1 0M727 522l1 0M731 520l1 0M1051 132l1 0M963 175l1 0M886 212l1 0M869 62l1 0M2003 420l1 0M1878 504l1 0M1409 302l1 0M1377 275l1 0M1571 491l1 0M1619 459l1 0M1479 336l1 0M1519 371l1 0M1812 -31l1 0M1867 15l1 0M1937 330l1 0M1883 368l1 0M1790 364l1 0M1897 449l1 0M2031 351l1 0M1969 396l1 0M1972 221l1 0M1891 284l1 0M1937 319l1 0M2050 451l1 0M1920 607l1 0M1836 531l1 0M1478 398l1 0M1520 440l1 0M953 284l1 0M1031 348l1 0M1080 317l1 0M1001 254l1 0M1348 163l1 0M1408 218l1 0M1516 113l1 0M1559 81l1 0M1480 81l1 0M1402 10l1 0M1700 16l1 0M1717 32l1 0M2067 318l1 0M2197 206l1 0M1649 760l1 0M1517 654l1 0M1369 685l1 0M1410 723l1 0M-2 188l1 0M22 179l1 0M93 62l1 0M141 25l1 0M175 -6l1 0M231 -53l1 0M284 -95l1 0M359 -160l1 0M790 133l1 0M815 120l1 0M785 68l1 0M730 -5l1 0M338 456l1 0M253 518l1 0M190 564l1 0M108 620l1 0M-66 746l1 0M3 809l1 0M184 680l1 0M267 621l1 0M326 578l1 0M-28 1558l1 0M-1 1458l1 0M18 1388l1 0M32 1330l1 0M79 1199l1 0M420 205l1 0M462 168l1 0M493 142l1 0M556 88l1 0M253 101l1 0M1089 577l1 0M1165 655l1 0M2311 147l1 0M2344 123l1 0M18 1586l1 0M-219 1442l1 0M1081 582l1 0M923 481l1 0M846 430l1 0M1161 530l1 0M1253 605l1 0M3353 1661l1 0M2795 1608l1 0M2738 1629l1 0M2607 1457l1 0M2629 1476l1 0M2665 1486l1 0M2653 1458l1 0M3783 1241l1 0M3631 1295l1 0M3562 1321l1 0M2529 1572l1 0M2518 1554l1 0M1679 56l1 0M1592 110l1 0M923 294l1 0M1095 193l1 0M1497 168l1 0M1454 192l1 0M1165 263l1 0M1203 244l1 0M1254 218l1 0M797 96l1 0M603 1416l1 0M503 1400l1 0M1727 101l1 0M1639 156l1 0M1033 93l1 0M1133 67l1 0M1230 66l1 0M1322 8l1 0M1283 204l1 0M1231 154l1 0M1174 101l1 0M1191 30l1 0M1101 -51l1 0M1112 21l1 0M1082 -41l1 0M1281 -30l1 0M993 7l1 0M1318 271l1 0M1508 238l1 0M1435 237l1 0M1392 452l1 0M1816 186l1 0M1730 238l1 0M2209 389l1 0M2177 372l1 0M2157 362l1 0M3294 923l1 0M3373 864l1 0M1975 13l1 0M1936 -27l1 0M2655 1436l1 0M2700 1403l1 0M3035 1519l1 0M3078 1553l1 0M3139 1509l1 0M3174 1504l1 0M3286 1583l1 0M3389 1504l1 0M2922 1707l1 0M2916 1684l1 0M2655 1661l1 0M2619 1675l1 0M3301 1724l1 0M3470 1852l1 0M2069 -39l1 0M2196 60l1 0M298 1132l1 0M373 1109l1 0M3336 861l1 0M3256 830l1 0M3369 958l1 0M3476 1009l1 0M3419 898l1 0M3436 863l1 0M3451 845l1 0M2051 167l1 0M2038 155l1 0M1984 112l1 0M13 987l1 0M58 859l1 0M2500 1539l1 0M1490 826l1 0M1498 832l1 0M560 285l1 0M507 293l1 0M2096 476l1 0M2210 559l1 0M1574 606l1 0M1497 541l1 0M1468 516l1 0M1440 493l1 0M910 240l1 0M3143 1260l1 0M3257 1176l1 0M3369 1091l1 0M3163 1455l1 0M3141 1431l1 0M378 -32l1 0M326 12l1 0M299 45l1 0M282 65l1 0M242 115l1 0M219 -138l1 0M456 20l1 0M657 155l1 0M546 274l1 0M204 160l1 0M135 129l1 0M-176 1l1 0M792 67l1 0M734 100l1 0M576 211l1 0M-43 269l1 0M27 328l1 0M143 426l1 0M193 467l1 0M408 330l1 0M306 249l1 0M495 402l1 0M627 510l1 0M731 595l1 0M786 643l1 0M128 356l1 0M92 291l1 0M55 231l1 0M349 83l1 0M25 183l1 0M396 191l1 0M-136 534l1 0M-61 485l1 0M13 433l1 0M91 380l1 0M677 273l1 0M614 236l1 0M1372 829l1 0M1335 769l1 0M1303 723l1 0M1270 689l1 0M418 1002l1 0M487 959l1 0M1434 111l1 0M1391 137l1 0M1338 87l1 0M1645 360l1 0M1684 195l1 0M1946 137l1 0M1907 163l1 0M370 481l1 0M549 368l1 0M618 323l1 0M680 285l1 0M761 330l1 0M719 302l1 0M699 377l1 0M626 433l1 0M578 471l1 0M464 558l1 0M429 582l1 0M375 619l1 0M323 663l1 0M2009 259l1 0M2094 200l1 0M2168 184l1 0M2022 272l1 0M1739 324l1 0M1783 289l1 0M1146 375l1 0M1232 318l1 0M1063 431l1 0M1006 432l1 0M1566 619l1 0M1579 609l1 0M1793 559l1 0M1749 586l1 0M1651 647l1 0M1697 619l1 0M-147 313l1 0M-44 390l1 0M120 512l1 0M-119 -39l1 0M15 12l1 0M541 -28l1 0M1926 1456l1 0M1927 1536l1 0M1820 1455l1 0M1967 1566l1 0M1983 1070l1 0M2096 1159l1 0M77 1633l1 0M-74 1676l1 0M-108 1693l1 0M-7 1609l1 0M102 1525l1 0M2805 1350l1 0M3111 1069l1 0M2998 1154l1 0M3599 754l1 0M3713 668l1 0M1526 51l1 0M1449 -18l1 0M875 715l1 0M826 620l1 0M780 566l1 0M679 478l1 0M909 939l1 0M928 923l1 0M380 62l1 0M322 9l1 0M514 256l1 0M698 183l1 0M640 19l1 0M683 -19l1 0M470 302l1 0M-87 1366l1 0M3059 1495l1 0M1867 817l1 0M1793 756l1 0M3135 64l1 0M3230 135l1 0M2871 1580l1 0M2825 1598l1 0M1985 728l1 0M2032 694l1 0M3184 169l1 0M3169 181l1 0M3323 203l1 0M2792 461l1 0M2679 377l1 0M2568 292l1 0M1820 1518l1 0M1199 984l1 0M1536 1238l1 0M1647 1323l1 0M1763 1410l1 0M855 1067l1 0M971 1155l1 0M1198 637l1 0M1069 710l1 0M1697 326l1 0M819 1039l1 0M3285 104l1 0M3392 184l1 0M3193 177l1 0M3297 255l1 0M3514 158l1 0M3626 75l1 0M2497 5l1 0M2612 90l1 0M2725 174l1 0M2249 246l1 0M2130 350l1 0M2151 360l1 0M2265 258l1 0M2101 407l1 0M2062 376l1 0M1764 735l1 0M1755 727l1 0M2663 559l1 0M2598 608l1 0M1753 772l1 0M1836 840l1 0M115 1476l1 0M1846 722l1 0M1943 698l1 0M2800 503l1 0M2887 563l1 0M401 1413l1 0M1775 767l1 0M1851 828l1 0M2625 1434l1 0M2523 1347l1 0M2590 1426l1 0M1856 244l1 0M1941 192l1 0M1347 295l1 0M1379 321l1 0M1430 363l1 0M1141 176l1 0M1182 220l1 0M1858 21l1 0M1545 466l1 0M1372 -22l1 0M1260 135l1 0M1839 667l1 0M1753 9l1 0M1450 698l1 0M1614 -5l1 0M1379 60l1 0M1766 76l1 0M1815 122l1 0M1833 330l1 0M139 1530l1 0M184 1352l1 0M3063 7l1 0M3190 -91l1 0M2603 1452l1 0M2713 1526l1 0M2738 1545l1 0M2810 1584l1 0M2474 1571l1 0M2501 1564l1 0M2486 1553l1 0M1953 320l1 0M1945 325l1 0M1355 673l1 0M1327 689l1 0M1722 1100l1 0M1834 1183l1 0M219 1156l1 0M209 1176l1 0M248 1176l1 0M258 1163l1 0M2272 5l1 0M2386 90l1 0M3029 1611l1 0M3043 1594l1 0M2230 36l1 0M2103 -61l1 0M2282 125l1 0M3168 1468l1 0M3420 916l1 0M2460 210l1 0M2437 231l1 0M1082 1750l1 0M967 1663l1 0M570 1369l1 0M609 1397l1 0M203 1115l1 0M-213 1211l1 0M224 1544l1 0M338 1630l1 0M77 1020l1 0M56 1044l1 0M-34 1144l1 0M1598 321l1 0M1651 288l1 0M1565 412l1 0M3056 345l1 0M3170 258l1 0M1360 832l1 0M815 455l1 0M852 483l1 0M1271 868l1 0M1284 877l1 0M1219 894l1 0M387 1105l1 0M-10 1015l1 0M171 1102l1 0M213 1088l1 0M1771 750l1 0M1843 723l1 0M28 556l1 0M-113 441l1 0M3283 1643l1 0M3328 1685l1 0M1973 23l1 0M1967 26l1 0M3393 769l1 0M3504 683l1 0M3167 762l1 0M3275 680l1 0M3514 690l1 0M3627 602l1 0M3333 958l1 0M3469 826l1 0M3244 994l1 0M3005 -37l1 0M3117 50l1 0M1700 760l1 0M1737 756l1 0M2514 251l1 0M2448 201l1 0M2389 157l1 0M2667 217l1 0M2415 226l1 0M2128 412l1 0M240 725l1 0M2230 1783l1 0M2354 1689l1 0M514 943l1 0M675 842l1 0M734 806l1 0M2895 557l1 0M2824 495l1 0M3225 819l1 0M3288 897l1 0M3345 733l1 0M3229 645l1 0M3517 789l1 0M1311 898l1 0M2379 1707l1 0M2515 1570l1 0M2572 1519l1 0M2212 1769l1 0M2338 1677l1 0M198 1302l1 0M106 1673l1 0M116 1624l1 0M147 1348l1 0M69 1336l1 0M3490 1428l1 0M3540 1391l1 0M3581 41l1 0M3651 94l1 0M3468 -44l1 0M3360 38l1 0M3232 1625l1 0M2040 516l1 0M2325 814l1 0M2211 899l1 0M2325 986l1 0M1983 561l1 0M2268 770l1 0M2439 900l1 0M2426 234l1 0M2534 317l1 0M1366 844l1 0M1343 849l1 0M1714 738l1 0M1496 798l1 0M1557 625l1 0M2901 1277l1 0M930 955l1 0M1184 800l1 0M606 1050l1 0M1435 360l1 0M1457 346l1 0M1809 751l1 0M1962 712l1 0M428 1389l1 0M362 1379l1 0M397 1239l1 0M627 1239l1 0M513 1326l1 0M3047 442l1 0M3064 431l1 0M3092 410l1 0M1896 626l1 0M2439 728l1 0M2365 784l1 0M2678 719l1 0M2779 643l1 0M2553 816l1 0M168 1410l1 0M3251 1348l1 0M1981 562l1 0M1958 580l1 0M2325 473l1 0M2382 430l1 0M3333 1407l1 0M3423 1478l1 0M2261 600l1 0M2277 611l1 0M2919 1263l1 0M3032 1178l1 0M1085 1071l1 0M1002 1008l1 0M1082 1237l1 0M1039 1106l1 0M3491 784l1 0M3455 816l1 0M282 410l1 0M225 447l1 0M456 1196l1 0M853 1408l1 0M742 1493l1 0M742 1326l1 0M808 1276l1 0M643 1400l1 0M967 1494l1 0M414 1253l1 0M3583 210l1 0M3455 306l1 0M3015 1166l1 0M2925 1209l1 0M3146 1093l1 0M3130 1081l1 0M578 1031l1 0M349 1088l1 0M1305 1583l1 0M1919 1358l1 0M1987 1409l1 0M1308 1408l1 0M1265 1442l1 0M2037 1203l1 0M2165 1106l1 0M1305 1751l1 0M1423 1668l1 0M1648 1495l1 0M1874 1326l1 0M-257 1285l1 0M192 1169l1 0M1130 1104l1 0M1677 963l1 0M1791 1046l1 0M1905 1129l1 0M1031 1199l1 0M681 1449l1 0M360 1098l1 0M333 1105l1 0M592 1040l1 0M2820 489l1 0M2809 474l1 0M2761 484l1 0M3067 1507l1 0M3041 1516l1 0M2960 508l1 0M3005 475l1 0M1175 522l1 0M1185 524l1 0M1340 556l1 0M1458 610l1 0M2785 498l1 0M1717 491l1 0M1602 387l1 0M1555 347l1 0M799 37l1 0M812 10l1 0M1045 606l1 0M1926 684l1 0M1788 719l1 0M2472 585l1 0M2642 542l1 0M208 1179l1 0M183 1238l1 0M1475 209l1 0M3442 835l1 0M917 945l1 0M286 1102l1 0M238 1091l1 0M844 976l1 0M1291 731l1 0M1381 657l1 0M1405 643l1 0M1324 709l1 0M1358 545l1 0M1257 470l1 0M969 390l1 0M1197 419l1 0M1284 362l1 0M1100 407l1 0M1135 437l1 0M1211 629l1 0M3679 642l1 0M3565 728l1 0M2890 48l1 0M2835 6l1 0M2779 -35l1 0M2665 -121l1 0M2898 1247l1 0M2963 1207l1 0M2861 1283l1 0M2909 1255l1 0M2735 468l1 0M2407 239l1 0M2323 302l1 0M287 132l1 0M615 21l1 0M616 38l1 0M642 37l1 0M793 305l1 0M708 289l1 0M857 175l1 0M898 228l1 0M909 343l1 0M806 296l1 0M426 208l1 0M177 1580l1 0M1237 676l1 0M1151 450l1 0M1639 19l1 0M1638 558l1 0M1647 1155l1 0M1652 1159l1 0M2550 472l1 0M2439 556l1 0M2637 1441l1 0M2287 1181l1 0M2397 1270l1 0M1760 1580l1 0M1647 1665l1 0M2301 1172l1 0M1976 905l1 0M1961 916l1 0M1422 1325l1 0M2276 1190l1 0M2383 1281l1 0M1967 898l1 0M2070 1005l1 0M3279 99l1 0M3004 134l1 0M2890 219l1 0M2779 302l1 0M1871 1666l1 0M1857 1655l1 0M1533 1409l1 0M1532 1751l1 0M2004 1566l1 0M2080 1510l1 0M455 1088l1 0M646 1397l1 0M701 1356l1 0M645 1423l1 0M2796 1590l1 0M2811 1603l1 0M2779 1597l1 0M2762 1545l1 0M2893 1665l1 0M2858 1637l1 0M2834 1616l1 0M2690 1647l1 0M1946 928l1 0M1806 1035l1 0M1936 921l1 0M1759 1240l1 0M1548 212l1 0M1356 39l1 0M863 -154l1 0M2263 1032l1 0M2157 953l1 0M-181 66l1 0M4 250l1 0M-10 226l1 0M1256 540l1 0M1208 499l1 0M1521 826l1 0M2886 1238l1 0M2771 1325l1 0M2031 676l1 0M2054 781l1 0M2113 653l1 0M2451 567l1 0M2321 644l1 0M2619 525l1 0M2716 501l1 0M3007 641l1 0M2550 984l1 0M2436 1070l1 0M2071 665l1 0M2133 669l1 0M2094 645l1 0M2119 658l1 0M3582 741l1 0M3647 691l1 0M3342 561l1 0M3458 648l1 0M2438 387l1 0M2142 440l1 0M3486 1350l1 0M3399 346l1 0M3343 389l1 0M3468 316l1 0M3481 325l1 0M3571 389l1 0M3687 477l1 0M3641 259l1 0M3123 388l1 0M3231 304l1 0M3303 250l1 0M2750 493l1 0M2715 520l1 0M2741 473l1 0M2768 487l1 0M1958 208l1 0M2749 1554l1 0M499 587l1 0M3588 1094l1 0M3486 1003l1 0M3481 1177l1 0M3370 1262l1 0M3710 1174l1 0M3597 1087l1 0M3703 1180l1 0M3593 1261l1 0M577 762l1 0M668 846l1 0M1387 839l1 0M762 996l1 0M426 1082l1 0M1831 1536l1 0M1726 747l1 0M1706 692l1 0M1643 640l1 0M1115 895l1 0M1035 832l1 0M954 775l1 0M3298 968l1 0M2892 728l1 0M2991 803l1 0M3020 824l1 0M3118 899l1 0M3230 984l1 0M2115 1506l1 0M2169 1548l1 0M740 2005l1 0M290 1665l1 0M2531 630l1 0M1422 1495l1 0M1537 1582l1 0M2563 1167l1 0M2613 1205l1 0M2776 1155l1 0M2708 1103l1 0M3293 427l1 0M3229 476l1 0M3116 560l1 0M3061 600l1 0M276 1366l1 0M-67 1315l1 0M776 1007l1 0M750 987l1 0M2217 220l1 0M3118 392l1 0M1250 669l1 0M697 274l1 0M768 229l1 0M688 280l1 0M835 274l1 0M3574 562l1 0M3458 474l1 0M3112 733l1 0M3120 727l1 0M3021 971l1 0M3000 988l1 0M2990 996l1 0M2889 1071l1 0M2367 1466l1 0M2212 1581l1 0M2661 1242l1 0M2191 1597l1 0M2006 1735l1 0M2663 899l1 0M2763 975l1 0M2791 996l1 0M2915 1432l1 0M2787 1337l1 0M2407 1623l1 0M3260 1007l1 0M1517 819l1 0M1082 1580l1 0M1020 1624l1 0M1224 1473l1 0M3472 125l1 0M1985 1751l1 0M1910 1694l1 0M853 1922l1 0M1113 895l1 0M3266 1432l1 0M3070 1377l1 0M2985 1538l1 0M3001 1494l1 0M2100 1028l1 0M2149 946l1 0M2114 972l1 0M2376 852l1 0M2181 1094l1 0M2195 1083l1 0M3688 -40l1 0M2054 1017l1 0M3543 69l1 0M943 964l1 0M931 955l1 0M2695 1689l1 0M275 1159l1 0M211 1151l1 0M970 396l1 0M935 370l1 0M1089 517l1 0M1043 471l1 0M1094 522l1 0M1124 553l1 0M76 536l1 0M833 -49l1 0M591 305l1 0M201 1131l1 0M292 1108l1 0M285 1153l1 0M299 1125l1 0M333 1073l1 0M912 1198l1 0M155 1463l1 0M991 641l1 0M1035 612l1 0M609 882l1 0M1019 446l1 0M2579 1689l1 0M2494 1722l1 0M55 1759l1 0M121 1450l1 0M158 1311l1 0M949 602l1 0M2275 120l1 0M393 1090l1 0M1332 852l1 0M160 1154l1 0M177 1150l1 0M2255 354l1 0M3216 1016l1 0M2727 1383l1 0M2763 1355l1 0M2433 1602l1 0M3169 1026l1 0M3223 1448l1 0M3345 219l1 0M3436 290l1 0M2902 1442l1 0M1736 716l1 0M3020 -221l1 0M2555 133l1 0M2499 174l1 0M2463 199l1 0M3030 1347l1 0M2956 1292l1 0M3308 1388l1 0M3594 921l1 0M3706 838l1 0M3480 836l1 0M2324 1666l1 0M1194 1665l1 0M1110 1559l1 0M444 1276l1 0M1373 831l1 0M2944 431l1 0M2328 -36l1 0M1200 505l1 0M1166 527l1 0M1348 414l1 0M2976 1541l1 0M2953 1550l1 0M-66 1030l1 0M563 1365l1 0M3210 795l1 0M927 365l1 0M929 356l1 0M1137 499l1 0M1168 525l1 0M3234 813l1 0M3151 416l1 0M2999 649l1 0M3706 1005l1 0M2374 1024l1 0M2346 1138l1 0M908 1539l1 0M943 1513l1 0M3118 218l1 0M3025 288l1 0M2946 261l1 0M3003 304l1 0M3134 1436l1 0M3092 1469l1 0M1259 858l1 0M1328 553l1 0M34 334l1 0M2266 1369l1 0M2150 1285l1 0M1920 1118l1 0M2477 1546l1 0M2493 1535l1 0M916 322l1 0M916 1699l1 0M852 1748l1 0M836 1737l1 0M758 1680l1 0M919 1547l1 0M3348 217l1 0M41 -54l1 0M1474 146l1 0M1955 707l1 0M2166 864l1 0M2533 1144l1 0M2741 1302l1 0M2816 1185l1 0M2649 1059l1 0M2593 1017l1 0M2478 930l1 0M2215 730l1 0M2169 695l1 0M946 368l1 0M1557 282l1 0M1600 254l1 0M1690 200l1 0M1604 255l1 0M1775 147l1 0M1838 108l1 0M1856 96l1 0M1918 57l1 0M1988 13l1 0M1981 18l1 0M2026 -12l1 0M2370 192l1 0M1406 8l1 0M1349 253l1 0M1289 199l1 0M83 1822l1 0M174 1753l1 0M645 723l1 0M2766 56l1 0M3042 334l1 0M3186 171l1 0M2901 1569l1 0M1194 1321l1 0M2621 1640l1 0M925 573l1 0M3144 410l1 0M3314 367l1 0M-29 262l1 0M1323 774l1 0M1691 952l1 0M1606 1123l1 0M2285 618l1 0M2299 628l1 0M3023 801l1 0M3108 738l1 0M2162 1103l1 0M2085 994l1 0M2192 1080l1 0M2406 1264l1 0M2507 1359l1 0M2413 1258l1 0M2307 1176l1 0M2798 970l1 0M2867 917l1 0M2391 1286l1 0M2493 1369l1 0M2598 1456l1 0M2382 1454l1 0M2606 515l1 0M1805 53l1 0M497 145l1 0M102 1695l1 0M-123 693l1 0M2535 1578l1 0M2614 1635l1 0M2850 484l1 0M1884 144l1 0M16 1191l1 0M88 1173l1 0M3792 1290l1 0M100 893l1 0M283 1035l1 0M879 404l1 0M2822 1606l1 0M2708 526l1 0M2941 351l1 0M1697 1193l1 0M1575 1377l1 0M3662 1149l1 0M485 240l1 0M878 508l1 0M1266 1376l1 0M1976 20l1 0M2259 1392l1 0M2264 1390l1 0M2118 1481l1 0M2238 1393l1 0M2085 1483l1 0M2037 1447l1 0M2110 1481l1 0M2107 1510l1 0M1779 1736l1 0M1853 1679l1 0M2910 899l1 0M2910 885l1 0M2867 901l1 0M2867 884l1 0M2909 915l1 0M2664 1070l1 0M2572 1141l1 0M2599 1118l1 0M2678 1081l1 0M2682 1077l1 0M2683 1055l1 0M2644 1064l1 0M2644 1086l1 0M2549 1156l1 0M2415 1257l1 0M2457 1225l1 0M2555 1171l1 0M2544 1141l1 0M2529 1171l1 0M2566 633l1 0M2538 653l1 0M2643 715l1 0M2567 657l1 0M2489 691l1 0M2546 657l1 0M2549 631l1 0M2650 740l1 0M2755 799l1 0M2681 742l1 0M2645 731l1 0M2681 723l1 0M2960 457l1 0M3021 1000l1 0M3208 1021l1 0M2928 1270l1 0M2906 1273l1 0M364 358l1 0M2983 459l1 0M2756 1001l1 0M2787 999l1 0M2983 831l1 0M2987 974l1 0M2795 801l1 0M2799 832l1 0M2760 827l1 0M2022 1214l1 0M1887 1677l1 0M1891 1651l1 0M1853 1658l1 0M2281 1379l1 0M2283 1357l1 0M861 903l1 0M801 949l1 0M1966 1594l1 0M2612 1109l1 0M2604 1102l1 0M3254 1661l1 0M3238 1620l1 0M620 619l1 0M1726 708l1 0M1772 757l1 0M1743 756l1 0M1756 763l1 0M1762 753l1 0M1792 755l1 0M2975 453l1 0M3441 336l1 0M2950 435l1 0M3110 736l1 0M1138 1708l1 0M1820 1535l1 0M3285 345l1 0M2701 531l1 0M2626 1098l1 0M2497 1196l1 0M1208 46l1 0M1714 342l1 0M1760 386l1 0M1854 480l1 0M1943 415l1 0M2142 356l1 0M2108 340l1 0M2072 321l1 0M2030 280l1 0M1975 219l1 0M2005 254l1 0M1915 170l1 0M1887 143l1 0M1684 -50l1 0M1962 94l1 0M2441 48l1 0M1834 256l1 0M3664 320l1 0M2251 1380l1 0M2276 1630l1 0M150 1482l1 0M86 1593l1 0M808 461l1 0M775 569l1 0M85 376l1 0M39 338l1 0M714 683l1 0M635 728l1 0M655 718l1 0M2136 1296l1 0M322 1111l1 0M325 1109l1 0M1733 751l1 0M3639 168l1 0M3176 515l1 0M2833 772l1 0M2720 857l1 0M2608 941l1 0M2213 1238l1 0M2049 1362l1 0M1881 1489l1 0M1624 1683l1 0M1740 1736l1 0M1586 1711l1 0M362 1612l1 0M3249 1438l1 0M2715 1710l1 0M655 348l1 0M871 500l1 0M1025 672l1 0M2317 1661l1 0M2383 -78l1 0M2520 -13l1 0M97 1723l1 0M1968 1081l1 0M1354 1545l1 0M1694 1530l1 0M1355 1272l1 0M967 982l1 0M810 1032l1 0M1376 1459l1 0M137 1160l1 0M-6 1197l1 0M1743 763l1 0M2601 434l1 0M1246 686l1 0M710 293l1 0M3058 1643l1 0M628 29l1 0M784 -27l1 0M1442 703l1 0"/>
                         <path class="ex-edge" d="M853 1408L831 1426L817 1437L772 1473L768 1476L766 1477L757 1484L742 1493"/>
                         <circle class="pin pin-o" cx="853" cy="1408" r="7"/>
-                        <circle class="pin-ring" cx="853" cy="1408" r="13"/>
+                        <circle class="pin-ring ring-o" cx="853" cy="1408" r="13"/>
                         <circle class="pin pin-d" cx="3323" cy="203" r="7"/>
                         <circle class="pin-ring" cx="3323" cy="203" r="13"/>
                         <text class="mlab lab-o" x="853" y="1448">CÒRSEGA · ORIGIN</text>
