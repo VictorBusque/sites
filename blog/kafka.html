@@ -1,9 +1,53 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>How Kafka Swallows a Trillion Messages</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>How Kafka Handles 7 Trillion Messages a Day — Víctor Busqué</title>
+<meta name="description" content="Six design decisions — an append-only log, partitions, replication, zero-copy reads, batching — that let Kafka absorb LinkedIn's 7 trillion messages a day.">
+<meta name="author" content="Víctor Busqué">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://engineering.victorbusque.com/blog/kafka.html">
+<link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#E4572E">
+<meta name="color-scheme" content="light">
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Víctor Busqué — Curiosities">
+<meta property="og:title" content="How Kafka Handles 7 Trillion Messages a Day — Víctor Busqué">
+<meta property="og:description" content="Six design decisions — an append-only log, partitions, replication, zero-copy reads, batching — that let Kafka absorb LinkedIn's 7 trillion messages a day.">
+<meta property="og:url" content="https://engineering.victorbusque.com/blog/kafka.html">
+<meta property="og:image" content="https://engineering.victorbusque.com/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="en_US">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How Kafka Handles 7 Trillion Messages a Day — Víctor Busqué">
+<meta name="twitter:description" content="Six design decisions — an append-only log, partitions, replication, zero-copy reads, batching — that let Kafka absorb LinkedIn's 7 trillion messages a day.">
+<meta name="twitter:image" content="https://engineering.victorbusque.com/img/og.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "How Kafka Handles 7 Trillion Messages a Day",
+  "description": "Six design decisions — an append-only log, partitions, replication, zero-copy reads, batching — that let Kafka absorb LinkedIn's 7 trillion messages a day.",
+  "datePublished": "2026-08",
+  "author": {"@type": "Person", "name": "Víctor Busqué", "url": "https://engineering.victorbusque.com/"},
+  "publisher": {"@type": "Person", "name": "Víctor Busqué"},
+  "image": "https://engineering.victorbusque.com/img/og.png",
+  "url": "https://engineering.victorbusque.com/blog/kafka.html",
+  "mainEntityOfPage": "https://engineering.victorbusque.com/blog/kafka.html",
+  "inLanguage": "en",
+  "keywords": ["Kafka", "event streaming", "append-only log", "partitions", "zero copy"],
+  "articleSection": "Distributed systems · Messaging"
+}
+</script>
+
+<script>document.documentElement.className='js';</script>
+<link rel="stylesheet" href="../css/post-progress.css">
+<link rel="stylesheet" href="../css/post-nav.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
@@ -18,7 +62,9 @@
 html{scroll-behavior:smooth}
 body{background:var(--paper);color:var(--txt);font-family:var(--body);font-size:18px;line-height:1.75;overflow-x:hidden}
 ::selection{background:var(--accent);color:#fff}
-#progress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--accent);z-index:60}
+.skip{position:absolute;left:-9999px;top:0;z-index:99;background:var(--ink);color:#fff;padding:10px 16px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none}
+.skip:focus{left:12px;top:12px}
 #chapchip{position:fixed;left:18px;bottom:18px;z-index:50;font-family:var(--mono);font-size:10px;letter-spacing:.18em;
   color:var(--ink2);background:var(--paper);border:1px solid var(--line);padding:7px 12px;text-transform:uppercase}
 @media(max-width:640px){#chapchip{display:none}}
@@ -53,9 +99,9 @@ body{background:var(--paper);color:var(--txt);font-family:var(--body);font-size:
 .stage-col{position:sticky;top:0;height:100vh;height:100svh;align-self:start;display:flex;align-items:center}
 .stage{width:100%}
 .viz{position:relative;width:100%;height:min(62vh,490px);background:var(--panel);border:1px solid var(--line);border-radius:10px;
-  box-shadow:0 30px 70px -42px rgba(23,23,27,.3);overflow:hidden;transition:box-shadow .4s,transform .7s ease,opacity .7s ease;
-  transform:scale(.985) translateY(8px);opacity:.55}
-.viz.live{transform:none;opacity:1}
+  box-shadow:0 30px 70px -42px rgba(23,23,27,.3);overflow:hidden;transition:box-shadow .4s,transform .7s ease,opacity .7s ease}
+.js .viz{transform:scale(.985) translateY(8px);opacity:.55}
+.js .viz.live{transform:none;opacity:1}
 .viz:hover{box-shadow:0 34px 80px -40px rgba(23,23,27,.36)}
 .cap{position:absolute;left:0;right:0;bottom:0;padding:11px 20px 13px;border-top:1px solid var(--line2);
   font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--ink2);min-height:42px;background:var(--panel)}
@@ -64,16 +110,18 @@ body{background:var(--paper);color:var(--txt);font-family:var(--body);font-size:
 
 .steps{padding:22vh 0 36vh;max-width:35rem}
 .step{min-height:95vh;display:flex;align-items:center}
-.scard{opacity:.22;transform:translateY(22px);transition:opacity .65s ease,transform .65s cubic-bezier(.2,.7,.2,1)}
-.step.is-active .scard{opacity:1;transform:none}
+.scard{transition:opacity .65s ease,transform .65s cubic-bezier(.2,.7,.2,1)}
+.js .scard{opacity:.22;transform:translateY(22px)}
+.js .step.is-active .scard{opacity:1;transform:none}
 .sno{font-family:var(--mono);font-size:10px;letter-spacing:.26em;color:var(--mute);text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:10px}
 .sno::before{content:'';width:22px;height:1px;background:var(--accent)}
 .step.is-active .sno{color:var(--ink2)}
 .scard h3{font-family:var(--disp);font-weight:700;font-size:26px;line-height:1.2;letter-spacing:-.015em;margin-bottom:16px;color:var(--ink)}
 h2.big{font-family:var(--disp);font-weight:700;font-size:clamp(38px,4.6vw,60px);line-height:1.02;letter-spacing:-.025em;margin-bottom:20px;color:var(--ink)}
 h2.big span{display:block;overflow:hidden}
-h2.big span i{display:block;font-style:normal;transform:translateY(112%);transition:transform .85s cubic-bezier(.19,.8,.22,1)}
-.step.is-active h2.big span i{transform:none}
+h2.big span i{display:block;font-style:normal}
+.js h2.big span i{transform:translateY(112%);transition:transform .85s cubic-bezier(.19,.8,.22,1)}
+.js .step.is-active h2.big span i{transform:none}
 .scard p{color:var(--txt);font-size:18px;line-height:1.78}
 .scard p + p{margin-top:14px}
 .scard .foot{margin-top:18px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--mute);text-transform:uppercase}
@@ -114,6 +162,7 @@ h2.big span i{display:block;font-style:normal;transform:translateY(112%);transit
   border:1px solid var(--accent);border-radius:4px;padding:3px 8px;opacity:0;background:#fff}
 .logbars{position:absolute;left:20px;right:20px;bottom:64px;opacity:0;transform:translateY(10px);transition:all .5s}
 .viz-log[data-st="2"] .logbars{opacity:1;transform:none}
+html:not(.js) .logbars{opacity:1;transform:none}
 .brow{display:grid;grid-template-columns:140px 1fr 96px;gap:14px;align-items:center;margin-top:12px;font-family:var(--mono);font-size:10.5px}
 .bl{color:var(--mute);letter-spacing:.06em;text-align:right}
 .btrack{height:10px;background:rgba(23,23,27,.06);border-radius:3px;overflow:hidden}
@@ -213,6 +262,7 @@ h2.big span i{display:block;font-style:normal;transform:translateY(112%);transit
 .lrow:hover{background:rgba(23,23,27,.02)}
 #led-chart{position:absolute;left:20px;right:20px;bottom:56px;height:30%;opacity:0;transition:opacity .6s}
 #led-chart.on{opacity:1}
+html:not(.js) #led-chart{opacity:1}
 #led-chart svg{width:100%;height:100%}
 #led-line{fill:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:600;stroke-dashoffset:600}
 #led-chart.on #led-line{animation:lineg 1.8s ease forwards}
@@ -250,6 +300,13 @@ footer b{color:var(--accent);font-weight:400}
 
 /* ---------- RESPONSIVE ---------- */
 @media(max-width:940px){
+  #cons-parts{gap:8px;left:5%}
+  .pstrip{width:16px}
+  .offflag span{display:none}
+  #cons-group{width:38%}
+  .brow{grid-template-columns:88px 1fr 70px;gap:8px}
+  .zn{padding:10px 2px}
+  .zn b{font-size:10px}
   .chapter,.chapter.flip{grid-template-columns:1fr;gap:0;max-width:none}
   .chapter.flip .stage-col{order:0}
   .stage-col{height:56vh;height:56svh;z-index:20;background:var(--paper);padding-bottom:14px}
@@ -265,23 +322,24 @@ footer b{color:var(--accent);font-weight:400}
 }
 </style>
 </head>
-<body>
+<body data-vb-progress-start="#E4572E" data-vb-progress-mid="#B8862B" data-vb-progress-end="#1F6F6B">
+<a class="skip" href="#doc">Skip to content</a>
+<div id="chapchip" aria-hidden="true">Prologue</div>
 
-<div id="progress"></div>
-<div id="chapchip">Prologue</div>
+<main id="doc">
 
 <!-- ================= PROLOGUE ================= -->
 <section class="prol" id="prol">
   <div id="stream" aria-hidden="true"></div>
   <div class="prol-copy">
     <div class="kicker">A field guide to throughput</div>
-    <h1>How Kafka swallows <em>a&nbsp;trillion</em> messages</h1>
+    <h1>How Kafka swallows <em>seven&nbsp;trillion</em> messages a day</h1>
     <div class="bigwrap">
       <div id="bigcount">0</div>
       <div class="biglabel">messages per day — LinkedIn's production clusters, 2019, and the number has only grown</div>
     </div>
     <p class="prol-sub">That is a sustained average of <em>≈ 81,000,000 messages every second</em>. Not a queue. Not a database. An append-only log, sharded to the horizon. What follows is the anatomy of that throughput — six decisions, one scroll at a time.</p>
-    <div class="prol-meta">prototyped 2010 <b>·</b> open-sourced 2011 <b>·</b> apache top-level 2013</div>
+    <div class="prol-meta">prototyped 2010 <b>·</b> open-sourced 2011 <b>·</b> apache top-level 2012</div>
   </div>
   <div class="cue">scroll <b>↓</b> the log is append-only</div>
 </section>
@@ -289,15 +347,15 @@ footer b{color:var(--accent);font-weight:400}
 <!-- ================= CH 01 ================= -->
 <section class="chapter" data-title="01 · The Flood" data-scene="flood">
   <div class="stage-col"><div class="stage">
-    <div class="viz" id="viz-flood">
+    <div class="viz" id="viz-flood" aria-hidden="true">
       <div class="fpanel" id="fp-mess"><svg id="flood-mess" viewBox="0 0 600 440" preserveAspectRatio="xMidYMid meet"></svg></div>
       <div class="fpanel" id="fp-hub"><svg id="flood-hub" viewBox="0 0 600 440" preserveAspectRatio="xMidYMid meet"></svg></div>
       <div class="fpanel" id="fp-nums"><div class="fnums">
         <div class="fnum"><div class="v fn-c" data-t="7000000000000">0</div><div class="l">messages / day</div></div>
         <div class="fnum"><div class="v fn-c" data-t="81000000">0</div><div class="l">messages / second · average</div></div>
-        <div class="fnum"><div class="v fn-c" data-t="40">0</div><div class="l">pipelines unified into one log</div></div>
+        <div class="fnum"><div class="v fn-c" data-t="7000000">0</div><div class="l">partitions across the clusters</div></div>
       </div></div>
-      <div class="cap" id="cap-flood"></div>
+      <div class="cap" id="cap-flood">5 sources × 5 sinks = <b>25</b> bespoke connectors — the real mesh was far bigger</div>
     </div>
   </div></div>
   <div class="steps">
@@ -305,8 +363,8 @@ footer b{color:var(--accent);font-weight:400}
       <div class="sno">Chapter 01 · The Flood</div>
       <h2 class="big"><span><i>Every pipeline, hand-braided</i></span></h2>
       <p>LinkedIn, 2010. Clickstream into Hadoop. Databases into the warehouse. Metrics into alerting. Every new source × every new sink meant another bespoke connector — its own protocol, its own failure modes, its own 3 a.m. page.</p>
-      <p>Five sources and five sinks already means <span class="hl">25 integrations</span>. LinkedIn counted more than forty.</p>
-      <div class="foot">complexity grows as M × N — quadratically, without mercy</div>
+      <p>Five sources and five sinks already means <span class="hl">25 integrations</span>. LinkedIn's real inventory ran far beyond that.</p>
+      <div class="foot">complexity grows as M × N — quadratic, and it never stops</div>
     </div></article>
     <article class="step" data-state="1"><div class="scard">
       <div class="sno">01 · step 2 of 3</div>
@@ -326,23 +384,23 @@ footer b{color:var(--accent);font-weight:400}
 <!-- ================= CH 02 ================= -->
 <section class="chapter flip" data-title="02 · The Log" data-scene="log">
   <div class="stage-col"><div class="stage">
-    <div class="viz viz-log" id="viz-log">
+    <div class="viz viz-log" id="viz-log" aria-hidden="true">
       <div class="lg-head">topic=<b>orders</b> · partition=<b>0</b> · retention=<b>7d</b></div>
       <div class="writehead">PRODUCER ▮ APPENDING</div>
       <div id="logstrip"></div>
       <div id="logsweep"></div>
       <div class="rej" id="rejtag">✕ NOT ALLOWED</div>
       <div class="logbars">
-        <div class="brow"><span class="bl">random 4K writes</span><div class="btrack"><div class="bfill rand" style="--w:1.4%"></div></div><span class="bv">≈ 0.5 MB/s</span></div>
-        <div class="brow"><span class="bl">sequential append</span><div class="btrack"><div class="bfill seq" style="--w:96%"></div></div><span class="bv">≈ 200 MB/s</span></div>
+        <div class="brow"><span class="bl">random writes</span><div class="btrack"><div class="bfill rand" style="--w:.2%"></div></div><span class="bv">≈ 100 KB/s</span></div>
+        <div class="brow"><span class="bl">linear writes</span><div class="btrack"><div class="bfill seq" style="--w:96%"></div></div><span class="bv">≈ 600 MB/s</span></div>
       </div>
-      <div class="cap" id="cap-log"></div>
+      <div class="cap" id="cap-log">writes land at the tail only — <b>no edits, no in-place updates</b></div>
     </div>
   </div></div>
   <div class="steps">
     <article class="step" data-state="0"><div class="scard">
       <div class="sno">Chapter 02 · The Log</div>
-      <h2 class="big"><span><i>One data structure to rule them all</i></span></h2>
+      <h2 class="big"><span><i>One data structure: the log</i></span></h2>
       <p>Kafka's heart isn't a queue or a table — it's an <span class="hl2">append-only log</span>. Producers write records to the tail. That's the entire write path: no index updates, no B-tree rebalancing, no in-place edits.</p>
       <p>That <span class="code">UPDATE</span> you wanted? Rejected at the door.</p>
     </div></article>
@@ -355,14 +413,14 @@ footer b{color:var(--accent);font-weight:400}
     <article class="step" data-state="2"><div class="scard">
       <div class="sno">02 · step 3 of 4</div>
       <h3>Disks are fast — if you don't make them think</h3>
-      <p>A spinning disk random-seeks at ~0.5 MB/s but streams sequentially at ~200 MB/s — <span class="hl2">400× faster on the same platter</span>. Kafka only ever appends, so its "slow disk" writes at near-memory speed.</p>
+      <p>Kafka's designers measured a six-drive SATA array: <span class="hl2">~600 MB/s linear writes against ~100 KB/s random ones</span> — a 6,000× gap on the same hardware. Kafka only ever appends, so its "slow disk" streams.</p>
       <p>The log converts the expensive kind of I/O into the cheap kind. That's the whole trick of the write path.</p>
     </div></article>
     <article class="step" data-state="3"><div class="scard">
       <div class="sno">02 · step 4 of 4</div>
       <h3>Old data is the feature</h3>
       <p>Consuming a record doesn't delete it. Records are retained for days, weeks, years. A new consumer starts at the tail. A buggy consumer <span class="hl2">rewinds to Tuesday</span>. A new model trains on three months of history.</p>
-      <p>Storage is cheap. Re-processing is a superpower — and one queue still has a ceiling.</p>
+      <p>Storage is cheap. Re-processing is the payoff — and one log still has a ceiling.</p>
     </div></article>
   </div>
 </section>
@@ -370,10 +428,10 @@ footer b{color:var(--accent);font-weight:400}
 <!-- ================= CH 03 ================= -->
 <section class="chapter" data-title="03 · Shard the Log" data-scene="part">
   <div class="stage-col"><div class="stage">
-    <div class="viz viz-part" id="viz-part">
+    <div class="viz viz-part" id="viz-part" aria-hidden="true">
       <div id="pgate">hash(key) % P</div>
       <div id="planes"></div>
-      <div class="cap" id="cap-part"></div>
+      <div class="cap" id="cap-part">one partition: one writer, one reader — <b>a hard ceiling</b></div>
     </div>
   </div></div>
   <div class="steps">
@@ -407,14 +465,14 @@ footer b{color:var(--accent);font-weight:400}
 <!-- ================= CH 04 ================= -->
 <section class="chapter flip" data-title="04 · Survive the Crash" data-scene="repl">
   <div class="stage-col"><div class="stage">
-    <div class="viz" id="viz-repl">
+    <div class="viz" id="viz-repl" aria-hidden="true">
       <svg id="rep-wires"></svg>
       <div id="prod-node"><b>PRODUCER</b>acks=all</div>
       <div class="broker" id="br0"><div class="bh"><span class="bname">broker-0</span><span class="crown on" id="cr0">leader</span><span class="isr" id="isr0">ISR</span></div><div class="blog" id="bl0"></div></div>
       <div class="broker" id="br1"><div class="bh"><span class="bname">broker-1</span><span class="crown" id="cr1">leader</span><span class="isr" id="isr1">ISR</span></div><div class="blog" id="bl1"></div></div>
       <div class="broker" id="br2"><div class="bh"><span class="bname">broker-2</span><span class="crown" id="cr2">leader</span><span class="isr" id="isr2">ISR</span></div><div class="blog" id="bl2"></div></div>
       <div id="rep-layer"></div>
-      <div class="cap" id="cap-repl"></div>
+      <div class="cap" id="cap-repl">one <b>leader</b> per partition — followers tail the leader's log</div>
     </div>
   </div></div>
   <div class="steps">
@@ -448,7 +506,7 @@ footer b{color:var(--accent);font-weight:400}
 <!-- ================= CH 05 ================= -->
 <section class="chapter" data-title="05 · Never Copy Bytes" data-scene="zero">
   <div class="stage-col"><div class="stage">
-    <div class="viz" id="viz-zero">
+    <div class="viz" id="viz-zero" aria-hidden="true">
       <div class="zlabel la">traditional — read() + write()</div>
       <div class="zrow a">
         <div class="zn" id="za0"><b>Disk</b>platter</div><span class="zarr">→</span>
@@ -467,7 +525,7 @@ footer b{color:var(--accent);font-weight:400}
         <div class="zn" id="zb4"><b>NIC</b>DMA</div>
       </div>
       <div id="zc-layer" style="position:absolute;inset:0;pointer-events:none"></div>
-      <div class="cap" id="cap-zero"></div>
+      <div class="cap" id="cap-zero">Kafka keeps <b>no cache of its own</b> — the OS page cache is the cache</div>
     </div>
   </div></div>
   <div class="steps">
@@ -495,12 +553,12 @@ footer b{color:var(--accent);font-weight:400}
 <!-- ================= CH 06 ================= -->
 <section class="chapter flip" data-title="06 · Readers Keep Pace" data-scene="cons">
   <div class="stage-col"><div class="stage">
-    <div class="viz" id="viz-cons">
+    <div class="viz" id="viz-cons" aria-hidden="true">
       <svg id="cons-lines"></svg>
       <div id="cons-parts"></div>
       <div class="pullarr" id="pullarr" style="display:none">← pull</div>
       <div id="cons-group"></div>
-      <div class="cap" id="cap-cons"></div>
+      <div class="cap" id="cap-cons">brokers never push — consumers fetch at their own pace</div>
     </div>
   </div></div>
   <div class="steps">
@@ -534,9 +592,9 @@ footer b{color:var(--accent);font-weight:400}
 <!-- ================= CH 07 ================= -->
 <section class="chapter" data-title="07 · The Arithmetic" data-scene="ledger">
   <div class="stage-col"><div class="stage">
-    <div class="viz" id="viz-ledger">
+    <div class="viz" id="viz-ledger" aria-hidden="true">
       <div style="position:absolute;inset:0 0 34% 0;overflow:hidden">
-        <div class="lrow lit" data-r="1"><span class="lname">Sequential I/O</span><span class="leff">append at the tail, never seek</span><span class="lmul">×400 vs random</span></div>
+        <div class="lrow lit" data-r="1"><span class="lname">Sequential I/O</span><span class="leff">append at the tail, never seek</span><span class="lmul">×6000 vs random</span></div>
         <div class="lrow lit" data-r="2"><span class="lname">Page cache</span><span class="leff">the OS caches, the JVM stays lean</span><span class="lmul">−GC pressure</span></div>
         <div class="lrow lit" data-r="3"><span class="lname">Zero-copy reads</span><span class="leff">sendfile(): bytes skip userspace</span><span class="lmul">−2 copies</span></div>
         <div class="lrow" data-r="4"><span class="lname">Batching</span><span class="leff">linger.ms → 10k records per request</span><span class="lmul">÷50 round-trips</span></div>
@@ -550,7 +608,7 @@ footer b{color:var(--accent);font-weight:400}
         <text class="axl" x="322" y="145">BROKERS →</text><text class="axl" x="34" y="18">MSGS/S →</text>
       </svg></div>
       <div id="led-total"></div>
-      <div class="cap" id="cap-ledger"></div>
+      <div class="cap" id="cap-ledger">the ledger — every multiplier on the books</div>
     </div>
   </div></div>
   <div class="steps">
@@ -575,8 +633,8 @@ footer b{color:var(--accent);font-weight:400}
     <article class="step" data-state="3"><div class="scard">
       <div class="sno">07 · step 4 of 4</div>
       <h3>Then multiply by N</h3>
-      <p>One modest machine: <span class="hl">~2,000,000 messages/sec</span> in Kreps' 2012 benchmark. Ten machines: ~10×. The curve stays embarrassingly linear because partitions barely share state — they don't coordinate, so they don't contend.</p>
-      <p>That's the whole trick, compounding everything before it: <span class="hl2">trillions is just arithmetic</span>.</p>
+      <p>Kreps' benchmark: three cheap machines, default settings, <span class="hl">2,024,032 writes per second</span> — about 675,000 per machine. The curve stays linear because partitions barely share state — they don't coordinate, so they don't contend.</p>
+      <p>Run the arithmetic: LinkedIn's 81-million-a-second average is <span class="hl2">about 120 such brokers</span>. Trillions is just multiplication.</p>
     </div></article>
   </div>
 </section>
@@ -594,7 +652,7 @@ footer b{color:var(--accent);font-weight:400}
     <div class="rc"><div class="k">State the broker keeps</div><div class="v">just the log — <b>your position is yours</b> (offsets)</div></div>
   </div>
   <div id="finalcount">0</div>
-  <p>messages that flowed through a linkedin-scale stream while you read this page</p>
+  <p>messages that flowed through a LinkedIn-scale stream while you read this page</p>
   <div class="notes">
     <div class="note"><div class="n">N.01</div><div class="t"><b>Keys decide order.</b> Hash routing is deterministic — pick keys that match how you'll consume.</div></div>
     <div class="note"><div class="n">N.02</div><div class="t"><b>Partitions decide parallelism.</b> Write and read throughput are both capped at P. Budget headroom; repartitioning is painful.</div></div>
@@ -604,16 +662,19 @@ footer b{color:var(--accent);font-weight:400}
   <div class="src"><b>Sources &amp; further reading</b>
     Kreps, Narkhede, Rao — “Kafka: a Distributed Messaging System for Log Processing”, NetDB 2011<br>
     Jay Kreps — “The Log: What every software engineer should know about real-time data's unifying abstraction”, 2013<br>
-    LinkedIn Engineering — Kafka at LinkedIn scale reports (2015–2019): 7 trillion messages/day<br>
-    Jay Kreps — Kafka benchmarking notes, 2012 (~2M msgs/s per modest server)<br>
-    Apache Kafka documentation — kafka.apache.org</div>
+    LinkedIn Engineering — Kafka at LinkedIn scale (2019): 7 trillion messages/day<br>
+    Jay Kreps — Benchmarking Apache Kafka: 2 Million Writes Per Second (On Three Cheap Machines), LinkedIn Engineering, 2014<br>
+    Apache Kafka design documentation — kafka.apache.org (linear vs random I/O: ~600 MB/s vs ~100 KB/s)</div>
 </section>
+</main>
 
 <footer>
-  <div>set in space grotesk &amp; source serif · a scrollytelling study · aug 2026</div>
+  <div>set in space grotesk &amp; source serif · a field guide to throughput · aug 2026</div>
   <div><b>■</b> append-only since 2011</div>
 </footer>
 
+<script src="../js/post-progress.js" defer></script>
+<script src="../js/post-nav.js" defer></script>
 <script>
 'use strict';
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -632,7 +693,7 @@ function tween(el,to,dur,f=fmt){ if(!el) return; if(RM){el.textContent=f(to);ret
     el.textContent=f(to*e); if(p<1) requestAnimationFrame(step); })(t0); }
 function rel(el,layer){ const r=el.getBoundingClientRect(), l=layer.getBoundingClientRect();
   return {x:r.left+r.width/2-l.left, y:r.top+r.height/2-l.top}; }
-function fly(layer,from,to,{cls='',dur=600}={},done){ const a=rel(from,layer), b=rel(to,layer);
+function fly(layer,from,to,{cls='',dur=600}={},done){ if(RM) dur=1; const a=rel(from,layer), b=rel(to,layer);
   const p=document.createElement('div'); p.className='pkt '+cls; layer.appendChild(p);
   const an=p.animate([{transform:`translate(${a.x}px,${a.y}px)`},{transform:`translate(${b.x}px,${b.y}px)`}],{duration:dur,easing:'ease-in-out'});
   an.onfinish=()=>{p.remove(); done&&done();}; return an; }
@@ -697,10 +758,10 @@ SCENES.flood=new class extends Scene{
     $('#fp-mess').classList.toggle('show',s===0);
     $('#fp-hub').classList.toggle('show',s===1);
     $('#fp-nums').classList.toggle('show',s===2);
-    if(s===0){ this.say('5 sources × 5 sinks = <b id="fc">25</b> bespoke connectors — LinkedIn ran 40+');
+    if(s===0){ this.say('5 sources × 5 sinks = <b id="fc">25</b> bespoke connectors — the real mesh was far bigger');
       tween($('#fc'),25,900); }
     if(s===1) this.say('5 + 5 = <i>10 integrations</i> — every new reader changes nothing upstream');
-    if(s===2){ this.say('production scale · linkedin, 2019');
+    if(s===2){ this.say('production scale · LinkedIn, 2019');
       if(!this.counted){ this.counted=true;
         $$('.fn-c').forEach((el,i)=>this.later(()=>tween(el,+el.dataset.t,1600+i*200),i*220)); } } }
 }();
@@ -728,7 +789,7 @@ SCENES.log=new class extends Scene{
       this.every(()=>this.append(),650); this.every(()=>this.reject(),3600); }
     if(s===1){ this.say('every record carries an <i>offset</i> — reading is a seek, not a search');
       this.every(()=>this.append(),1300); this.every(()=>this.probe(),2300); this.later(()=>this.probe(),500); }
-    if(s===2) this.say('same platter, same second: random ≈ 0.5 MB/s · sequential ≈ <b>200 MB/s</b> — the seek is the cost');
+    if(s===2) this.say('same array, same second: random ≈ 100 KB/s · linear ≈ <b>600 MB/s</b> — the seek is the cost');
     if(s===3){ this.say('records outlive consumption — <i>rewind to tuesday, train on three months</i>');
       this.coldify(); this.every(()=>this.append(),1000);
       if(!RM){ const sweep=()=>{ if(!this.live||this.state!==3)return;
@@ -887,12 +948,12 @@ SCENES.ledger=new class extends Scene{
     if(s===0){ tot.innerHTML=''; this.say('the ledger so far — <i>three quiet wins</i> already on the books'); }
     if(s===1){ tot.innerHTML='1 request ≈ <b>10,000</b> records'; this.say('<b>linger.ms</b> buys batches: amortize one round-trip over 10,000 records'); }
     if(s===2){ tot.innerHTML='wire bytes <b>÷ 4</b>'; this.say('lz4 / zstd end-to-end — <i>the broker never decompresses</i>'); }
-    if(s===3){ this.say('partitions don\u2019t coordinate, so they don\u2019t contend — the curve stays <b>linear</b>');
+    if(s===3){ this.say('from Kreps\u2019 3-machine benchmark: ≈ 675,000 msgs/s per broker — partitions don\u2019t contend, so the curve stays <b>linear</b>');
       if(!this.counted){ this.counted=true;
-        if(RM){ tot.innerHTML='24 brokers ≈ <b>48,000,000</b> msgs/s'; return; }
+        if(RM){ tot.innerHTML='24 brokers ≈ <b>16,192,248</b> msgs/s'; return; }
         const t0=performance.now();
         const step=t=>{ if(!this.live) return; const p=clamp((t-t0)/1800,0,1); const N=Math.round(1+p*23);
-          tot.innerHTML=`${N} brokers ≈ <b>${fmt(N*2e6)}</b> msgs/s`;
+          tot.innerHTML=`${N} brokers ≈ <b>${fmt(N*674677)}</b> msgs/s`;
           if(p<1) requestAnimationFrame(step); };
         requestAnimationFrame(step); } } }
 }();
@@ -919,15 +980,13 @@ new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting) chip.textConte
 new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting) chip.textContent='∞ · The Receipt'; }),{threshold:.1}).observe($('#epi'));
 
 /* ---------- GLOBAL LOOP ---------- */
-const progress=$('#progress'), finalCount=$('#finalcount');
+const finalCount=$('#finalcount');
 const T0=Date.now(); let last=performance.now();
 function loop(t){ const dt=Math.min(.05,(t-last)/1000); last=t;
   streamTick(dt);
   if(S.current&&S.current.live) S.current.tick(dt,t);
   const n=(Date.now()-T0)/1000*81e6;
   if(finalCount) finalCount.textContent=fmt(n);
-  const sc=document.documentElement.scrollTop, h=document.documentElement.scrollHeight-innerHeight;
-  progress.style.width=(h>0 ? (sc/h*100) : 0)+'%';
   requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
 addEventListener('resize',()=>{ if(S.current===SCENES.repl&&SCENES.repl.live) SCENES.repl.wires(); });

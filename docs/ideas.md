@@ -18,7 +18,7 @@
 - [ ] How does a push notification system work?
 - [x] How does Google Maps calculate the best route?
 - [ ] How does Kubernetes work?
-- [ ] How does Kafka scale to trillions of messages?
+- [x] How does Kafka scale to trillions of messages? -> Followed six design decisions to LinkedIn's 7 trillion/day.
 - [x] How does an online payment actually happen? -> Followed one card payment: auth round trip + settlement.
 - [x] How does JPEG make a 10 MB photo become 500 KB?
 - [x] How does a QR code work?

@@ -20,6 +20,15 @@
    JSON so the checker can parse it directly. */
 window.VB_POSTS = [
     {
+        "slug": "blog/kafka.html",
+        "no": "15",
+        "title": "How Kafka Handles 7 Trillion Messages a Day",
+        "date": "2026-08",
+        "topic": "Distributed systems · Messaging",
+        "tags": ["Kafka", "Event streaming", "Append-only log", "Partitions"],
+        "deck": "Six design decisions — an append-only log, partitions, replication, zero-copy reads, batching — that let Kafka absorb LinkedIn's 7 trillion messages a day."
+    },
+    {
         "slug": "blog/how-card-payments-work.html",
         "no": "14",
         "title": "How a Card Payment Actually Works",
