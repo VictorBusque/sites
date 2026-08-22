@@ -301,7 +301,7 @@ a { color: var(--g-blue-dark); }
 
 /* ── sticky scenes — the site contract, in a Maps skin ── */
 .sticky-scene { position: relative; border-top: 1px solid var(--g-line); border-bottom: 1px solid var(--g-line); margin-top: 10vh; }
-.js .sticky-scene { padding-bottom: 100vh; padding-bottom: 100svh; }
+.js .sticky-scene { padding-bottom: 100vh; padding-bottom: 100svh; padding-bottom: 100dvh; /* track collapsing mobile UI */ }
 .sticky-scene__stage {
     background-color: var(--stage);
     background-image: linear-gradient(var(--grid) 1px, transparent 1px),
@@ -309,7 +309,7 @@ a { color: var(--g-blue-dark); }
     background-size: 32px 32px;
     color: var(--g-ink); position: relative; overflow: hidden; min-height: 60vh;
 }
-.js .sticky-scene__stage { position: sticky; top: 0; height: 100vh; height: 100svh; min-height: 0; }
+.js .sticky-scene__stage { position: sticky; top: 0; height: 100vh; height: 100svh; height: 100dvh; /* dynamic viewport: stays equal to innerHeight when mobile URL bars collapse mid-scroll */ min-height: 0; }
 .scene-head {
     display: flex; align-items: center; gap: 16px;
     border-bottom: 1px solid var(--g-line); padding: 12px 4vw;
@@ -319,8 +319,8 @@ a { color: var(--g-blue-dark); }
 .scene-no { font: 10px "Roboto Mono"; letter-spacing: .14em; color: var(--g-red); }
 .scene-name { font: 10px "Roboto Mono"; letter-spacing: .18em; color: var(--g-ink-2); }
 .scene-readout { font: 10px "Roboto Mono"; color: var(--g-ink-4); margin-left: auto; }
-.js .sticky-scene__steps { position: relative; margin-top: -100vh; margin-top: -100svh; pointer-events: none; z-index: 1; }
-.js .sticky-scene__steps > * { min-height: 100vh; min-height: 100svh; display: flex; align-items: center; padding: 0 4vw; }
+.js .sticky-scene__steps { position: relative; margin-top: -100vh; margin-top: -100svh; margin-top: -100dvh; pointer-events: none; z-index: 1; }
+.js .sticky-scene__steps > * { min-height: 100vh; min-height: 100svh; min-height: 100dvh; display: flex; align-items: center; padding: 0 4vw; }
 .step { max-width: 420px; background: #fff; border: 1px solid var(--g-line); border-radius: 16px; padding: 24px 26px; color: var(--g-ink); }
 .js .step { background: none; border: 0; padding: 0; max-width: none; pointer-events: none; }
 .js .step.is-active { pointer-events: auto; }
@@ -603,7 +603,7 @@ a { color: var(--g-blue-dark); }
     }
     /* chips and insets stay pinned overlays — never flex children */
     .sticky-scene__stage .chips, .sticky-scene__stage .inset { position: absolute; }
-    .js .sticky-scene__steps > * { min-height: 100vh; min-height: 100svh; align-items: flex-end; }
+    .js .sticky-scene__steps > * { min-height: 100vh; min-height: 100svh; min-height: 100dvh; align-items: flex-end; }
     .js .step-card {
         width: 100%; max-width: 560px; border-radius: 20px 20px 16px 16px;
         padding: 12px 20px 18px; max-height: 44vh; overflow-y: auto;
@@ -1635,7 +1635,8 @@ a { color: var(--g-blue-dark); }
             var stage = scene.querySelector('.sticky-scene__stage');
             if (!stage) return false;
             var rect = stage.getBoundingClientRect();
-            return rect.top <= 1 && rect.bottom >= innerHeight - 1;
+            /* 131px tolerance: phones collapsing the URL bar make innerHeight up to ~130px taller than a 100svh stage — without it every scene after the collapse stops activating (dvh covers engines that have it). */
+            return rect.top <= 1 && rect.bottom >= innerHeight - 131;
         }
         var engaged = false;
         function deactivate() {

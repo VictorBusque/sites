@@ -322,7 +322,8 @@ a { color: inherit; text-decoration: none; }
 .js .sticky-scene {
     padding-bottom: 100vh;
     padding-bottom: 100svh;
-}
+    padding-bottom: 100dvh; /* track collapsing mobile UI */
+    padding-bottom: 100dvh; /* track collapsing mobile UI */}
 .sticky-scene__stage {
     background-color: var(--stage);
     background-image: linear-gradient(#ffffff08 1px, transparent 1px),
@@ -338,6 +339,7 @@ a { color: inherit; text-decoration: none; }
     top: 0;
     height: 100vh;
     height: 100svh;
+    height: 100dvh; /* dynamic viewport: stays equal to innerHeight when mobile URL bars collapse mid-scroll */
     min-height: 0;
 }
 .sticky-scene__stage::after {
@@ -380,12 +382,14 @@ a { color: inherit; text-decoration: none; }
     position: relative;
     margin-top: -100vh;
     margin-top: -100svh;
+    margin-top: -100dvh;
     pointer-events: none;
     z-index: 1;
 }
 .js .sticky-scene__steps > * {
     min-height: 100vh;
     min-height: 100svh;
+    min-height: 100dvh;
     display: flex;
     align-items: center;
     padding: 0 4vw;
@@ -956,6 +960,8 @@ input[type="range"] {
     .js .sticky-scene__steps > * {
         min-height: 100vh;
         min-height: 100svh;
+        min-height: 100dvh;
+        min-height: 100dvh;
     }
     .js .step-card {
         width: 100%;
@@ -2366,7 +2372,8 @@ input[type="range"] {
             var stage = scene.querySelector('.sticky-scene__stage');
             if (!stage) return false;
             var rect = stage.getBoundingClientRect();
-            return rect.top <= 1 && rect.bottom >= innerHeight - 1;
+            /* 131px tolerance: phones collapsing the URL bar make innerHeight up to ~130px taller than a 100svh stage — without it every scene after the collapse stops activating (dvh covers engines that have it). */
+            return rect.top <= 1 && rect.bottom >= innerHeight - 131;
         }
         var engaged = false;
         function deactivate() {

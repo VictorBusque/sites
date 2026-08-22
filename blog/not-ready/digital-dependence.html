@@ -664,7 +664,7 @@ html.vb-motion-paused *::after {
        instead of releasing that card into the following prose section. */
     padding-bottom: 100vh;
     padding-bottom: 100svh;
-}
+    padding-bottom: 100dvh; /* track collapsing mobile UI */}
 .sticky-scene__stage {
     background-color: var(--stage);
     background-image: linear-gradient(var(--grid) 1px, transparent 1px),
@@ -680,6 +680,7 @@ html.vb-motion-paused *::after {
     top: 0;
     height: 100vh;   /* fallback for engines without svh */
     height: 100svh;
+    height: 100dvh;  /* dynamic viewport: stays equal to innerHeight when mobile browsers collapse the URL bar mid-scroll */
     min-height: 0;
 }
 .sticky-scene__stage::after {
@@ -725,12 +726,14 @@ html.vb-motion-paused *::after {
     position: relative;
     margin-top: -100vh;   /* fallback for engines without svh */
     margin-top: -100svh;
+    margin-top: -100dvh;
     pointer-events: none;
     z-index: 1;
 }
 .js .sticky-scene__steps > * {
     min-height: 100vh;   /* fallback for engines without svh */
     min-height: 100svh;
+    min-height: 100dvh;
     display: flex;
     align-items: center;
     padding: 0 4vw;
@@ -1154,6 +1157,7 @@ footer::after {
     .js .sticky-scene__steps > * {
         min-height: 100vh;
         min-height: 100svh;
+        min-height: 100dvh;
     }
     /* ── the step text: a bottom sheet ──
        The step text is presented as a docked, rounded sheet at the bottom
@@ -2387,8 +2391,12 @@ footer::after {
             var rect = stage.getBoundingClientRect();
             /* `top <= 0` alone remains true after a sticky stage has reached
                its container's end. Require the whole viewport-height stage
-               too, so an active card cannot spill into the next section. */
-            return rect.top <= 1 && rect.bottom >= innerHeight - 1;
+               too, so an active card cannot spill into the next section.
+               The 131px tolerance keeps activation alive on phones, where a
+               collapsing URL bar makes innerHeight up to ~130px taller than
+               a 100svh stage (engines without dvh) — without it every scene
+               after the bar collapse stops activating. */
+            return rect.top <= 1 && rect.bottom >= innerHeight - 131;
         }
         /* engaged = a card is lit while the stage is pinned. Reset whenever
            the stage scrolls away, so re-entering the scene re-bootstraps. */

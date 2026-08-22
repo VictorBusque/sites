@@ -244,7 +244,7 @@ a { color: inherit; }
 
 /* ── sticky scenes — the site contract ── */
 .sticky-scene { position: relative; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-top: 10vh; }
-.js .sticky-scene { padding-bottom: 100vh; padding-bottom: 100svh; }
+.js .sticky-scene { padding-bottom: 100vh; padding-bottom: 100svh; padding-bottom: 100dvh; /* track collapsing mobile UI */ }
 .sticky-scene__stage {
     background-color: var(--stage);
     background-image: linear-gradient(var(--grid) 1px, transparent 1px),
@@ -252,7 +252,7 @@ a { color: inherit; }
     background-size: 32px 32px;
     color: #fff; position: relative; overflow: hidden; min-height: 60vh;
 }
-.js .sticky-scene__stage { position: sticky; top: 0; height: 100vh; height: 100svh; min-height: 0; }
+.js .sticky-scene__stage { position: sticky; top: 0; height: 100vh; height: 100svh; height: 100dvh; /* dynamic viewport: stays equal to innerHeight when mobile URL bars collapse mid-scroll */ min-height: 0; }
 .sticky-scene__stage::after {
     content: ""; position: absolute; width: 200px; height: 200px;
     border: 1px solid #ffffff12; border-radius: 50%;
@@ -266,8 +266,8 @@ a { color: inherit; }
 .scene-no { font: 10px "DM Mono"; letter-spacing: .14em; color: var(--orange); }
 .scene-name { font: 10px "DM Mono"; letter-spacing: .18em; }
 .scene-readout { font: 10px "DM Mono"; color: #777; margin-left: auto; }
-.js .sticky-scene__steps { position: relative; margin-top: -100vh; margin-top: -100svh; pointer-events: none; z-index: 1; }
-.js .sticky-scene__steps > * { min-height: 100vh; min-height: 100svh; display: flex; align-items: center; padding: 0 4vw; }
+.js .sticky-scene__steps { position: relative; margin-top: -100vh; margin-top: -100svh; margin-top: -100dvh; pointer-events: none; z-index: 1; }
+.js .sticky-scene__steps > * { min-height: 100vh; min-height: 100svh; min-height: 100dvh; display: flex; align-items: center; padding: 0 4vw; }
 .step { max-width: 420px; background: var(--paper); border: 1px solid var(--line); padding: 26px 28px; color: var(--ink); }
 .js .step { background: none; border: 0; padding: 0; max-width: none; pointer-events: none; }
 .js .step.is-active { pointer-events: auto; }
@@ -517,7 +517,7 @@ a { color: inherit; }
         justify-content: center !important; align-items: center;
         padding: 10px 4vw calc(var(--card-reserve, 36vh) + 4px) !important;
     }
-    .js .sticky-scene__steps > * { min-height: 100vh; min-height: 100svh; align-items: flex-end; }
+    .js .sticky-scene__steps > * { min-height: 100vh; min-height: 100svh; min-height: 100dvh; align-items: flex-end; }
     .js .step-card {
         width: 100%; max-width: 560px; border-radius: 18px 18px 14px 14px;
         box-shadow: 0 20px 44px -24px rgba(0,0,0,.55);
@@ -1748,7 +1748,8 @@ a { color: inherit; }
             var stage = scene.querySelector('.sticky-scene__stage');
             if (!stage) return false;
             var rect = stage.getBoundingClientRect();
-            return rect.top <= 1 && rect.bottom >= innerHeight - 1;
+            /* 131px tolerance: phones collapsing the URL bar make innerHeight up to ~130px taller than a 100svh stage — without it every scene after the collapse stops activating (dvh covers engines that have it). */
+            return rect.top <= 1 && rect.bottom >= innerHeight - 131;
         }
         var engaged = false;
         function deactivate() {
