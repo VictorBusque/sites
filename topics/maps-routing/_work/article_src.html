@@ -594,11 +594,15 @@ a { color: var(--g-blue-dark); }
 @media (max-width: 850px) and (min-height: 521px) {
     .js .sticky-scene__stage { display: flex; flex-direction: column; padding-top: 62px; }
     .js .sticky-scene__stage .scene-head { flex: 0 0 auto; width: 100%; padding: 8px 4vw; }
-    .js .sticky-scene__stage > :not(.scene-head) {
+    /* the map is full-bleed: it fills the stage and the bottom sheet
+       simply docks over it, the way a navigation card overlays the map */
+    .js .sticky-scene__stage > .map-stage {
         position: static !important; flex: 1 1 auto; width: 100%; min-height: 0;
         justify-content: center !important; align-items: center;
-        padding: 10px 4vw calc(var(--card-reserve, 36vh) + 4px) !important;
+        padding: 8px 0 min(26vh, 240px) !important;
     }
+    /* chips and insets stay pinned overlays — never flex children */
+    .sticky-scene__stage .chips, .sticky-scene__stage .inset { position: absolute; }
     .js .sticky-scene__steps > * { min-height: 100vh; min-height: 100svh; align-items: flex-end; }
     .js .step-card {
         width: 100%; max-width: 560px; border-radius: 20px 20px 16px 16px;
@@ -1604,7 +1608,162 @@ a { color: var(--g-blue-dark); }
     window.addEventListener('resize', frame);
 })();
 </script>
-<script src="../js/post-progress.js" defer></script>
+<script>
+/* ── Inlined scene runtime (the site's sticky-scene contract) ─────── */
+(function () {
+    'use strict';
+
+    var portraitMob = window.matchMedia('(max-width: 850px) and (min-height: 521px)');
+
+    if (!('IntersectionObserver' in window)) {
+        document.documentElement.classList.remove('js');
+        window.VBScene = { init: function () {}, refresh: function () {}, onStep: function () {} };
+        return;
+    }
+
+    function wireScene(scene) {
+        if (scene.dataset.vbSceneWired === 'true') return;
+        var steps = scene.querySelectorAll('[data-step]');
+        if (!steps.length) return;
+        scene.dataset.vbSceneWired = 'true';
+        var readout = scene.querySelector('[data-readout]');
+        var total = steps.length;
+
+        var band = portraitMob.matches ? '-20% 0px -20% 0px' : '-45% 0px -45% 0px';
+
+        function stagePinned() {
+            var stage = scene.querySelector('.sticky-scene__stage');
+            if (!stage) return false;
+            var rect = stage.getBoundingClientRect();
+            return rect.top <= 1 && rect.bottom >= innerHeight - 1;
+        }
+        var engaged = false;
+        function deactivate() {
+            steps.forEach(function (s) { s.classList.remove('is-active'); });
+            delete scene.dataset.activeStep;
+            if (readout) readout.textContent = '';
+            engaged = false;
+        }
+        function activate(step) {
+            steps.forEach(function (s) { s.classList.remove('is-active'); });
+            step.classList.add('is-active');
+            scene.dataset.activeStep = step.getAttribute('data-step');
+            if (readout) {
+                readout.textContent = 'STEP ' + step.getAttribute('data-step') + ' / ' + total;
+            }
+            var fill = step.querySelector('.step-progress i');
+            if (fill) {
+                var pi = parseInt(step.getAttribute('data-step'), 10) || 1;
+                fill.style.width = (total > 1 ? ((pi - 1) / (total - 1)) * 100 : 100) + '%';
+            }
+            engaged = true;
+            notifyHooks(scene, step, total);
+        }
+
+        var io = new IntersectionObserver(function (es) {
+            es.forEach(function (e) {
+                if (!e.isIntersecting || !stagePinned()) return;
+                activate(e.target);
+            });
+        }, { rootMargin: band });
+
+        var ticking = false;
+        function bootstrap() {
+            if (engaged || !stagePinned()) return;
+            var c = innerHeight / 2;
+            for (var i = 0; i < steps.length; i++) {
+                var r = steps[i].getBoundingClientRect();
+                if (r.top <= c && r.bottom >= c) {
+                    activate(steps[i]);
+                    return;
+                }
+            }
+        }
+        function onScroll() {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(function () {
+                ticking = false;
+                if (!stagePinned()) {
+                    deactivate();
+                    return;
+                }
+                bootstrap();
+            });
+        }
+        addEventListener('scroll', onScroll, { passive: true });
+        addEventListener('resize', onScroll);
+        bootstrap();
+
+        steps.forEach(function (s) {
+            if (!s.querySelector(':scope > .step-card')) {
+                if (!s.querySelector(':scope > .step-k')) {
+                    var label = document.createElement('span');
+                    var number = parseInt(s.getAttribute('data-step'), 10) || 1;
+                    label.className = 'step-k';
+                    label.textContent = 'STEP ' + (number < 10 ? '0' : '') + number + ' / ' +
+                        (total < 10 ? '0' : '') + total;
+                    s.insertBefore(label, s.firstChild);
+                }
+                var card = document.createElement('div');
+                card.className = 'step-card';
+                var prog = document.createElement('div');
+                prog.className = 'step-progress';
+                prog.innerHTML = '<i></i>';
+                card.appendChild(prog);
+                while (s.firstChild) card.appendChild(s.firstChild);
+                s.appendChild(card);
+            }
+            io.observe(s);
+        });
+    }
+
+    function measureCardReserve() {
+        if (!portraitMob.matches) return;
+        document.querySelectorAll('.sticky-scene').forEach(function (scene) {
+            var stage = scene.querySelector('.sticky-scene__stage');
+            if (!stage) return;
+            var max = 0;
+            scene.querySelectorAll('.step-card').forEach(function (c) {
+                var h = c.getBoundingClientRect().height;
+                if (h > max) max = h;
+            });
+            stage.style.setProperty('--card-reserve', (max + 30) + 'px');
+        });
+    }
+
+    var hooks = [];
+    function notifyHooks(scene, step, total) {
+        for (var i = 0; i < hooks.length; i++) {
+            hooks[i](scene, step, parseInt(step.getAttribute('data-step'), 10), total);
+        }
+    }
+
+    function init() {
+        document.querySelectorAll('.sticky-scene').forEach(wireScene);
+        measureCardReserve();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+
+    window.VBScene = {
+        init: init,
+        refresh: measureCardReserve,
+        onStep: function (fn) { if (typeof fn === 'function') hooks.push(fn); }
+    };
+    addEventListener('resize', measureCardReserve);
+    addEventListener('orientationchange', measureCardReserve);
+    addEventListener('load', measureCardReserve);
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', measureCardReserve);
+    }
+})();
+</script>
+    <script src="../js/post-progress.js" defer></script>
 <script src="../js/post-nav.js" defer></script>
 <script>
     if ('serviceWorker' in navigator) {
