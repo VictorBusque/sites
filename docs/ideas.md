@@ -22,5 +22,5 @@
 - [ ] How does an online payment actually happen?
 - [x] How does JPEG make a 10 MB photo become 500 KB?
 - [x] How does a QR code work?
-- [ ] How can one IP address represent millions of machines?
+- [x] How can one IP address represent millions of machines?
 - [ ] How does a jet engine work?

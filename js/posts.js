@@ -56,6 +56,15 @@ window.VB_POSTS = [
         "deck": "Follow one S3 upload: erasure-coded shards across three Availability Zones, a continuous repair loop, and the read barrier behind strong consistency."
     },
     {
+        "slug": "blog/how-nat-works.html",
+        "no": "13",
+        "title": "How NAT Works: Millions Behind One IP",
+        "date": "2026-08",
+        "topic": "Networks · NAT",
+        "tags": ["NAT", "CGNAT", "IPv4", "Ports"],
+        "deck": "Watch one packet get its address rewritten by a NAT table, then see the same table scale to a whole ISP — the honest arithmetic of millions behind one IP."
+    },
+    {
         "slug": "blog/write-ahead-log.html",
         "no": "08",
         "title": "How WAL Saves a $100 Transfer.",

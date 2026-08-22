@@ -1,0 +1,2934 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+
+    <!-- Primary meta -->
+    <title>How NAT Works: Millions Behind One IP — Víctor Busqué</title>
+    <meta name="description" content="Watch one packet get its address rewritten by a NAT table, then see the same table scale to a whole ISP — the honest arithmetic of millions behind one IP.">
+    <meta name="author" content="Víctor Busqué">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://engineering.victorbusque.com/blog/how-nat-works.html">
+
+    <!-- Favicons / PWA (absolute paths resolve from /blog/) -->
+    <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/img/favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#101010">
+    <meta name="apple-mobile-web-app-title" content="VB Posts">
+    <meta name="application-name" content="VB Posts">
+    <meta name="color-scheme" content="light dark">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Víctor Busqué — Curiosities">
+    <meta property="og:title" content="How NAT Works: Millions Behind One IP — Víctor Busqué">
+    <meta property="og:description" content="Watch one packet get its address rewritten by a NAT table, then see the same table scale to a whole ISP — the honest arithmetic of millions behind one IP.">
+    <meta property="og:url" content="https://engineering.victorbusque.com/blog/how-nat-works.html">
+    <meta property="og:image" content="https://engineering.victorbusque.com/img/og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="How NAT Works: Millions Behind One IP — Víctor Busqué">
+    <meta name="twitter:description" content="Watch one packet get its address rewritten by a NAT table, then see the same table scale to a whole ISP — the honest arithmetic of millions behind one IP.">
+    <meta name="twitter:image" content="https://engineering.victorbusque.com/img/og.png">
+
+    <!-- Performance: preconnect to font CDN -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Structured data — matches js/posts.js, the site's single post manifest. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": "How NAT Works: Millions Behind One IP",
+      "description": "Watch one packet get its address rewritten by a NAT table, then see the same table scale to a whole ISP — the honest arithmetic of millions behind one IP.",
+      "datePublished": "2026-08",
+      "author": { "@id": "https://engineering.victorbusque.com/#person" },
+      "publisher": { "@id": "https://engineering.victorbusque.com/#person" },
+      "url": "https://engineering.victorbusque.com/blog/how-nat-works.html",
+      "mainEntityOfPage": "https://engineering.victorbusque.com/blog/how-nat-works.html",
+      "inLanguage": "en",
+      "keywords": ["NAT", "CGNAT", "IPv4", "Ports"],
+      "articleSection": "Networks · NAT"
+    }
+    </script>
+
+    <!-- The .js gate: enables the scene overlay layout. Without it (no JS,
+         reduced motion) scenes render as a plain document — stage first,
+         steps stacked. Must run before the body parses. -->
+    <script>document.documentElement.className += ' js';</script>
+
+    <style>
+/* ── Base stylesheet ────────────────────────────────────────────────
+   Inlined from the former shared css/site.css. This copy belongs to
+   this article alone and may diverge from every other page. */
+/* ==========================================================================
+   site.css — shared design system
+   Víctor Busqué · Living Engineering Notes
+   Landing page specifics live inline in index.html; figure specifics live
+   inline in each blog post. This file is the shared skeleton.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Unbounded:wght@400;500;600;700&display=swap');
+
+/* ── Tokens ─────────────────────────────────────────────── */
+:root {
+    --ink: #101010;
+    --paper: #f2f0e9;
+    --paper-2: #ece9de;
+    --acid: #c7ff3d;
+    --blue: #546cff;
+    --orange: #ff6b2c;
+    --muted: #716f68;
+    --line: #111111;
+
+    /* stages (dark diagram canvases) */
+    --stage: #121212;
+    --stage-2: #1a1a1a;
+    --grid: #ffffff0d;
+
+    /* motion system — premium editorial */
+    --ease-out: cubic-bezier(.16, 1, .3, 1);       /* entrances: decelerate */
+    --ease-in: cubic-bezier(.55, 0, .85, .36);     /* exits: accelerate */
+    --ease-snap: cubic-bezier(.2, 0, 0, 1);        /* micro-interactions */
+    --ease-swift: cubic-bezier(.4, 0, .2, 1);      /* on-screen state */
+    --t-fast: 180ms;
+    --t-med: 400ms;
+    --t-slow: 800ms;
+    --t-dramatic: 1100ms;
+}
+
+/* ── Base ───────────────────────────────────────────────── */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 84px;
+}
+
+/* A document must be traversable before any visual choreography matters.
+   site.js inserts this link when a page has a <main>; it stays out of sight
+   until keyboard users need it. */
+.skip-link {
+    position: fixed;
+    left: max(16px, env(safe-area-inset-left, 0px));
+    top: max(12px, env(safe-area-inset-top, 0px));
+    z-index: 100;
+    padding: 10px 14px;
+    background: var(--acid);
+    color: var(--ink);
+    font: 10px "DM Mono", monospace;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    transform: translateY(-160%);
+    transition: transform var(--t-fast) var(--ease-out);
+}
+.skip-link:focus { transform: none; }
+
+body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Newsreader", Georgia, serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+::selection {
+    background: var(--acid);
+    color: var(--ink);
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 3px;
+}
+
+.mono { font-family: "DM Mono", monospace; }
+.serif { font-family: "Instrument Serif", serif; }
+
+/* ── Scroll progress ────────────────────────────────────── */
+.progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 100%;
+    background: var(--acid);
+    transform-origin: 0 50%;
+    transform: scaleX(0);
+    z-index: 60;
+    pointer-events: none;
+}
+@keyframes vb-progress-scroll { to { transform: scaleX(1); } }
+/* Native scroll timelines keep the reading rail on the compositor where the
+   browser supports them. site.js retains an rAF fallback elsewhere. */
+@supports (animation-timeline: scroll(root block)) {
+    .progress {
+        animation: vb-progress-scroll 1ms linear both;
+        animation-timeline: scroll(root block);
+    }
+}
+
+/* ── Cursor ─────────────────────────────────────────────── */
+.cursor-dot,
+.cursor-ring {
+    position: fixed;
+    top: 0;
+    left: 0;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 70;
+    transform: translate(-50%, -50%);
+}
+.cursor-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--acid);
+}
+.cursor-ring {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #10101055;
+    transition: width var(--t-fast) var(--ease-snap), height var(--t-fast) var(--ease-snap),
+        border-color var(--t-fast) var(--ease-snap), opacity var(--t-fast) var(--ease-snap);
+}
+.cursor-ring.is-hot {
+    width: 46px;
+    height: 46px;
+    border-color: var(--orange);
+}
+@media (hover: none), (pointer: coarse) {
+    .cursor-dot, .cursor-ring { display: none; }
+}
+
+/* ── Nav ────────────────────────────────────────────────── */
+nav {
+    height: 70px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    padding: 0 4vw;
+    position: sticky;
+    top: 0;
+    background: #f2f0e9e8;
+    backdrop-filter: blur(16px);
+    z-index: 50;
+}
+
+.logo {
+    font-family: "Unbounded", sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -.06em;
+    display: inline-flex;
+    align-items: center;
+}
+.logo i {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: var(--acid);
+    border-radius: 50%;
+    margin-left: 6px;
+    animation: blink 1.8s var(--ease-snap) infinite, ping 2.4s var(--ease-out) infinite;
+}
+
+nav .links {
+    margin-left: auto;
+    display: flex;
+    gap: 30px;
+    font-size: 13px;
+}
+nav .links a {
+    position: relative;
+    padding: 6px 0;
+    transition: color var(--t-fast) var(--ease-snap);
+}
+nav .links a::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 1px;
+    background: var(--ink);
+    transform: scaleX(0);
+    transform-origin: 100% 50%;
+    transition: transform var(--t-med) var(--ease-out);
+}
+nav .links a:hover::after {
+    transform: scaleX(1);
+    transform-origin: 0 50%;
+}
+
+/* Reader-controlled pause for ambient movement. It does not remove the
+   scroll-driven states themselves; those remain a direct consequence of the
+   reader's own input. */
+.motion-toggle {
+    appearance: none;
+    border: 0;
+    padding: 6px 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    font-size: 10px;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: color var(--t-fast) var(--ease-snap);
+}
+.motion-toggle::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin: 0 7px 1px 0;
+    border-radius: 50%;
+    background: var(--acid);
+    box-shadow: 0 0 0 0 #c7ff3d66;
+    vertical-align: middle;
+}
+.motion-toggle:hover { color: var(--blue); }
+.motion-toggle[aria-pressed="true"]::before {
+    background: var(--orange);
+    box-shadow: none;
+}
+html.vb-motion-paused { scroll-behavior: auto; }
+html.vb-motion-paused *,
+html.vb-motion-paused *::before,
+html.vb-motion-paused *::after {
+    animation-play-state: paused !important;
+}
+
+.status {
+    margin-left: 30px;
+    padding-left: 30px;
+    border-left: 1px solid #11111133;
+    font: 10px "DM Mono";
+    color: #777;
+}
+.status b {
+    color: var(--ink);
+    font-weight: 500;
+}
+
+/* Nav toggle — injected by site.js, only visible on small screens.
+   The burger morphs into an X; the menu drops from the nav. */
+.nav-toggle {
+    display: none;
+    margin-left: auto;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    border: 1px solid var(--line);
+    background: transparent;
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease-snap),
+        transform var(--t-fast) var(--ease-snap);
+}
+.nav-toggle:hover { background: var(--ink); }
+.nav-toggle:active { transform: scale(.92); }
+.nav-toggle-icon {
+    position: relative;
+    display: block;
+    width: 16px;
+    height: 10px;
+}
+.nav-toggle-icon i {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 1.6px;
+    background: var(--ink);
+    transition: transform var(--t-med) var(--ease-out),
+        opacity var(--t-fast) var(--ease-snap),
+        background var(--t-fast) var(--ease-snap);
+}
+.nav-toggle-icon i:nth-child(1) { top: 0; }
+.nav-toggle-icon i:nth-child(2) { top: 4px; }
+.nav-toggle-icon i:nth-child(3) { top: 8px; }
+.nav-toggle:hover .nav-toggle-icon i { background: var(--acid); }
+.nav-toggle.is-open .nav-toggle-icon i:nth-child(1) { transform: translateY(4px) rotate(45deg); }
+.nav-toggle.is-open .nav-toggle-icon i:nth-child(2) { opacity: 0; }
+.nav-toggle.is-open .nav-toggle-icon i:nth-child(3) { transform: translateY(-4px) rotate(-45deg); }
+
+/* ── Marquee strip ──────────────────────────────────────── */
+.marquee {
+    border-bottom: 1px solid var(--line);
+    overflow: hidden;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 14px 0;
+}
+.marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee 30s linear infinite;
+    will-change: transform;
+}
+.marquee span {
+    font: 11px "DM Mono";
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    padding: 0 22px;
+}
+.marquee span i {
+    font-style: normal;
+    color: var(--acid);
+}
+
+/* ── Masked line reveals (scroll-triggered) ─────────────── */
+.mask .row {
+    display: block;
+    overflow: hidden;
+    padding-bottom: .06em;
+    margin-bottom: -.06em;
+}
+.mask .row > span {
+    display: block;
+    transform: translateY(112%);
+    transition: transform 1s var(--ease-out);
+    transition-delay: calc(var(--i, 0) * .12s);
+}
+.mask.seen .row > span {
+    transform: translateY(0);
+}
+
+/* ── Load-time line reveals (heroes) ────────────────────── */
+.h-line {
+    display: block;
+    overflow: hidden;
+    padding-bottom: .08em;
+    margin-bottom: -.08em;
+}
+.h-line > span {
+    display: block;
+    transform: translateY(112%);
+    animation: rise var(--t-dramatic) var(--ease-out) both;
+}
+.h-line:nth-child(1) > span { animation-delay: .1s; }
+.h-line:nth-child(2) > span { animation-delay: .22s; }
+.h-line:nth-child(3) > span { animation-delay: .34s; }
+
+/* ── Scroll reveals ─────────────────────────────────────── */
+.reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity var(--t-slow) var(--ease-out), transform var(--t-slow) var(--ease-out);
+    transition-delay: var(--d, 0s);
+}
+.reveal.seen {
+    opacity: 1;
+    transform: none;
+}
+.stagger > * {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity var(--t-slow) var(--ease-out), transform var(--t-slow) var(--ease-out);
+}
+.stagger.seen > * {
+    opacity: 1;
+    transform: none;
+}
+.stagger > *:nth-child(1) { transition-delay: .05s; }
+.stagger > *:nth-child(2) { transition-delay: .15s; }
+.stagger > *:nth-child(3) { transition-delay: .25s; }
+.stagger > *:nth-child(4) { transition-delay: .35s; }
+.stagger > *:nth-child(5) { transition-delay: .45s; }
+
+/* ── Buttons / tags ─────────────────────────────────────── */
+.btn {
+    display: inline-block;
+    font: 10px "DM Mono";
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    border: 1px solid var(--line);
+    padding: 12px 18px;
+    background: transparent;
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease-snap), color var(--t-fast) var(--ease-snap);
+}
+.btn:hover {
+    background: var(--ink);
+    color: var(--paper);
+}
+
+.tag {
+    border: 1px solid #aaa;
+    padding: 6px 9px;
+    font: 10px "DM Mono";
+    background: var(--paper);
+    transition: border-color var(--t-fast) var(--ease-snap), transform var(--t-fast) var(--ease-snap);
+    cursor: default;
+}
+
+/* ── Figure system ──────────────────────────────────────── */
+/*
+   Every figure is a dark animated canvas with a head bar and a caption.
+   Two kinds:
+     · looping figures — pure CSS choreography, get PAUSE / REPLAY controls
+     · scripted figures — driven by a draw(i) function registered in
+       window.__figScripts, get PREV / PLAY / NEXT / RESET controls.
+   See blog/template.html for the recipe.
+*/
+.fig {
+    margin: 11vh auto;
+    width: 100%;
+}
+.fig-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border: 1px solid var(--line);
+    border-bottom: 0;
+    background: var(--paper-2);
+    padding: 12px 16px;
+}
+.fig-no {
+    font: 10px "DM Mono";
+    letter-spacing: .14em;
+    color: var(--orange);
+}
+.fig-name {
+    font: 10px "DM Mono";
+    letter-spacing: .18em;
+}
+.fig-readout {
+    font: 10px "DM Mono";
+    color: #666;
+    margin-left: auto;
+    text-align: right;
+    max-width: 46%;
+    line-height: 1.5;
+}
+.fig-controls {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.fig-btn {
+    font: 9px "DM Mono";
+    letter-spacing: .12em;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease-snap), color var(--t-fast) var(--ease-snap),
+        transform var(--t-fast) var(--ease-snap);
+}
+.fig-btn:hover {
+    background: var(--ink);
+    color: var(--paper);
+}
+.fig-btn:active {
+    transform: scale(.94);
+}
+.fig-btn.is-active {
+    background: var(--ink);
+    color: var(--acid);
+}
+.fig-btn:disabled {
+    opacity: .3;
+    cursor: default;
+    transform: none;
+}
+
+.fig-body {
+    border: 1px solid var(--line);
+    background-color: var(--stage);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 32px 32px;
+    position: relative;
+    overflow: hidden;
+    min-height: 380px;
+    color: #fff;
+}
+.fig-body::after {
+    content: "";
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    border: 1px solid #ffffff12;
+    border-radius: 50%;
+    right: -100px;
+    bottom: -100px;
+    pointer-events: none;
+}
+
+/* pause / restart mechanics */
+.fig.is-paused .fig-body *,
+.fig.is-paused .fig-body *::before,
+.fig.is-paused .fig-body *::after {
+    animation-play-state: paused !important;
+}
+.fig.is-restarting .fig-body *,
+.fig.is-restarting .fig-body *::before,
+.fig.is-restarting .fig-body *::after {
+    animation: none !important;
+    transition: none !important;
+}
+
+.fig-caption {
+    margin-top: 16px;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--muted);
+    max-width: 760px;
+}
+.fig-caption b {
+    font-family: "DM Mono";
+    font-size: 9.5px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--orange);
+    font-weight: 500;
+    margin-right: 8px;
+}
+
+/* ── Scene system (scrollytelling) ────────────────────────── */
+/*
+   Posts are scrollytelling articles. The scene system pins a dark stage
+   while step cards scroll over it — the scroll length is the timeline.
+   the scene runtime toggles .is-active on [data-step] cards, sets
+   data-active-step on the section, and fills [data-readout]. The overlay
+   layout exists only under the .js gate in <head>; without JS or under
+   reduced motion the scene is a plain document (stage block, then steps).
+   See blog/template.html for the recipe.
+*/
+.scene {
+    padding: 0 4vw;
+    margin: 11vh 0;
+}
+.scene.split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6vw;
+    align-items: center;
+    max-width: 1240px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.scene__copy h2 {
+    font-family: "Unbounded", sans-serif;
+    font-weight: 500;
+    font-size: clamp(25px, 3.4vw, 38px);
+    letter-spacing: -.045em;
+    line-height: 1.05;
+    margin: 0 0 20px;
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+}
+.scene__copy h2 .sec-no {
+    font: 10px "DM Mono";
+    letter-spacing: .14em;
+    color: var(--orange);
+    align-self: center;
+}
+.scene__copy p {
+    font-size: 17px;
+    line-height: 1.7;
+    color: #33322e;
+    margin-bottom: 1.2em;
+}
+.scene__visual {
+    display: grid;
+    place-items: center;
+}
+
+/* ── sticky scene ── */
+.sticky-scene {
+    position: relative;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+}
+.js .sticky-scene {
+    /* Steps begin over the stage because of their negative margin. Reserve
+       one extra viewport so the stage remains pinned through the final card
+       instead of releasing that card into the following prose section. */
+    padding-bottom: 100vh;
+    padding-bottom: 100svh;
+}
+.sticky-scene__stage {
+    background-color: var(--stage);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 32px 32px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    min-height: 60vh; /* static fallback */
+}
+.js .sticky-scene__stage {
+    position: sticky;
+    top: 0;
+    height: 100vh;   /* fallback for engines without svh */
+    height: 100svh;
+    min-height: 0;
+}
+.sticky-scene__stage::after {
+    content: "";
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    border: 1px solid #ffffff12;
+    border-radius: 50%;
+    right: -100px;
+    bottom: -100px;
+    pointer-events: none;
+}
+.scene-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid #ffffff1a;
+    padding: 12px 4vw;
+    position: relative;
+    z-index: 2;
+}
+.scene-no {
+    font: 10px "DM Mono";
+    letter-spacing: .14em;
+    color: var(--orange);
+}
+.scene-name {
+    font: 10px "DM Mono";
+    letter-spacing: .18em;
+}
+.scene-readout {
+    font: 10px "DM Mono";
+    color: #777;
+    margin-left: auto;
+}
+
+/* steps overlay — only under .js. Each article is a full-height track
+   through the pinned stage; the scene runtime wraps its content in .step-card,
+   the visual card (bg, border, 420px max). Without JS there is no
+   track — .step itself is the plain-document card. */
+.js .sticky-scene__steps {
+    position: relative;
+    margin-top: -100vh;   /* fallback for engines without svh */
+    margin-top: -100svh;
+    pointer-events: none;
+    z-index: 1;
+}
+.js .sticky-scene__steps > * {
+    min-height: 100vh;   /* fallback for engines without svh */
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    padding: 0 4vw;
+}
+.step {
+    max-width: 420px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    padding: 26px 28px;
+    color: var(--ink);
+}
+.js .step {
+    background: none;
+    border: 0;
+    padding: 0;
+    max-width: none;
+    pointer-events: none;
+}
+.js .step.is-active {
+    pointer-events: auto;
+}
+.step-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    padding: 26px 28px;
+    color: var(--ink);
+    opacity: 0;
+    transform: translateY(26px);
+    transition: opacity var(--t-slow) var(--ease-out),
+        transform var(--t-slow) var(--ease-out);
+}
+.js .step.is-active .step-card {
+    opacity: 1;
+    transform: none;
+}
+/* progress rail injected by the scene runtime into each card — a mobile-only
+   affordance (shown in the portrait block); hidden everywhere else */
+.step-progress {
+    display: none;
+}
+.step-k {
+    font: 9px "DM Mono";
+    letter-spacing: .16em;
+    color: var(--orange);
+    display: block;
+    margin-bottom: 10px;
+}
+.step p {
+    font-size: 16.5px;
+    line-height: 1.6;
+    color: #33322e;
+}
+.step p + p {
+    margin-top: .8em;
+}
+
+/* ── other scene kinds ── */
+.breather {
+    padding: 14vh 4vw;
+    text-align: center;
+}
+.breather .breather-line {
+    font: italic clamp(30px, 4.6vw, 54px)/1.25 "Instrument Serif";
+    max-width: 720px;
+    margin: 0 auto;
+}
+.metrics-scene {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 5vw;
+    align-items: center;
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 4vw;
+}
+.metrics-scene .metric {
+    font: italic clamp(90px, 14vw, 190px)/.9 "Instrument Serif";
+    letter-spacing: -.04em;
+}
+.metrics-scene p {
+    font-size: 17px;
+    line-height: 1.7;
+    color: #33322e;
+    max-width: 560px;
+}
+
+/* ── Blog post layout ───────────────────────────────────── */
+.post-hero {
+    border-bottom: 1px solid var(--line);
+    padding: 9vh 4vw 7vh;
+    position: relative;
+    overflow: hidden;
+}
+.post-hero .ghost {
+    position: absolute;
+    right: -1vw;
+    top: 2vh;
+    font: italic 160px/1 "Instrument Serif";
+    color: #1111110d;
+    pointer-events: none;
+    animation: floaty 9s var(--ease-swift) infinite;
+}
+.crumb {
+    font: 10px "DM Mono";
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: #777;
+    margin-bottom: 34px;
+}
+.crumb a {
+    border-bottom: 1px solid #777;
+    padding-bottom: 2px;
+    transition: color var(--t-fast) var(--ease-snap), border-color var(--t-fast) var(--ease-snap);
+}
+.crumb a:hover {
+    color: var(--ink);
+    border-color: var(--ink);
+}
+.post-hero h1 {
+    font-family: "Unbounded", sans-serif;
+    font-weight: 500;
+    font-size: clamp(46px, 7.5vw, 116px);
+    letter-spacing: -.07em;
+    line-height: .86;
+    margin: 0 0 34px;
+}
+.post-hero h1 em {
+    font-family: "Instrument Serif";
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -.04em;
+}
+.post-hero .dek {
+    font-size: 18px;
+    line-height: 1.6;
+    max-width: 620px;
+    color: #45433f;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fade-rise var(--t-slow) var(--ease-out) .55s both;
+}
+.post-meta {
+    margin-top: 40px;
+    display: flex;
+    gap: 26px;
+    flex-wrap: wrap;
+    font: 10px "DM Mono";
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #777;
+}
+.post-meta b {
+    color: var(--ink);
+    font-weight: 500;
+}
+
+.post-prose {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 5vh 4vw 0;
+}
+.post-prose > p {
+    font-size: 18px;
+    line-height: 1.74;
+    color: #33322e;
+    margin-bottom: 1.5em;
+}
+.post-prose > p strong {
+    font-weight: 600;
+}
+.post-prose h2 {
+    font-family: "Unbounded", sans-serif;
+    font-weight: 500;
+    font-size: clamp(25px, 3.4vw, 38px);
+    letter-spacing: -.045em;
+    line-height: 1.05;
+    margin: 11vh 0 20px;
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+}
+.post-prose h2 .sec-no {
+    font: 10px "DM Mono";
+    letter-spacing: .14em;
+    color: var(--orange);
+    align-self: center;
+}
+.post-prose .callout {
+    border-left: 4px solid var(--acid);
+    background: var(--paper-2);
+    padding: 22px 26px;
+    margin: 5vh 0;
+    font: italic 23px/1.45 "Instrument Serif";
+}
+.post-prose .callout em {
+    font-style: normal;
+}
+.post-prose .aside {
+    font: 11px/1.7 "DM Mono";
+    color: #777;
+    border-top: 1px solid #d8d4c6;
+    padding-top: 12px;
+    margin: 6vh 0;
+}
+
+/* ── Footer ─────────────────────────────────────────────── */
+footer {
+    padding: 6vw 4vw 3vw;
+    background: var(--ink);
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+footer::after {
+    content: "VB";
+    position: absolute;
+    right: -2vw;
+    bottom: -8vw;
+    font: 500 30vw/1 "Unbounded";
+    letter-spacing: -.12em;
+    color: #ffffff05;
+    pointer-events: none;
+    animation: floaty 10s var(--ease-swift) infinite;
+}
+.footer-big {
+    font-family: "Unbounded", sans-serif;
+    font-weight: 600;
+    font-size: clamp(65px, 10vw, 170px);
+    line-height: .78;
+    letter-spacing: -.07em;
+}
+.footer-big em {
+    font-family: "Instrument Serif";
+    font-weight: 400;
+    color: var(--acid);
+}
+.foot {
+    margin-top: 80px;
+    padding-top: 18px;
+    border-top: 1px solid #555;
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    font: 10px "DM Mono";
+    color: #999;
+}
+
+/* ── Keyframes ──────────────────────────────────────────── */
+@keyframes rise { to { transform: translateY(0); } }
+@keyframes fade-rise { to { opacity: 1; transform: none; } }
+@keyframes blink { 50% { opacity: .2; } }
+@keyframes ping {
+    0% { box-shadow: 0 0 0 0 #c7ff3d55; }
+    70% { box-shadow: 0 0 0 9px #c7ff3d00; }
+    100% { box-shadow: 0 0 0 0 #c7ff3d00; }
+}
+@keyframes marquee { to { transform: translateX(-50%); } }
+@keyframes floaty {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-14px); }
+}
+@keyframes pop {
+    0%, 12% { transform: scale(1); }
+    30% { transform: scale(1.18); }
+    40%, 100% { transform: scale(1); }
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 850px) {
+    .nav-toggle { display: grid; }
+    .status { display: none; }
+
+    /* dropdown panel — closes fast (accelerate), opens staggered (decelerate) */
+    nav .links {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin: 0;
+        padding: 8px 4vw 16px;
+        flex-direction: column;
+        gap: 0;
+        background: var(--paper);
+        border-bottom: 1px solid var(--line);
+        box-shadow: 0 30px 46px -34px #11111180;
+        transform-origin: 50% 0;
+        transform: scaleY(0);
+        visibility: hidden;
+        transition: transform var(--t-med) var(--ease-in),
+            visibility 0s linear var(--t-med);
+    }
+    nav.is-open .links {
+        transform: scaleY(1);
+        visibility: visible;
+        transition: transform var(--t-med) var(--ease-out),
+            visibility 0s;
+    }
+    nav .links a,
+    .motion-toggle {
+        padding: 13px 2px;
+        font-size: 15px;
+        border-bottom: 1px solid #11111114;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity var(--t-fast) var(--ease-out),
+            transform var(--t-fast) var(--ease-out);
+    }
+    nav .links > :last-child { border-bottom: 0; }
+    .motion-toggle { text-align: left; }
+    nav .links a::after { bottom: 6px; }
+    nav.is-open .links a,
+    nav.is-open .links .motion-toggle {
+        opacity: 1;
+        transform: none;
+        transition: opacity var(--t-med) var(--ease-out),
+            transform var(--t-med) var(--ease-out);
+        transition-delay: calc(60ms + var(--i, 0) * 60ms);
+    }
+    .fig-body { min-height: 300px; }
+    .fig-head { flex-wrap: wrap; gap: 10px; }
+    .fig-readout { max-width: 100%; margin-left: 0; }
+    .scene-head { flex-wrap: wrap; gap: 6px 14px; padding: 10px 4vw; }
+    .scene.split { grid-template-columns: 1fr; }
+    .metrics-scene { grid-template-columns: 1fr; gap: 4vh; }
+    /* scrollytelling on small screens: the card is sticky at the
+       viewport bottom while its step is active, and the diagram owns
+       the top of the stage — nothing overlaps at any scroll offset.
+       Page stages shift their content up (justify-content: flex-start,
+       tight top padding) in their own media queries. */
+    .js .sticky-scene__steps > * {
+        align-items: flex-end;
+        justify-content: center;
+        padding: 0 5vw;
+    }
+    .step-card {
+        position: sticky;
+        bottom: max(18px, env(safe-area-inset-bottom, 0px));
+        max-width: 560px;
+    }
+    .post-nav { display: none; }
+    .post-hero .ghost { font-size: 100px; }
+}
+
+/* ── Small phones: type and cards stay comfortable ──────── */
+@media (max-width: 480px) {
+    .post-hero h1 { font-size: clamp(38px, 10.5vw, 50px); }
+    .post-prose > p { font-size: 17px; }
+    .post-prose .callout { font-size: 20px; padding: 18px 20px; }
+    .metrics-scene .metric { font-size: clamp(72px, 26vw, 96px); }
+    .step-card { padding: 20px 22px; }
+    .step-card p { font-size: 15.5px; }
+    .breather .breather-line { font-size: clamp(26px, 8vw, 34px); }
+}
+
+/* ── Very narrow phones: the card gives a little more back ── */
+@media (max-width: 380px) {
+    .step-card { padding: 16px 18px; }
+    .step-card p { font-size: 14.5px; }
+}
+
+/* ── Short viewports (landscape phones): the card becomes a sticky
+   column pinned to the right edge, and stage content keeps to the
+   left — the overlay survives heights where top/bottom docking
+   would collide. ── */
+@media (max-height: 520px) and (max-width: 960px) {
+    .js .sticky-scene__steps > * {
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 0 3vw;
+    }
+    .step-card {
+        position: sticky;
+        right: max(14px, env(safe-area-inset-right, 0px));
+        bottom: max(12px, env(safe-area-inset-bottom, 0px));
+        max-width: 300px;
+    }
+    /* stages: content keeps left of the card column; children capped
+       so vw-based widths (lanes, plates) cannot reach under the card */
+    .sticky-scene__stage > div { padding-right: 48%; padding-top: 44px; }
+    .sticky-scene__stage > div > * { max-width: 100%; }
+}
+
+/* ── Portrait phones ────────────────────────────────────────
+   The sticky stage becomes a column: the scene-head sits just below the
+   sticky nav, and the diagram child fills the rest and centers in the
+   space above the bottom-docked card. Its bottom padding is
+   --card-reserve, measured from the tallest step card by the scene runtime, so
+   the animation never starts too high, never runs under the card, and
+   is properly centered instead of shoved to the top. The card is capped
+   in height (scrolls if its text is long) and cross-fades quickly so it
+   never reads as text "disappearing early". Landscape (short-height)
+   phones keep the right-docked card layout above. ── */
+@media (max-width: 850px) and (min-height: 521px) {
+    .js .sticky-scene__stage {
+        display: flex;
+        flex-direction: column;
+        padding-top: 70px;   /* clear the sticky nav */
+    }
+    .js .sticky-scene__stage .scene-head {
+        flex: 0 0 auto;
+        width: 100%;
+        padding: 8px 4vw;
+    }
+    /* the page-specific diagram child (.*-stage) is promoted to a flex
+       child that fills the stage below the head and centers its content */
+    .js .sticky-scene__stage > :not(.scene-head) {
+        position: static !important;
+        flex: 1 1 auto;
+        width: 100%;
+        min-height: 0;
+        justify-content: center !important;
+        padding: 10px 4vw calc(var(--card-reserve, 36vh) + 4px) !important;
+    }
+    /* Each card owns one viewport. Besides giving the reader enough time to
+       read, that lets flex-end place the card at the bottom from its first
+       frame; a shorter track made step one appear high in the stage. */
+    .js .sticky-scene__steps > * {
+        min-height: 100vh;
+        min-height: 100svh;
+    }
+    /* ── the step text: a bottom sheet ──
+       The step text is presented as a docked, rounded sheet at the bottom
+       of the pinned stage — the standard mobile scrollytelling affordance.
+       It slides up and fades in when its step is active and slides back
+       down on dismissal; inside, the label then the paragraph rise in
+       with a slight stagger. A thin progress rail shows how far you are
+       through the scene. Bounded (and scrollable) so it never crowds the
+       diagram above it. Background/border inherit from the base card so
+       each page theme keeps its own surface. */
+    .js .step-card {
+        width: 100%;
+        max-width: 560px;
+        border-radius: 18px 18px 14px 14px;
+        box-shadow: 0 20px 44px -24px rgba(0,0,0,.55);
+        padding: 12px 20px 18px;
+        max-height: 44vh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        opacity: 0;
+        transform: translateY(52px);
+        transform-origin: 50% 100%;
+        /* resting/dismiss state: text clears quickly so the next diagram
+           state gets the stage to itself before its own text arrives */
+        transition: opacity .16s var(--ease-in), transform .2s var(--ease-in);
+    }
+    /* entrance is choreographed: the diagram changes first, then after a
+       beat the sheet rises. Scrolling up replays the same lag, so every
+       step always reads as animation-then-text. */
+    .js .step.is-active .step-card {
+        opacity: 1;
+        transform: none;
+        transition: opacity .36s var(--ease-out) .2s, transform .44s var(--ease-out) .2s;
+    }
+    /* the progress rail — how far you are through this scene (sweeps as
+       the sheet rises, in both directions) */
+    .step-progress {
+        display: block;
+        height: 3px;
+        border-radius: 3px;
+        background: rgba(127,127,127,.28);
+        overflow: hidden;
+        margin: 0 0 12px;
+    }
+    .step-progress i {
+        display: block;
+        height: 100%;
+        width: 0;
+        border-radius: 3px;
+        background: var(--acid);
+        transition: width .5s var(--ease-out) .2s;
+    }
+    /* label then body rise in after the sheet (motion-aware) */
+    @media (prefers-reduced-motion: no-preference) {
+        .js .step-card .step-k,
+        .js .step-card p {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity .14s var(--ease-in), transform .16s var(--ease-in);
+        }
+        .js .step.is-active .step-card .step-k {
+            opacity: 1;
+            transform: none;
+            transition: opacity .3s var(--ease-out) .24s, transform .32s var(--ease-out) .24s;
+        }
+        .js .step.is-active .step-card p {
+            opacity: 1;
+            transform: none;
+            transition: opacity .3s var(--ease-out) .3s, transform .32s var(--ease-out) .3s;
+        }
+    }
+}
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+    }
+    nav .links { transition-delay: 0s; }
+    .reveal, .stagger > *, .h-line > span, .post-hero .dek {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+    .fig.is-paused .fig-body *,
+    .fig.is-paused .fig-body *::before,
+    .fig.is-paused .fig-body *::after {
+        animation-play-state: initial !important;
+    }
+    /* scenes → plain document flow: stage block first, steps stacked */
+    .js .sticky-scene__stage { position: relative; height: auto; min-height: 50vh; }
+    .js .sticky-scene { padding-bottom: 0; }
+    .js .sticky-scene__steps { margin-top: 0; }
+    .js .sticky-scene__steps > * { min-height: auto; display: block; padding: 0 4vw; }
+    .js .step {
+        opacity: 1 !important;
+        transform: none !important;
+        max-width: none;
+        background: none;
+        border: 0;
+        padding: 30px 0;
+        pointer-events: auto;
+    }
+    .js .step-card {
+        opacity: 1 !important;
+        transform: none !important;
+        background: none;
+        border: 0;
+        padding: 0;
+        max-width: none;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+    }
+    .step-progress { display: none !important; }
+}
+
+</style>
+    <script>
+/* ── Inlined site runtime ────────────────────────────────────────────
+   Formerly the shared js/vb.js — this copy belongs to this article
+   alone and may diverge from every other page. ── */
+/* ==========================================================================
+   vb.js — tiny shared utilities for page scripts
+   --------------------------------------------------------------------------
+   Small, general-purpose helpers that posts reach for over and over: HTML
+   escaping for computed text, a deterministic seeded PRNG, motion
+   choreography (retrigger / count-up), reduced-motion detection, and a few
+   number formatters (pct / ordinal / superscript). Centralized here so no
+   article re-implements them by hand — the site's "every article works the
+   same" rule extends to helpers, not just scene wiring.
+
+   Everything lives on one namespace, window.VB:
+
+     VB.reduceMotion   boolean — (prefers-reduced-motion: reduce) at load
+     VB.esc(str)       HTML-escape &, <, >, quotes for safe computed HTML
+     VB.mulberry32(seed) → fn() deterministic float PRNG in [0,1)
+     VB.fmt.pct(p[, d])   d=0..100 → "88.2%"
+     VB.fmt.ordinal(n)    21 → "ST", 3 → "RD"  (n≥1)
+     VB.fmt.sup(n)        1024 → "¹⁰²⁴"         (negative → ⁻ prefix)
+     VB.motion.retrig(el, cls)   force-restart a CSS animation class
+     VB.motion.countUp(el, txt[, opts])
+         animate a numeric textContent from 0 to parseFloat(txt)
+         opts: { ms: 480, digits: 1 } — reduced-motion → set instantly
+
+   Load: this copy is inlined in <head> so window.VB exists while page
+   scripts parse. The site and scene runtimes are inlined at end of body,
+   after the page's own scripts. To register scene reactions from a page
+   script, use VB.onReady(fn) — it runs fn once the scene runtime has
+   mounted window.VBScene (at DOMContentLoaded), so no hand-rolled
+   MutationObserver on data-active-step.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* HTML-escape computed strings before writing them into innerHTML. */
+    function esc(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    /* Deterministic seeded PRNG (mulberry32) — identical sequence for the
+       same seed, so sampled/randomized page state is reproducible. */
+    function mulberry32(seed) {
+        var a = seed | 0;
+        return function () {
+            a |= 0; a = a + 0x6D2B79F5 | 0;
+            var t = Math.imul(a ^ a >>> 15, 1 | a);
+            t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+            return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        };
+    }
+
+    /* ── number formatters ── */
+    function pct(p, digits) {
+        return (p * 100).toFixed(digits == null ? 1 : digits) + '%';
+    }
+    function ordinal(n) {
+        var s = ['TH', 'ST', 'ND', 'RD'], v = n % 100;
+        return s[(v - 20) % 10] || s[v] || s[0];
+    }
+    function sup(n) {
+        var D = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+        return (n < 0 ? '⁻' : '') + String(Math.abs(n)).split('').map(function (c) { return D[+c]; }).join('');
+    }
+
+    /* ── motion choreography helpers ──
+       retrig(el, cls) removes then re-adds a class after a forced reflow,
+       so a CSS animation restarts from its beginning. */
+    function retrig(el, cls) {
+        el.classList.remove(cls);
+        void el.offsetWidth;
+        el.classList.add(cls);
+    }
+
+    /* countUp(el, txt) animates a numeric textContent from 0 up to
+       parseFloat(txt) over ~480ms (eased), then sets the exact string.
+       Non-numeric or reduced-motion → set instantly. Safe to re-call:
+       a later call cancels the earlier one. */
+    function countUp(el, txt, opts) {
+        opts = opts || {};
+        var target = parseFloat(txt);
+        if (reduceMotion || isNaN(target)) { el.textContent = txt; return; }
+        var ms = opts.ms || 480;
+        var digits = opts.digits == null ? 1 : opts.digits;
+        var id = (el._vbCountUpId || 0) + 1;
+        el._vbCountUpId = id;
+        (function frame(t) {
+            if (id !== el._vbCountUpId) return;
+            var k = Math.max(0, Math.min(1, (t - t0) / ms));
+            var e = 1 - Math.pow(1 - k, 3);
+            el.textContent = (target * e).toFixed(digits) + '%';
+            if (k < 1) requestAnimationFrame(frame);
+            else el.textContent = txt;
+        })(t0);
+    }
+
+    /* onReady(fn) — run fn once the scene module (window.VBScene) exists.
+       The scene runtime is inlined after the page scripts, so this queues
+       fn until DOMContentLoaded, which fires after those scripts execute. */
+    function onReady(fn) {
+        if (window.VBScene) { fn(); return; }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () { fn(); });
+        } else if (window.VBScene) {
+            fn();
+        } else {
+            document.addEventListener('DOMContentLoaded', function () { fn(); });
+        }
+    }
+
+    window.VB = {
+        reduceMotion: reduceMotion,
+        esc: esc,
+        mulberry32: mulberry32,
+        fmt: { pct: pct, ordinal: ordinal, sup: sup },
+        motion: { retrig: retrig, countUp: countUp },
+        onReady: onReady
+    };
+})();
+
+</script>
+    <style>
+        /* ════════════════════════════════════════════════════════════════
+           HOW NAT WORKS — article styles
+           Night-sorting-office ledger: mono slips, stamped rows, one
+           dashed midline per scene. Palette semantics follow the house:
+           acid = a row born or matched, blue = the packet under
+           examination, orange = the field to watch / a drop.
+           All stage states are named and keyed off data-active-step.
+           Base state (no data-active-step) is the final, most
+           informative state — no-JS readers land on it.
+           ════════════════════════════════════════════════════════════════ */
+
+        /* ── hero extras ── */
+        .hh-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 26px; }
+        .hh-chip {
+            font: 10px "DM Mono", monospace;
+            letter-spacing: .12em;
+            border: 1px solid var(--line);
+            padding: 8px 12px;
+            background: var(--paper-2);
+            color: var(--muted);
+        }
+        .hh-chip b { color: var(--ink); font-weight: 500; }
+
+        /* ── S01 · the port wall (split scene, on paper) ── */
+        .pw {
+            position: relative;
+            width: min(420px, 100%);
+            aspect-ratio: 1;
+            border: 1px solid var(--line);
+            background-color: var(--paper-2);
+            background-image: radial-gradient(#1010102e 1px, transparent 1.4px);
+            background-size: 7px 7px;
+            overflow: hidden;
+        }
+        .pw-band { position: absolute; left: 0; right: 0; }
+        .pw-band.dy { top: 0; height: 25%; background: #546cff1f; border-bottom: 1px dashed #546cff88; }
+        .pw-band.reg { top: 25%; height: 73.4375%; }
+        .pw-band.wk { top: 98.4375%; height: 1.5625%; background: #ff6b2c55; }
+        .pw-band .pw-lab {
+            position: absolute;
+            right: 10px;
+            top: 8px;
+            font: 9px "DM Mono", monospace;
+            letter-spacing: .1em;
+            color: var(--ink);
+            background: var(--paper);
+            border: 1px solid var(--line);
+            padding: 4px 8px;
+        }
+        .pw-dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            margin: -6px 0 0 -6px;
+            border-radius: 50%;
+            background: var(--acid);
+            border: 1.5px solid var(--ink);
+            box-shadow: 0 0 0 5px #c7ff3d33;
+        }
+        .pw-dot i {
+            position: absolute;
+            right: 16px;
+            top: -5px;
+            font: 9px "DM Mono", monospace;
+            font-style: normal;
+            letter-spacing: .1em;
+            white-space: nowrap;
+            background: var(--ink);
+            color: var(--acid);
+            padding: 3px 7px;
+        }
+        .pw-legend {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 14px;
+            font: 9px "DM Mono", monospace;
+            letter-spacing: .1em;
+            color: var(--muted);
+        }
+        .pw-legend b { font-weight: 500; color: var(--ink); }
+        .pw-legend .sw { display: inline-block; width: 9px; height: 9px; border: 1px solid var(--line); margin-right: 6px; vertical-align: -1px; }
+        .pw-legend .sw.dy { background: #546cff55; }
+        .pw-legend .sw.reg { background: var(--paper-2); }
+        .pw-legend .sw.wk { background: #ff6b2c77; }
+
+        /* ── S02 · the ledger (sticky) ── */
+        .l-stage {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 18px;
+            padding: 84px 4vw 24px;
+            max-width: 860px;
+            margin: 0 auto;
+        }
+        .l-lane { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; }
+        .l-end {
+            border: 1px solid #ffffff2a;
+            padding: 10px 12px;
+            font: 10px "DM Mono", monospace;
+            letter-spacing: .1em;
+            color: #aaa;
+            text-align: center;
+            transition: opacity .5s var(--ease-swift), border-color .5s var(--ease-swift), box-shadow .5s var(--ease-swift);
+        }
+        .l-end b { display: block; color: #fff; font-weight: 400; font-size: 11px; margin-bottom: 3px; }
+        .l-nat {
+            border: 1px solid var(--blue);
+            color: #fff;
+            padding: 12px 16px;
+            font: 11px "DM Mono", monospace;
+            letter-spacing: .12em;
+            text-align: center;
+            background: #546cff14;
+            transition: box-shadow .5s var(--ease-swift);
+        }
+        .l-nat span { display: block; color: #9aa5ff; font-size: 9px; margin-top: 3px; }
+
+        .l-track { position: relative; height: 74px; }
+        .l-slip {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 250px;
+            background: var(--stage-2);
+            border: 1px solid #ffffff3d;
+            padding: 10px 14px;
+            font: 10.5px "DM Mono", monospace;
+            letter-spacing: .06em;
+            color: #fff;
+            transition: left .8s var(--ease-swift), opacity .5s var(--ease-swift), border-color .5s var(--ease-swift);
+            z-index: 2;
+        }
+        .l-slip .l-dir { font-size: 8.5px; letter-spacing: .18em; color: #777; margin-bottom: 2px; }
+        .l-slip .v { position: relative; display: inline-block; }
+        .l-slip .v i {
+            position: absolute;
+            left: 0;
+            top: 0;
+            font-style: normal;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity .45s var(--ease-swift);
+        }
+        .l-slip .v.on i { opacity: 1; }
+        .l-slip .v.on > span { opacity: 0; }
+        .l-slip .v > span { transition: opacity .45s var(--ease-swift); color: #9aa5ff; }
+        .l-slip b { color: var(--acid); font-weight: 400; }
+        .l-slip.rep { border-color: #ffffff1f; }
+        .l-tag {
+            position: absolute;
+            right: 8px;
+            top: -9px;
+            font: 8px "DM Mono", monospace;
+            letter-spacing: .14em;
+            background: var(--orange);
+            color: #121212;
+            padding: 2px 6px;
+            opacity: 0;
+            transition: opacity .4s var(--ease-swift);
+        }
+        .l-tag.show { opacity: 1; }
+        /* step 1 shows the pre-rewrite source: ID-keyed overrides beat .on */
+        .sticky-scene[data-active-step="1"] #lSlipOut .v > span { opacity: 1; }
+        .sticky-scene[data-active-step="1"] #lSlipOut .v i { opacity: 0; }
+
+        .l-ledger { border: 1px solid #ffffff24; }
+        .l-head, .l-row {
+            display: grid;
+            grid-template-columns: 1.1fr 1.2fr 1.2fr;
+            gap: 8px;
+            padding: 9px 12px;
+            font: 10px "DM Mono", monospace;
+            letter-spacing: .06em;
+            align-items: center;
+        }
+        .l-head {
+            color: #777;
+            font-size: 8.5px;
+            letter-spacing: .16em;
+            border-bottom: 1px solid #ffffff1a;
+            background: #ffffff08;
+        }
+        .l-row {
+            color: #bbb;
+            border-bottom: 1px solid #ffffff12;
+            position: relative;
+            background: #ffffff05;
+            transition: opacity .5s var(--ease-swift), transform .5s var(--ease-swift),
+                background .5s var(--ease-swift), border-color .5s var(--ease-swift);
+        }
+        .l-row:last-child { border-bottom: 0; }
+        .l-row .o { color: #fff; }
+        .l-row .o b { color: var(--acid); font-weight: 500; }
+        .l-ttl {
+            position: absolute;
+            right: 8px;
+            top: -8px;
+            font: 8px "DM Mono", monospace;
+            font-style: normal;
+            letter-spacing: .12em;
+            color: var(--orange);
+            background: var(--stage);
+            border: 1px solid #ff6b2c66;
+            padding: 1px 6px;
+            opacity: 0;
+            transition: opacity .5s var(--ease-swift);
+        }
+        .l-ttl.show { opacity: 1; }
+        .l-chips { display: flex; gap: 10px; flex-wrap: wrap; }
+        .l-chip {
+            font: 9px "DM Mono", monospace;
+            letter-spacing: .14em;
+            color: #999;
+            border: 1px solid #ffffff1f;
+            padding: 6px 10px;
+            transition: color .4s var(--ease-swift), border-color .4s var(--ease-swift);
+        }
+        .l-chip b { color: var(--acid); font-weight: 500; }
+
+        /* S02 step states — base = final state (rows live, swaps shown) */
+        .sticky-scene[data-active-step="1"] #lRow1, .sticky-scene[data-active-step="1"] #lRow2 { opacity: 0; transform: translateY(-8px); }
+        .sticky-scene[data-active-step="1"] #lSlipOut { left: 8%; }
+        .sticky-scene[data-active-step="1"] #lSlipIn, .sticky-scene[data-active-step="2"] #lSlipIn { opacity: 0; }
+        .sticky-scene[data-active-step="2"] #lSlipOut { left: 50%; }
+        .sticky-scene[data-active-step="2"] #lRow2 { opacity: 0; transform: translateY(-8px); }
+        .sticky-scene[data-active-step="3"] #lSlipOut { opacity: .12; left: 8%; }
+        .sticky-scene[data-active-step="3"] #lSlipIn { left: 50%; border-color: var(--acid); }
+        .sticky-scene[data-active-step="3"] #lSlipIn .l-tag.show { opacity: 1; }
+        .sticky-scene[data-active-step="3"] #lRow1 { background: #c7ff3d12; border-color: #c7ff3d55; }
+        .sticky-scene[data-active-step="3"] #lRow2 { opacity: 0; transform: translateY(-8px); }
+        .sticky-scene[data-active-step="4"] #lSlipOut { opacity: .12; left: 8%; }
+        .sticky-scene[data-active-step="4"] #lSlipIn { opacity: 0; }
+        .sticky-scene[data-active-step="4"] #lRow2 { background: #c7ff3d12; border-color: #c7ff3d55; }
+        .sticky-scene[data-active-step="5"] #lHome { opacity: .22; }
+        .sticky-scene[data-active-step="5"] .l-nat { box-shadow: 0 0 24px #c7ff3d22; }
+        .sticky-scene[data-active-step="5"] #lSlipOut, .sticky-scene[data-active-step="5"] #lSlipIn { opacity: .1; }
+
+        /* ── S03 · no row, no entry (sticky) ── */
+        .r-stage {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 20px;
+            padding: 84px 4vw 24px;
+            max-width: 720px;
+            margin: 0 auto;
+        }
+        .r-lane { display: grid; grid-template-columns: 1fr auto 1.2fr; gap: 14px; align-items: center; }
+        .r-router {
+            border: 1px solid var(--blue);
+            background: #546cff14;
+            color: #fff;
+            padding: 14px 18px;
+            font: 11px "DM Mono", monospace;
+            letter-spacing: .12em;
+            text-align: center;
+        }
+        .r-router span { display: block; color: #9aa5ff; font-size: 9px; margin-top: 4px; letter-spacing: .14em; }
+        .r-slip {
+            border: 1px solid var(--orange);
+            color: #ffdead;
+            background: #ff6b2c12;
+            padding: 10px 12px;
+            font: 10px "DM Mono", monospace;
+            letter-spacing: .05em;
+            /* base = fallen: dimmed, tilted into the bin */
+            transform: translateY(22px) rotate(-8deg);
+            opacity: .3;
+            transition: transform .7s var(--ease-in), opacity .5s var(--ease-swift);
+        }
+        .r-drop {
+            border: 1px dashed #ff6b2c88;
+            padding: 14px;
+            font: 9.5px "DM Mono", monospace;
+            letter-spacing: .14em;
+            color: #ff9c6b;
+            text-align: center;
+            transition: background .5s var(--ease-swift);
+        }
+        .r-rows { border: 1px solid #ffffff24; }
+        .r-row {
+            display: grid;
+            grid-template-columns: 1.1fr 1.2fr;
+            gap: 8px;
+            padding: 9px 12px;
+            font: 10px "DM Mono", monospace;
+            color: #bbb;
+            border-bottom: 1px solid #ffffff12;
+            position: relative;
+            transition: opacity .6s var(--ease-swift);
+        }
+        .r-row:last-child { border-bottom: 0; }
+        .r-row .o { color: #fff; }
+        .r-row .o b { color: var(--acid); font-weight: 500; }
+        .r-perm {
+            position: absolute;
+            right: 8px;
+            top: -9px;
+            font: 8px "DM Mono", monospace;
+            letter-spacing: .16em;
+            color: var(--acid);
+            border: 1px solid #c7ff3d88;
+            background: var(--stage);
+            padding: 2px 7px;
+            transform: rotate(-2deg);
+        }
+        .r-chip {
+            font: 9px "DM Mono", monospace;
+            letter-spacing: .14em;
+            color: #999;
+            border: 1px solid #ffffff1f;
+            padding: 6px 10px;
+            align-self: flex-start;
+        }
+        .r-chip b { color: var(--orange); font-weight: 500; }
+        .r-mem {
+            font: 9px "DM Mono", monospace;
+            letter-spacing: .18em;
+            color: #9aa5ff;
+            opacity: 0;
+            transition: opacity .5s var(--ease-swift);
+        }
+        .r-mem.show { opacity: 1; }
+
+        /* S03 step states — base = final (attempt fallen, TTLs on, permanent stamped) */
+        .sticky-scene[data-active-step="1"] .r-slip { opacity: 1; transform: translateY(0) rotate(-2deg); }
+        .sticky-scene[data-active-step="1"] .r-ttl { opacity: 0; }
+        .sticky-scene[data-active-step="1"] .r-perm { opacity: 0; }
+        .sticky-scene[data-active-step="1"] .r-mem { opacity: 0; }
+        .sticky-scene[data-active-step="2"] .r-perm { opacity: 0; }
+        .sticky-scene[data-active-step="2"] .r-mem { opacity: 0; }
+        .sticky-scene[data-active-step="3"] .r-mem { opacity: 0; }
+        #rRowA { opacity: .3; }
+
+        /* ── S04 · two clerks (sticky) ── */
+        .c-stage {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 14px;
+            padding: 84px 4vw 24px;
+            max-width: 720px;
+            margin: 0 auto;
+        }
+        .c-plate { border: 1px solid #ffffff28; background: #ffffff05; }
+        .c-plate h4 {
+            font: 9px "DM Mono", monospace;
+            font-weight: 400;
+            letter-spacing: .16em;
+            color: #777;
+            padding: 8px 12px;
+            border-bottom: 1px solid #ffffff1a;
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            transition: color .4s var(--ease-swift);
+        }
+        .c-plate h4 b { color: #fff; font-weight: 400; }
+        .c-row {
+            display: grid;
+            grid-template-columns: 1.15fr 1fr;
+            gap: 8px;
+            padding: 7px 12px;
+            font: 10px "DM Mono", monospace;
+            color: #bbb;
+            border-bottom: 1px solid #ffffff0f;
+            transition: opacity .5s var(--ease-swift), background .5s var(--ease-swift);
+        }
+        .c-row:last-child { border-bottom: 0; }
+        .c-row .o { color: #fff; }
+        .c-row .o b { color: var(--acid); font-weight: 500; }
+        .c-row .you { color: #9aa5ff; }
+        .c-bar { height: 10px; border: 1px solid #ffffff24; position: relative; overflow: hidden; }
+        .c-bar i {
+            position: absolute;
+            inset: 0;
+            width: 92%;
+            background: repeating-linear-gradient(-55deg, #546cff 0 6px, #546cff88 6px 12px);
+            transition: width .9s var(--ease-out);
+        }
+        .c-bar-lab { font: 8.5px "DM Mono", monospace; letter-spacing: .16em; color: #777; }
+        .c-chip {
+            font: 9px "DM Mono", monospace;
+            letter-spacing: .14em;
+            color: #999;
+            border: 1px solid #ffffff1f;
+            padding: 6px 10px;
+            align-self: flex-start;
+        }
+        .c-chip b { color: var(--acid); font-weight: 500; }
+
+        /* S04 step states — base = final (ISP table full, bar filled) */
+        .sticky-scene[data-active-step="1"] .c-isp .c-row { opacity: 0; }
+        .sticky-scene[data-active-step="1"] #cBarFill { width: 0; }
+        .sticky-scene[data-active-step="2"] .c-isp .c-row { opacity: 0; }
+        .sticky-scene[data-active-step="2"] .c-isp .c-row:first-of-type { opacity: 1; background: #c7ff3d10; }
+        .sticky-scene[data-active-step="2"] #cBarFill { width: 0; }
+        .sticky-scene[data-active-step="3"] #cBarFill { width: 74%; }
+
+        /* ── S05 · the rationing dial (interactive, on paper) ── */
+        .d-panel { border: 1px solid var(--line); background: var(--paper-2); padding: 26px; margin: 5vh 0; }
+        .d-ctls { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+        .d-ctl label { font: 9px "DM Mono", monospace; letter-spacing: .16em; color: var(--muted); display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .d-ctl label output { color: var(--ink); font-weight: 500; }
+        .d-ctl input[type="range"] { width: 100%; accent-color: var(--ink); }
+        .d-presets { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 4px; }
+        .d-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; }
+        .d-card { border: 1px solid var(--line); background: var(--paper); padding: 18px 20px; }
+        .d-card .k { font: 8.5px "DM Mono", monospace; letter-spacing: .16em; color: var(--muted); display: block; margin-bottom: 8px; }
+        .d-card .n { font: italic clamp(30px, 4vw, 44px)/1 "Instrument Serif", serif; letter-spacing: -.03em; }
+        .d-card .u { font: 9px "DM Mono", monospace; color: var(--muted); display: block; margin-top: 8px; letter-spacing: .12em; }
+        .d-strip { display: flex; height: 26px; border: 1px solid var(--line); margin-top: 22px; overflow: hidden; }
+        .d-strip i { flex: 1 1 0; background: #546cff66; box-shadow: inset -1px 0 0 var(--paper); }
+        .d-strip i.alt { background: #546cff2e; }
+        .d-strip-lab { font: 8.5px "DM Mono", monospace; letter-spacing: .14em; color: var(--muted); margin-top: 8px; display: block; }
+        .d-note { font: 9px "DM Mono", monospace; letter-spacing: .14em; color: var(--muted); margin-top: 16px; }
+        .d-fallback { width: 100%; border-collapse: collapse; margin: 4vh 0; font: 10.5px "DM Mono", monospace; }
+        .d-fallback th, .d-fallback td { border: 1px solid var(--line); padding: 8px 10px; text-align: right; }
+        .d-fallback th { font-weight: 400; letter-spacing: .12em; font-size: 8.5px; color: var(--muted); background: var(--paper-2); }
+        .d-fallback td:first-child, .d-fallback th:first-child { text-align: left; }
+
+        .bx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 5vh 0; }
+        .bx-card { border: 1px solid var(--line); background: var(--paper-2); padding: 22px; }
+        .bx-card .bx-k { font: 9px "DM Mono", monospace; letter-spacing: .16em; color: var(--orange); display: block; margin-bottom: 10px; }
+        .bx-card h4 { font-size: 16px; margin-bottom: 8px; font-family: "Newsreader", serif; font-weight: 600; }
+        .bx-card p { font-size: 13.5px; color: #55534e; line-height: 1.55; }
+
+        /* ── S06 · the hole punch (sticky) ── */
+        .p-stage {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 16px;
+            padding: 84px 4vw 24px;
+            max-width: 760px;
+            margin: 0 auto;
+        }
+        .p-broker {
+            align-self: center;
+            font: 9.5px "DM Mono", monospace;
+            letter-spacing: .16em;
+            color: #9aa5ff;
+            border: 1px dashed #546cff88;
+            padding: 7px 14px;
+            transition: box-shadow .5s var(--ease-swift);
+        }
+        .p-duel { position: relative; display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; }
+        .p-card { border: 1px solid #ffffff28; background: #ffffff05; padding: 12px; font: 10px "DM Mono", monospace; color: #aaa; }
+        .p-card b { display: block; color: #fff; font-weight: 400; font-size: 11px; margin-bottom: 6px; letter-spacing: .1em; }
+        .p-disc {
+            display: block;
+            margin-top: 8px;
+            border: 1px solid #c7ff3d66;
+            color: var(--acid);
+            padding: 5px 8px;
+            font-size: 9.5px;
+            opacity: 0;
+            transition: opacity .5s var(--ease-swift);
+        }
+        .p-disc.show { opacity: 1; }
+        .p-mid { position: relative; height: 60px; width: 120px; }
+        .p-arr {
+            position: absolute;
+            top: 18px;
+            height: 2px;
+            width: 100%;
+            background: var(--blue);
+            transform: scaleX(1);
+            transform-origin: left center;
+            transition: transform .7s var(--ease-swift), opacity .5s var(--ease-swift);
+        }
+        .p-arr.r { top: 40px; transform-origin: right center; }
+        .p-arr::after {
+            content: "";
+            position: absolute;
+            right: -1px;
+            top: -4px;
+            border: 5px solid transparent;
+            border-left: 8px solid var(--blue);
+        }
+        .p-arr.r::after { right: auto; left: -1px; border-left: 0; border-right: 8px solid var(--blue); }
+        .p-meet {
+            position: absolute;
+            left: 50%;
+            top: 30px;
+            width: 14px;
+            height: 14px;
+            margin: -7px 0 0 -7px;
+            border-radius: 50%;
+            background: var(--acid);
+            box-shadow: 0 0 0 6px #c7ff3d26;
+            opacity: 1;
+            transition: opacity .5s var(--ease-swift);
+        }
+        .p-relay {
+            position: absolute;
+            left: 50%;
+            bottom: -34px;
+            transform: translateX(-50%);
+            font: 8.5px "DM Mono", monospace;
+            letter-spacing: .14em;
+            color: #ff9c6b;
+            border: 1px dashed #ff6b2c88;
+            padding: 4px 10px;
+            opacity: 0;
+            transition: opacity .5s var(--ease-swift);
+        }
+        .p-chip {
+            font: 9px "DM Mono", monospace;
+            letter-spacing: .14em;
+            color: #999;
+            border: 1px solid #ffffff1f;
+            padding: 6px 10px;
+            align-self: center;
+        }
+        .p-chip b { color: var(--acid); font-weight: 500; }
+
+        /* S06 step states — base = final (direct beam established) */
+        .sticky-scene[data-active-step="1"] .p-disc, .sticky-scene[data-active-step="2"] .p-disc { opacity: 0; }
+        .sticky-scene[data-active-step="1"] .p-arr { transform: scaleX(0); }
+        .sticky-scene[data-active-step="1"] .p-meet, .sticky-scene[data-active-step="2"] .p-meet { opacity: 0; }
+        .sticky-scene[data-active-step="4"] .p-arr { opacity: .2; }
+        .sticky-scene[data-active-step="4"] .p-relay { opacity: 1; }
+        .sticky-scene[data-active-step="4"] .p-meet { background: var(--orange); box-shadow: 0 0 0 6px #ff6b2c26; }
+
+        /* ── mobile ── */
+        @media (max-width: 850px), (max-height: 520px) and (max-width: 960px) {
+            .l-stage, .r-stage, .c-stage, .p-stage { justify-content: flex-start; padding: 14px 4vw 12px; gap: 12px; }
+            .l-slip { min-width: 200px; font-size: 9.5px; }
+            /* keep the crossing slips safely on-stage on narrow screens */
+            .l-slip { left: 50% !important; }
+            .l-track { height: 88px; }
+            .l-head, .l-row { font-size: 8.5px; padding: 7px 8px; }
+            .l-lane, .r-lane { grid-template-columns: 1fr; gap: 8px; }
+            .r-lane { grid-template-columns: 1fr; }
+            .c-row { font-size: 8.5px; padding: 6px 8px; }
+            .d-ctls { grid-template-columns: 1fr; }
+            .d-cards { grid-template-columns: 1fr 1fr; }
+            .bx-grid { grid-template-columns: 1fr; }
+            .p-duel { grid-template-columns: 1fr; }
+            .p-mid { width: 100%; height: 72px; }
+            .p-arr, .p-arr.r { left: 0; right: 0; width: 100%; }
+            .p-arr { top: 26px; transform-origin: left center; }
+            .p-arr.r { top: 44px; transform-origin: right center; }
+            .p-meet { top: 34px; }
+            .p-relay { bottom: 6px; }
+            .pw { width: 100%; }
+        }
+        @media (max-width: 480px) {
+            .d-cards { grid-template-columns: 1fr; }
+            .l-lane, .l-track { font-size: 9px; }
+            .l-slip { min-width: 180px; }
+            .hh-chip { font-size: 9px; }
+        }
+    </style>
+    <link rel="stylesheet" href="../css/post-progress.css">
+    <link rel="stylesheet" href="../css/post-nav.css">
+</head>
+
+<body data-vb-progress-start="#c7ff3d" data-vb-progress-mid="#546cff" data-vb-progress-end="#ff6b2c">
+    <!-- Chrome (progress, cursor, navigator) is embedded by this page's
+         inlined runtime and the two shared components -->
+    <header class="post-hero">
+        <div class="ghost" aria-hidden="true">2¹⁶</div>
+        <div class="crumb"><a href="../index.html">Index</a> / NETWORKS · POST 13</div>
+        <h1>
+            <span class="h-line"><span>One address,</span></span>
+            <span class="h-line"><span><em>millions</em> of machines.</span></span>
+        </h1>
+        <p class="dek">There are 4,294,967,296 IPv4 addresses — fewer than one for every two people alive — and yet a planet of devices gets online. The escape is a 16-bit field nobody talks about, and a box that rewrites packets and remembers.</p>
+        <div class="post-meta"><span>AUG <b>2026</b></span><span>~<b>11</b> MIN</span><span><b>4</b> STICKY SCENES + <b>1</b> DIAL</span><span>MODE: <b>NAT · CGNAT</b></span></div>
+        <div class="hh-row" aria-hidden="true">
+            <span class="hh-chip">PUBLIC ADDRESS <b>62.204.7.9</b></span>
+            <span class="hh-chip">SLOTS <b>65,536</b></span>
+            <span class="hh-chip">MACHINES BEHIND IT <b>COMPUTED BELOW</b></span>
+        </div>
+    </header>
+
+    <main>
+        <article class="post-prose">
+            <h2><span class="sec-no">01</span>The shortage that made the trick necessary</h2>
+            <p>An IPv4 address is 32 bits, so the entire internet has at most <strong>4,294,967,296</strong> of them. On 3 February 2011, the pool of unallocated addresses at IANA ran empty — the last five /8 blocks went to the five regional registries, and one by one those ran dry too: APNIC in 2011, RIPE NCC in 2012, LACNIC in 2014, ARIN in 2015. There is no barrel left. Addresses now move only by trade and recovery.</p>
+            <p>Demand never noticed. The world passed <strong>8 billion people</strong> in November 2022 — nearly two of us per address before counting a single gadget. A typical US internet household keeps about <strong>17 connected devices</strong> (Parks Associates survey, Q3 2023). Count every phone, TV, console and doorbell and the machines outnumber addresses several times over. And yet everything connects.</p>
+            <p>The escape hatch was proposed in 1994, as a deliberate stopgap: let many machines share one public address, and let a box in the middle rewrite packets so nobody can tell. That box is a <strong>NAT</strong> — a network address translator — and the field that makes it possible is the <strong>port</strong>. Thirty years later it carries most residential traffic on Earth, in two sizes: the one on your shelf, and the one your ISP rents by the city.</p>
+            <div class="aside">SCARCITY HAS A PRICE TAG: ON THE 2025 SECONDARY MARKET, AN IPv4 ADDRESS TRANSFERRED FOR ≈ $27.75 ON AVERAGE ACROSS 901 TRANSACTIONS (MARKET REPORT — PRICES VARY BY BROKER AND BLOCK SIZE).</div>
+        </article>
+
+        <!-- ════ S01 · the port wall (split) ════ -->
+        <section class="scene split">
+            <div class="scene__copy">
+                <h2><span class="sec-no">02</span>An address is 65,536 mailboxes</h2>
+                <p>The port field is 16 bits, so every IP address offers <strong>65,536 numbered slots</strong> — and TCP and UDP each get their own full set. Any single conversation is four numbers: your address, a slot you picked, their address, a slot they always use. Your laptop to a website is <span class="mono">you:51724 ↔ site:443</span>.</p>
+                <p>The slots are zoned. The bottom 1,024 (<span class="mono">0–1023</span>) are reserved for services that listen on fixed numbers — 443 for HTTPS, 53 for DNS. Clients almost never listen; they grab a free slot from the <strong>dynamic range</strong>, <span class="mono">49152–65535</span>, the top quarter of the wall, and hold it just for that conversation.</p>
+                <p>Keep the proportions of this wall in mind. The whole trick of this article is that the wall — not the address — is what a NAT rents out.</p>
+            </div>
+            <div class="scene__visual">
+                <div class="pw reveal" role="img" aria-label="A wall of 65,536 port slots: the top quarter is the dynamic range 49152 to 65535, the middle 73 percent is registered ports, the bottom sliver 0 to 1023 is well-known.">
+                    <div class="pw-band dy"><span class="pw-lab">49152–65535 · DYNAMIC · 16,384</span></div>
+                    <div class="pw-band reg"><span class="pw-lab">1024–49151 · REGISTERED · 48,128</span></div>
+                    <div class="pw-band wk"></div>
+                    <span class="pw-dot" id="pwDot"><i>51,724 · CLAIMED (ILLUSTRATIVE)</i></span>
+                </div>
+                <div class="pw-legend">
+                    <span><i class="sw dy"></i><b>DYNAMIC</b> · CLIENTS PICK HERE</span>
+                    <span><i class="sw reg"></i><b>REGISTERED</b> · SERVICES</span>
+                    <span><i class="sw wk"></i><b>WELL-KNOWN</b> · 0–1023</span>
+                </div>
+            </div>
+        </section>
+
+        <article class="post-prose">
+            <h2><span class="sec-no">03</span>Two fields, then a swap</h2>
+            <p>Every packet carries four numbers that decide its fate: <strong>source address, source port, destination address, destination port</strong>. NAT's insight is disarmingly simple: if a box in the middle quietly rewrites two of them — and remembers what it did — then any number of private machines can share one public identity.</p>
+            <p>Private machines use ranges set aside in 1996 for exactly this: <span class="mono">10.x.x.x</span>, <span class="mono">172.16–31.x.x</span>, <span class="mono">192.168.x.x</span>. Your home almost certainly lives at 192.168-dot-something. These addresses are forbidden on the public internet — which is the point: they are infinitely reusable because they mean nothing outside their own network.</p>
+            <p>Your router is the box in the middle. Watch it work.</p>
+        </article>
+
+        <!-- ════ S02 · the ledger (sticky) ════ -->
+        <section class="sticky-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 02</span>
+                    <span class="scene-name">THE LEDGER</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="l-stage">
+                    <div class="l-lane">
+                        <div class="l-end" id="lHome"><b>192.168.1.0/24</b>YOUR HOME</div>
+                        <div class="l-nat">NAT<span>203.0.113.7 · ILLUSTRATIVE</span></div>
+                        <div class="l-end"><b>THE INTERNET</b>93.184.216.34:443</div>
+                    </div>
+                    <div class="l-track">
+                        <div class="l-slip" id="lSlipOut">
+                            <span class="l-dir">OUTBOUND · LAPTOP → EXAMPLE.COM</span>
+                            <span>FROM <span class="v on" id="lSwapOut"><span>192.168.1.20:<b>51724</b></span><i>203.0.113.7:<b>50123</b></i></span></span>
+                            <span>TO 93.184.216.34:443</span>
+                        </div>
+                        <div class="l-slip rep" id="lSlipIn">
+                            <span class="l-tag show">MATCHED → SWAPPED</span>
+                            <span class="l-dir">REPLY · EXAMPLE.COM → HOME</span>
+                            <span>FROM 93.184.216.34:443</span>
+                            <span>TO <span class="v" id="lSwapIn">192.168.1.20:<b>51724</b> · DELIVERED</span></span>
+                        </div>
+                    </div>
+                    <div class="l-ledger">
+                        <div class="l-head"><span>OUTSIDE SLOT</span><span>INSIDE</span><span>TALKING TO</span></div>
+                        <div class="l-row" id="lRow1">
+                            <span class="o">203.0.113.7:<b>50123</b></span><span>192.168.1.20:51724</span><span>93.184.216.34:443</span>
+                            <i class="l-ttl show">TTL · 30 S QUIET</i>
+                        </div>
+                        <div class="l-row" id="lRow2">
+                            <span class="o">203.0.113.7:<b>50124</b></span><span>192.168.1.34:40001</span><span>198.51.100.18:443</span>
+                            <i class="l-ttl show">TTL · 30 S QUIET</i>
+                        </div>
+                    </div>
+                    <div class="l-chips"><span class="l-chip" id="lRows">ROWS <b>2</b> · ALL VALUES ILLUSTRATIVE, DOC-RANGE ADDRESSES</span></div>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>Your laptop starts a conversation: a packet <span class="mono">FROM 192.168.1.20:51724</span> <span class="mono">TO 93.184.216.34:443</span>. That source address is private — it cannot cross the internet. So the router does something to this packet.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>It rewrites the source to <span class="mono">203.0.113.7:50123</span> — its own public address, and a free slot it just picked — and stamps a row into its <strong>translation table</strong>. From this moment, the table, not the address, remembers who is talking.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p>The server replies to <span class="mono">203.0.113.7:50123</span> — the only address it has ever seen. The router matches the row, swaps the destination back to <span class="mono">192.168.1.20:51724</span>, and delivers. One rewrite out, one reverse rewrite home.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <p>Your phone starts its own conversation from <span class="mono">192.168.1.34:40001</span>. Same public address, next free slot: <span class="mono">50124</span>. Two conversations, two rows, one address — zero confusion.</p>
+                </article>
+                <article class="step" data-step="5">
+                    <p>From outside, your entire household is <strong>one machine</strong>: address <span class="mono">203.0.113.7</span>, a scatter of numbered slots. That is why every device at home reports the same answer on “what is my IP”.</p>
+                </article>
+                <article class="step" data-step="6">
+                    <p>The rows are rentals. They expire when the conversation goes quiet and vanish on reboot — which is exactly where the trouble starts.</p>
+                </article>
+            </div>
+        </section>
+
+        <!-- ════ S03 · no row, no entry (sticky) ════ -->
+        <section class="sticky-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 03</span>
+                    <span class="scene-name">NO ROW, NO ENTRY</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="r-stage">
+                    <div class="r-lane">
+                        <div class="r-router">ROUTER<span>203.0.113.7</span></div>
+                        <div class="r-slip" id="rSlip">
+                            <span class="l-dir" style="color:#b98663">UNSOLICITED · INBOUND</span>
+                            FROM 45.63.11.7:33300<br>TO 203.0.113.7:50200
+                        </div>
+                        <div class="r-drop">▼ DROP BIN<br><span id="rDrops">3 ATTEMPTS · 3 DROPS · COMPUTED</span></div>
+                    </div>
+                    <div class="r-rows">
+                        <div class="r-row" id="rRowA">
+                            <span class="o">203.0.113.7:<b>50123</b></span><span>192.168.1.20:51724</span>
+                            <i class="l-ttl show r-ttl">UDP · EXPIRES ~30 S QUIET</i>
+                        </div>
+                        <div class="r-row" id="rRowB">
+                            <span class="o">203.0.113.7:<b>50125</b></span><span>TCP · LIVES ~5 DAYS</span>
+                            <i class="l-ttl show r-ttl">TCP ESTABLISHED</i>
+                        </div>
+                        <div class="r-row" id="rRowF">
+                            <span class="o">203.0.113.7:<b>25565</b></span><span>192.168.1.45:25565</span>
+                            <span class="r-perm">PERMANENT · HAND-WRITTEN</span>
+                        </div>
+                    </div>
+                    <div class="r-mem show">EVERY ROW IS MEMORY — THE ROUTER PARTICIPATES IN EVERY CONVERSATION</div>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>A stranger somewhere sends a packet to <span class="mono">203.0.113.7:50200</span> — a slot nobody claimed. No row, no match, no delivery: <strong>the packet is dropped</strong>. The bin's counter is computed from this page's scripted attempt list — three tries, three drops. This is why you cannot host a game server at home just by asking nicely.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>Rows also <strong>expire</strong>. A UDP mapping that goes quiet dies in about 30 seconds; an established TCP mapping can live for days. (Timeouts shown are Linux netfilter defaults — illustrative.) Idle video calls and sleeping multiplayer lobbies disconnect because their rows evaporated, not because the network broke.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p>The exception is a row you write yourself. <strong>Port forwarding</strong> is a permanent mapping — slot 25565 always leads to the Minecraft machine, no conversation required. You write it; the router obeys. It is an invitation pinned to the door.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <p>And every row is <strong>memory</strong>. A pure wire would never need this scene: NAT makes the middle of the network a party to every conversation, tracking each one. Network elders grumble that this breaks the end-to-end principle — the edges were supposed to be smart and the middle dumb. The middle got a ledger instead.</p>
+                </article>
+            </div>
+        </section>
+
+        <article class="post-prose">
+            <div class="callout">No row, no entry. <em>The table decides everything.</em></div>
+        </article>
+
+        <!-- ════ S04 · two clerks (sticky) ════ -->
+        <section class="sticky-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 04</span>
+                    <span class="scene-name">TWO CLERKS</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="c-stage">
+                    <div class="c-plate c-home">
+                        <h4><span>HOME LEDGER · YOURS</span><b>192.168.1.0/24</b></h4>
+                        <div class="c-row"><span class="o">203.0.113.7:<b>50123</b></span><span>192.168.1.20:51724</span></div>
+                        <div class="c-row"><span class="o">203.0.113.7:<b>50124</b></span><span>192.168.1.34:40001</span></div>
+                    </div>
+                    <div class="c-plate c-isp">
+                        <h4><span>ISP LEDGER · CGNAT</span><b>62.204.7.9 SHARED</b></h4>
+                        <div class="c-row"><span class="o">62.204.7.9:<b>32001</b></span><span class="you">100.64.12.8 · YOUR HOUSE</span></div>
+                        <div class="c-row"><span class="o">62.204.7.9:<b>32002</b></span><span>100.64.12.9 · NEIGHBOR</span></div>
+                        <div class="c-row"><span class="o">62.204.7.9:<b>32177</b></span><span>100.64.12.9 · NEIGHBOR</span></div>
+                        <div class="c-row"><span class="o">62.204.7.9:<b>33045</b></span><span>100.64.19.2 · NEIGHBOR</span></div>
+                        <div class="c-row"><span class="o">62.204.7.9:<b>33190</b></span><span>100.64.19.2 · NEIGHBOR</span></div>
+                        <div class="c-row"><span class="o">62.204.7.9:<b>35204</b></span><span>100.64.31.7 · NEIGHBOR</span></div>
+                    </div>
+                    <div class="c-bar"><i id="cBarFill"></i></div>
+                    <span class="c-bar-lab">ONE PUBLIC ADDRESS · SLOT OCCUPANCY (ILLUSTRATIVE)</span>
+                    <div class="c-chip" id="cChip">EVERY ROW LOGGED: PROTOCOL · SUBSCRIBER · ADDRESS · PORT · TIME (RFC 6888)</div>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>Your ISP runs the same ledger, one size bigger. To it, your whole household — every row of your home table — is a <strong>single inside endpoint</strong>: <span class="mono">100.64.12.8</span>, an address from <span class="mono">100.64.0.0/10</span>, a private stage reserved in 2012 for exactly this job.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>The ISP's router rewrites again: your house's packet leaves as <span class="mono">62.204.7.9:32001</span> — a public address you <strong>share with strangers</strong>, wearing a slot that is yours only for now.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p>Neighbors stack into the same table: one outside address, distinct slots. Rows can number in the millions per device — which is why operators must <strong>log every row</strong> (protocol, subscriber, address, port, time). When abuse comes from a shared address, that log is the only way home.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <p>Two clerks, no shared notes: that's <strong>double NAT</strong>. You control the home clerk — you can write its permanent rows. You will never control the ISP's. Its rules, including how many slots you may hold, are the next scene.</p>
+                </article>
+            </div>
+        </section>
+
+        <article class="post-prose">
+            <h2><span class="sec-no">04</span>How far does one address stretch?</h2>
+            <p>One public address owns about <strong>64,512 usable slots</strong> — 65,536 minus the 1,024 reserved at the bottom; operators may hold back a few more. The entire art of carrier-grade NAT is deciding how many of those slots a subscriber may claim at once. The standard that defines CGNAT (RFC 6888) requires the limit to exist and to be configurable. Turn the dials — every number below is computed from them, in your browser, right now.</p>
+            <div class="d-panel">
+                <div class="d-ctls">
+                    <div class="d-ctl">
+                        <label for="dPorts">PORTS PER SUBSCRIBER <output id="dPortsV" for="dPorts">1,024</output></label>
+                        <input type="range" id="dPorts" min="256" max="8192" step="256" value="1024">
+                    </div>
+                    <div class="d-ctl">
+                        <label for="dDevices">DEVICES PER HOME <output id="dDevicesV" for="dDevices">17</output></label>
+                        <input type="range" id="dDevices" min="1" max="40" step="1" value="17">
+                    </div>
+                </div>
+                <div class="d-presets" role="group" aria-label="Illustrative presets">
+                    <button class="fig-btn d-preset" type="button" data-ports="256">MOBILE · 256</button>
+                    <button class="fig-btn d-preset" type="button" data-ports="1024">RATIONED · 1,024</button>
+                    <button class="fig-btn d-preset" type="button" data-ports="4096">GENEROUS · 4,096</button>
+                </div>
+                <div class="d-cards" aria-live="polite">
+                    <div class="d-card"><span class="k">SUBSCRIBERS PER ADDRESS</span><span class="n" id="dSubs">63</span><span class="u">⌊ 64,512 ÷ PORTS ⌋</span></div>
+                    <div class="d-card"><span class="k">DEVICES BEHIND ONE ADDRESS</span><span class="n" id="dDev">1,071</span><span class="u">SUBSCRIBERS × DEVICES</span></div>
+                    <div class="d-card"><span class="k">DEVICES PER /24 POOL</span><span class="n" id="d24">274,176</span><span class="u">256 ADDRESSES</span></div>
+                    <div class="d-card"><span class="k">DEVICES PER /22 POOL</span><span class="n" id="d22">1,096,704</span><span class="u">1,024 ADDRESSES — A MILLION</span></div>
+                </div>
+                <div class="d-strip" id="dStrip" aria-hidden="true"></div>
+                <span class="d-strip-lab">THE 64,512 SLOTS OF ONE ADDRESS, DIVIDED INTO PER-SUBSCRIBER BLOCKS</span>
+                <p class="d-note">COMPUTED FROM YOUR DIAL · RATIOS ILLUSTRATIVE — REAL LIMITS VARY BY ISP</p>
+                <table class="d-fallback">
+                    <caption class="d-note" style="text-align:left;padding:14px 0 8px">COMPUTED EXAMPLES AT 17 DEVICES PER HOME (THE SAME MODEL, EVALUATED WITHOUT THE DIAL)</caption>
+                    <thead>
+                        <tr><th>PORTS / SUBSCRIBER</th><th>SUBSCRIBERS / ADDRESS</th><th>DEVICES / ADDRESS</th><th>DEVICES / /24</th><th>DEVICES / /22</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>256</td><td>252</td><td>4,284</td><td>1,096,704</td><td>4,386,816</td></tr>
+                        <tr><td>1,024</td><td>63</td><td>1,071</td><td>274,176</td><td>1,096,704</td></tr>
+                        <tr><td>2,048</td><td>31</td><td>527</td><td>134,912</td><td>539,648</td></tr>
+                        <tr><td>4,096</td><td>15</td><td>255</td><td>65,280</td><td>261,120</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>At the dial's defaults, a single <span class="mono">/24</span> — 256 addresses, one small pool — fronts over a quarter million devices. Make the ration mobile-tight (256 ports) and the same pool fronts <strong>1.1 million</strong>. That is the honest version of the headline: no single address carries a million machines at once, but a pool smaller than a university campus carries them without breaking a rule.</p>
+            <p>What happens when a subscriber's block is spent and one more app wants out? The standard is blunt: <strong>drop the packet</strong>, send “host unreachable” if you must, and <strong>never evict a neighbor's live row</strong> to make room. Port exhaustion at 21:00 on a Sunday looks, from the sofa, exactly like the internet being broken.</p>
+        </article>
+
+        <article class="post-prose">
+            <h2><span class="sec-no">05</span>What sharing costs</h2>
+            <p>Address sharing is invisible right up until it isn't. The failures were documented as design issues, not accidents:</p>
+            <div class="bx-grid">
+                <div class="bx-card"><span class="bx-k">DOCUMENTED · RFC 6269</span><h4>Console gaming</h4><p>Two players whose households share one outside address may be unable to join each other's lobby — the game sees one player trying to connect to itself.</p></div>
+                <div class="bx-card"><span class="bx-k">DOCUMENTED · RFC 6269</span><h4>Geolocation</h4><p>Maps and weather place you at the ISP's shared router, not your house. Address-based local results quietly stop being local.</p></div>
+                <div class="bx-card"><span class="bx-k">DOCUMENTED · RFC 6269</span><h4>Login limits</h4><p>Banks and social networks cap simultaneous sessions per address. Strangers now share your address — and your quota.</p></div>
+                <div class="bx-card"><span class="bx-k">DOCUMENTED · RFC 6269</span><h4>Inbound by design</h4><p>Peer-to-peer seeding and incoming voice calls need a reachable slot. Behind two uncooperative clerks, that needs a trick — one scene away.</p></div>
+            </div>
+            <div class="aside">POOL EMPTIED, TOP DOWN: IANA 2011 · APNIC 2011 · RIPE NCC 2012 · LACNIC 2014 · ARIN 2015 — EVERY REGISTRY SINCE.</div>
+        </article>
+
+        <!-- ════ S05 · the hole punch (sticky) ════ -->
+        <section class="sticky-scene" data-scene>
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 06</span>
+                    <span class="scene-name">THE HOLE PUNCH</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="p-stage">
+                    <div class="p-broker">STUN · PUBLIC BROKER — “WHAT DO I LOOK LIKE FROM OUTSIDE?”</div>
+                    <div class="p-duel">
+                        <div class="p-card">
+                            <b>YOU · 192.168.1.7</b>
+                            TABLE ROWS: IN → OUT
+                            <span class="p-disc show">SEEN AS 62.204.7.9:32044</span>
+                        </div>
+                        <div class="p-mid">
+                            <span class="p-arr"></span>
+                            <span class="p-arr r"></span>
+                            <span class="p-meet"></span>
+                            <span class="p-relay">TURN · RELAY — ALWAYS WORKS, SLOWER</span>
+                        </div>
+                        <div class="p-card">
+                            <b>FRIEND · 10.2.44.9</b>
+                            TABLE ROWS: IN → OUT
+                            <span class="p-disc show">SEEN AS 198.51.100.4:61200</span>
+                        </div>
+                    </div>
+                    <div class="p-chip" id="pChip">DISCOVERY → SIMULTANEOUS OUTBOUND → DIRECT PATH</div>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>Two homes, two tables, both refusing inbound. First, discovery: each side asks a public broker — a <strong>STUN</strong> server — “what do I look like from outside?” You learn you are <span class="mono">62.204.7.9:32044</span>. Your friend learns they are <span class="mono">198.51.100.4:61200</span>.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>Now the punch: <strong>both fire outbound at each other's discovered endpoint, at the same moment</strong>. Each router stamps a row before the other's packet can arrive — the hole exists on both sides of the wall.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p>The rows line up and the conversation runs <strong>direct</strong>, full speed, no middleman. This choreography — gathering candidates, trying pairs — is standardized as <strong>ICE</strong>, and it is how multiplayer voice, video calls and WebRTC mostly work behind NAT.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <p>When tables are too strict for the punch, traffic falls back to a <strong>TURN</strong> relay — a public machine both sides can reach. Slower, always works. Every call you have ever made quietly picked one of these paths.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="breather">
+            <p class="breather-line reveal">An address is a lease on <em>sixty-five thousand slots.</em></p>
+        </section>
+
+        <article class="post-prose">
+            <h2><span class="sec-no">06</span>So what is an address now?</h2>
+            <p>Here is the whole answer in plain words. One IP address can front an entire household because every address carries 65,536 numbered ports, and a NAT swaps each machine's private return address for its own address plus a free port, keeping a lookup table so replies can be swapped back. Rent that same trick at ISP scale, ration the slots, and one address fronts an apartment block while a small pool fronts a city — hundreds of thousands to millions of machines that will never hold an address of their own.</p>
+            <p>The address stopped being a name. It became a lease on slots, and the <strong>table</strong> — not the address — is what takes your packets home. That is the quiet power shift of NAT: whoever runs the table runs the rules. Your router's table you can edit. Your ISP's you cannot.</p>
+            <p>The long way out is IPv6: 128-bit addresses, enough to name every device many times over, with no clerk in the middle. About <strong>half of Google's traffic already arrives that way</strong> (April 2026). Until the rest of the internet finishes moving, the clerk keeps it all moving — one rewritten envelope at a time.</p>
+            <p>Following packets is this notebook's habit: the journey of <a href="starlink.html">one Starlink packet through space</a> is its own note.</p>
+            <div class="callout">Whoever owns the table <em>owns the rules.</em></div>
+            <div class="ex-row">
+                <span class="tag">NAT</span><span class="tag">CGNAT</span><span class="tag">IPv4</span><span class="tag">PORTS</span>
+            </div>
+            <div class="aside">EVERY LEDGER VALUE IN THE SCENES IS ILLUSTRATIVE (DOCUMENTATION-RANGE ADDRESSES); EVERY ARITHMETIC RESULT IN THE DIAL IS COMPUTED BY THIS PAGE FROM YOUR INPUTS. SOURCES: RFC 793/768 (PORT FIELD), RFC 1918, RFC 1631/2663/3022 (NAT), RFC 6598 (100.64.0.0/10), RFC 6888 (CGNAT REQUIREMENTS), RFC 6269 (SHARING ISSUES), RFC 8445/8489/8656 (ICE/STUN/TURN); IANA/ARIN 2011 ANNOUNCEMENTS; PARKS ASSOCIATES Q3 2023; GOOGLE IPv6 STATS.</div>
+        </article>
+    </main>
+
+    <script>
+        /* ────────────────────────────────────────────────────────────
+           how-nat-works — honest state, computed and written into the
+           DOM. The sticky scenes need no scene JS of their own (the
+           inlined runtime drives step activation); this script only
+           computes: the wall dot's position from its port number, the
+           drop counter from the scripted attempts, and the rationing
+           dial's arithmetic from the reader's inputs.
+           ──────────────────────────────────────────────────────────── */
+        (function () {
+            'use strict';
+            var VB = window.VB;
+
+            /* ── S01 · claimed dot position (dynamic band = top 25%) ── */
+            var DY_LO = 49152, DY_N = 16384, CLAIMED = 51724;
+            var dot = document.getElementById('pwDot');
+            if (dot) {
+                var f = (CLAIMED - DY_LO) / DY_N;        /* 0.157 inside the band */
+                dot.style.top = (f * 25) + '%';          /* band is the top quarter */
+                dot.style.left = '63%';
+            }
+
+            /* ── S03 · drop counter from the scripted attempt list ── */
+            var ATTEMPTS = [
+                '45.63.11.7:33300 → 203.0.113.7:50200',
+                '185.220.101.4:4443 → 203.0.113.7:51888',
+                '92.63.194.87:60001 → 203.0.113.7:33012'
+            ];
+            var slips = document.querySelectorAll('.r-slip');
+            var rDrops = document.getElementById('rDrops');
+            if (rDrops && slips.length) {
+                rDrops.textContent = ATTEMPTS.length + ' ATTEMPTS · ' + ATTEMPTS.length + ' DROPS · COMPUTED';
+            }
+
+            /* ── S05 · the rationing dial ── */
+            var USABLE = 64512;
+            function fmt(n) { return n.toLocaleString('en-US'); }
+            /* integer count-up: 420ms, decelerate, instant on reduced motion */
+            function setNum(el, n) {
+                if (!el) return;
+                if (!VB || VB.reduceMotion) { el.textContent = fmt(n); return; }
+                var from = parseInt(el.textContent.replace(/,/g, ''), 10) || 0;
+                if (from === n) { el.textContent = fmt(n); return; }
+                var t0 = null, ms = 420;
+                el._vbN = n;
+                requestAnimationFrame(function stepFn(t) {
+                    if (el._vbN !== n) return;
+                    if (t0 === null) t0 = t;
+                    var k = Math.max(0, Math.min(1, (t - t0) / ms));
+                    var e = 1 - Math.pow(1 - k, 3);
+                    el.textContent = fmt(Math.round(from + (n - from) * e));
+                    if (k < 1) requestAnimationFrame(stepFn);
+                    else el.textContent = fmt(n);
+                });
+            }
+            var inP = document.getElementById('dPorts');
+            var inD = document.getElementById('dDevices');
+            function calc() {
+                var p = inP ? parseInt(inP.value, 10) : 1024;
+                var d = inD ? parseInt(inD.value, 10) : 17;
+                var subs = Math.floor(USABLE / p);
+                var dev = subs * d;
+                setNum(document.getElementById('dSubs'), subs);
+                setNum(document.getElementById('dDev'), dev);
+                setNum(document.getElementById('d24'), dev * 256);
+                setNum(document.getElementById('d22'), dev * 1024);
+                var vp = document.getElementById('dPortsV');
+                var vd = document.getElementById('dDevicesV');
+                if (vp) vp.textContent = fmt(p);
+                if (vd) vd.textContent = fmt(d);
+                var strip = document.getElementById('dStrip');
+                if (strip) {
+                    strip.innerHTML = '';
+                    var blocks = Math.min(subs, 252);
+                    for (var i = 0; i < blocks; i++) {
+                        var b = document.createElement('i');
+                        if (i % 2) b.className = 'alt';
+                        strip.appendChild(b);
+                    }
+                }
+            }
+            if (inP) inP.addEventListener('input', calc);
+            if (inD) inD.addEventListener('input', calc);
+            Array.prototype.forEach.call(document.querySelectorAll('.d-preset'), function (btn) {
+                btn.addEventListener('click', function () {
+                    if (inP) inP.value = btn.getAttribute('data-ports');
+                    calc();
+                });
+            });
+            calc();
+
+            /* — no-JS honesty net: the preset table in the HTML is
+               precomputed for 17 devices; verify it matches the model — */
+            function expect(p, d) { return Math.floor(USABLE / p) * d; }
+            if (window.console && console.log) {
+                console.log('[nat] presets ok:',
+                    expect(1024, 17) === 1071,
+                    expect(2048, 17) === 527,
+                    expect(4096, 17) === 255);
+            }
+        })();
+    </script>
+<script>
+/* ── Inlined article runtime ──────────────────────────────────────────
+   Formerly a shared runtime; this local copy drives only article-owned
+   reveals, motion preferences, and figures. The reading indicator is the
+   separate shared reading indicator component.
+   Scroll reveals: .reveal / .stagger / .mask
+   Legacy figures:                       .fig > .fig-body
+       looping figures get PAUSE / REPLAY; scripted figures get
+       PREV / PLAY / NEXT / RESET (window.__figScripts).
+   Sticky scenes (scrollytelling posts) are handled by the dedicated scene
+   module (inlined after this one). See that block for the
+   step-card / progress / data-active-step contract.
+   ========================================================================== */
+
+(function () {
+    'use strict';
+
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+    /* ── Accessibility route ─────────────────────────────── */
+    (function () {
+        var main = document.querySelector('main');
+        if (main && !document.querySelector('.skip-link')) {
+            if (!main.id) main.id = 'main-content';
+            var skip = document.createElement('a');
+            skip.className = 'skip-link';
+            skip.href = '#' + main.id;
+            skip.textContent = 'Skip to content';
+            document.body.insertBefore(skip, document.body.firstChild);
+        }
+    })();
+
+    /* ── Intersection reveals ────────────────────────────── */
+    if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (es) {
+            es.forEach(function (e) {
+                if (e.isIntersecting) {
+                    e.target.classList.add('seen');
+                    io.unobserve(e.target);
+                }
+            });
+        }, { threshold: .15 });
+        document.querySelectorAll('.reveal, .stagger').forEach(function (x) { io.observe(x); });
+
+        /* ── Masked line reveals ─────────────────────────── */
+        var maskIO = new IntersectionObserver(function (es) {
+            es.forEach(function (e) {
+                if (e.isIntersecting) {
+                    e.target.querySelectorAll('.row > span').forEach(function (s) { s.style.transform = 'translateY(0)'; });
+                    maskIO.unobserve(e.target);
+                }
+            });
+        }, { threshold: .25 });
+        document.querySelectorAll('.mask').forEach(function (x) { maskIO.observe(x); });
+    } else {
+        /* Old browsers get the complete document, never a partly hidden one. */
+        document.querySelectorAll('.reveal, .stagger').forEach(function (x) { x.classList.add('seen'); });
+        document.querySelectorAll('.mask .row > span').forEach(function (x) { x.style.transform = 'translateY(0)'; });
+    }
+
+    /* ── Marquee: duplicate for a seamless loop ──────────── */
+    document.querySelectorAll('.marquee-track').forEach(function (t) { t.innerHTML += t.innerHTML; });
+
+    /* ── Reader motion preference ───────────────────────── */
+    (function () {
+        var key = 'vb-motion-paused';
+        var root = document.documentElement;
+        var paused = false;
+        try { paused = window.localStorage.getItem(key) === 'true'; } catch (ignore) {}
+        function apply() {
+            root.classList.toggle('vb-motion-paused', paused);
+            document.querySelectorAll('.motion-toggle').forEach(function (button) {
+                button.setAttribute('aria-pressed', paused ? 'true' : 'false');
+                button.textContent = paused ? 'Motion: off' : 'Motion: on';
+            });
+        }
+        document.querySelectorAll('.motion-toggle').forEach(function (button) {
+            button.addEventListener('click', function () {
+                paused = !paused;
+                try { window.localStorage.setItem(key, String(paused)); } catch (ignore) {}
+                apply();
+            });
+        });
+        apply();
+    })();
+
+    /* ── Custom cursor ───────────────────────────────────── */
+    if (finePointer && !reduceMotion) {
+        var dot = document.getElementById('cDot');
+        var ring = document.getElementById('cRing');
+        if (dot && ring) {
+            var mx = innerWidth / 2, my = innerHeight / 2, rx = mx, ry = my;
+            addEventListener('mousemove', function (e) {
+                mx = e.clientX;
+                my = e.clientY;
+                dot.style.left = mx + 'px';
+                dot.style.top = my + 'px';
+            }, { passive: true });
+            (function follow() {
+                rx += (mx - rx) * .16;
+                ry += (my - ry) * .16;
+                ring.style.left = rx + 'px';
+                ring.style.top = ry + 'px';
+                requestAnimationFrame(follow);
+            })();
+            document.querySelectorAll('a, button, .tag, .fig-btn').forEach(function (el) {
+                el.addEventListener('mouseenter', function () { ring.classList.add('is-hot'); });
+                el.addEventListener('mouseleave', function () { ring.classList.remove('is-hot'); });
+            });
+        }
+    }
+
+    /* ── Responsive figure framing ───────────────────────────
+       Full-bleed SVGs may declare a tighter mobile frame with
+       data-vb-narrow="minX minY w h". Below 850px the engine swaps
+       the viewBox (reframed/zoomed, never shrunken) and restores it
+       on resize. Font bumps and canvas aspect live in each page's
+       media query. */
+    (function () {
+        var mq = window.matchMedia('(max-width: 850px)');
+        var svgs = document.querySelectorAll('[data-vb-narrow]');
+        svgs.forEach(function (s) {
+            if (s._vbWide === undefined) s._vbWide = s.getAttribute('viewBox');
+        });
+        function applyVB() {
+            svgs.forEach(function (s) {
+                s.setAttribute('viewBox', mq.matches ? s.getAttribute('data-vb-narrow') : s._vbWide);
+            });
+        }
+        applyVB();
+        if (mq.addEventListener) mq.addEventListener('change', applyVB);
+        else if (mq.addListener) mq.addListener(applyVB);
+    })();
+
+    /* ── Figure engine (legacy — about.html only) ───────────
+       Sticky scenes are handled by the scene module (inlined after this one). */
+    var scripts = window.__figScripts = window.__figScripts || {};
+
+    function makeBtn(label) {
+        var b = document.createElement('button');
+        b.className = 'fig-btn';
+        b.type = 'button';
+        b.textContent = label;
+        return b;
+    }
+
+    document.querySelectorAll('.fig').forEach(function (fig) {
+        var body = fig.querySelector('.fig-body');
+        if (!body) return;
+        var head = fig.querySelector('.fig-head');
+        if (!head) return;
+
+        var controls = fig.querySelector('.fig-controls');
+        if (!controls) {
+            controls = document.createElement('div');
+            controls.className = 'fig-controls';
+            head.appendChild(controls);
+        }
+        var readout = fig.querySelector('.fig-readout');
+        var name = body.getAttribute('data-script');
+
+        if (name) {
+            /* ── Scripted figure ── */
+            var s = scripts[name];
+            if (!s || !s.draw) return;
+            var i = 0, playing = false, timer = null;
+            var autoplay = body.hasAttribute('data-autoplay');
+            var loop = body.hasAttribute('data-loop');
+            var speed = parseInt(body.getAttribute('data-speed'), 10) || 950;
+
+            var prevBtn = makeBtn('PREV');
+            var playBtn = makeBtn('PLAY');
+            var nextBtn = makeBtn('NEXT');
+            var resetBtn = makeBtn('RESET');
+            controls.appendChild(prevBtn);
+            controls.appendChild(playBtn);
+            controls.appendChild(nextBtn);
+            controls.appendChild(resetBtn);
+
+            function note(k) {
+                return s.label ? s.label(k) : 'STEP ' + (k + 1) + ' / ' + s.steps;
+            }
+            function update() {
+                prevBtn.disabled = i === 0;
+                nextBtn.disabled = i >= s.steps - 1 && !loop;
+                if (readout) readout.textContent = note(i);
+            }
+            function render(k) {
+                i = k < 0 ? 0 : (k >= s.steps ? s.steps - 1 : k);
+                var out = s.draw(i, body);
+                if (readout && typeof out === 'string') readout.textContent = out;
+                update();
+            }
+            function stop() {
+                playing = false;
+                if (timer) clearInterval(timer);
+                timer = null;
+                playBtn.textContent = 'PLAY';
+                playBtn.classList.remove('is-active');
+            }
+            function play() {
+                if (playing) { stop(); return; }
+                playing = true;
+                playBtn.textContent = 'PAUSE';
+                playBtn.classList.add('is-active');
+                timer = setInterval(function () {
+                    if (i >= s.steps - 1) {
+                        if (loop) { render(0); return; }
+                        stop();
+                        return;
+                    }
+                    render(i + 1);
+                }, speed);
+            }
+            prevBtn.addEventListener('click', function () { stop(); render(i - 1); });
+            nextBtn.addEventListener('click', function () { stop(); render(i + 1); });
+            playBtn.addEventListener('click', play);
+            resetBtn.addEventListener('click', function () { stop(); render(0); });
+
+            render(0);
+            if (autoplay && !reduceMotion) {
+                var started = false;
+                var autoIO = new IntersectionObserver(function (es) {
+                    es.forEach(function (e) {
+                        if (e.isIntersecting && !started) {
+                            started = true;
+                            play();
+                            autoIO.unobserve(body);
+                        }
+                    });
+                }, { threshold: .3 });
+                autoIO.observe(body);
+            }
+        } else {
+            /* ── Looping figure ── */
+            var pauseBtn = makeBtn('PAUSE');
+            var replayBtn = makeBtn('REPLAY');
+            controls.appendChild(pauseBtn);
+            controls.appendChild(replayBtn);
+
+            pauseBtn.addEventListener('click', function () {
+                var paused = fig.classList.toggle('is-paused');
+                pauseBtn.classList.toggle('is-active', paused);
+                pauseBtn.textContent = paused ? 'RESUME' : 'PAUSE';
+            });
+            replayBtn.addEventListener('click', function () {
+                fig.classList.add('is-restarting');
+                void body.offsetWidth;
+                fig.classList.remove('is-restarting');
+            });
+        }
+    });
+})();
+
+</script>
+<script>
+/* ── Inlined site runtime ────────────────────────────────────────────
+   Formerly the shared js/scene.js — this copy belongs to this article
+   alone and may diverge from every other page. ── */
+/* ==========================================================================
+   scene.js — the scrollytelling scene module
+   --------------------------------------------------------------------------
+   Single source of truth for sticky scenes on this site. Any article that
+   ships a <section class="sticky-scene"> gets identical behavior from this
+   module — no per-page scene JS needed:
+
+     · wraps each .step's content in a .step-card
+     · injects a .step-progress rail into each card (mobile bottom sheet)
+     · toggles .is-active while a step crosses its activation window
+     · sets data-active-step on the section (pages key stage states off it)
+     · fills [data-readout] with 'STEP k / n'
+     · measures the tallest step card and exposes --card-reserve so the
+       mobile diagram centers above the bottom-docked card and never runs
+       underneath it
+
+   Presentation (the bottom-sheet card, the rise/fade choreography, the
+   progress rail) lives in the base stylesheet — this module only toggles classes
+   and CSS variables. It is the "every article works the same" contract:
+   write the scene markup from blog/template.html and the behavior is done.
+
+   Inlined here: this page owns this copy. The original load order is
+   preserved by the inlined blocks (helpers → page → site → scene).
+
+   Optional hook for page scripts: window.VBScene.onStep(fn) — fn(sceneEl,
+   stepEl, index, total) is called each time a step becomes active. Page
+   scripts that must react to step changes (e.g. apply a computed state)
+   may use it. Do not observe data-active-step separately: this module is
+   already the single source of truth for scene activation.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    var portraitMob = window.matchMedia('(max-width: 850px) and (min-height: 521px)');
+
+    /* The semantic document is the fallback. If IntersectionObserver is not
+       available, remove the enhancement gate instead of leaving step cards
+       hidden over a stage the reader cannot control. */
+    if (!('IntersectionObserver' in window)) {
+        document.documentElement.classList.remove('js');
+        window.VBScene = { init: function () {}, refresh: function () {}, onStep: function () {} };
+        return;
+    }
+
+    /* each scene is one observer; steps are exclusive (one card active) */
+    function wireScene(scene) {
+        if (scene.dataset.vbSceneWired === 'true') return;
+        var steps = scene.querySelectorAll('[data-step]');
+        if (!steps.length) return;
+        scene.dataset.vbSceneWired = 'true';
+        var readout = scene.querySelector('[data-readout]');
+        var total = steps.length;
+
+        /* Portrait phones dock the card at the bottom, so a step must stay
+           active for a much wider scroll window than the desktop middle
+           band — otherwise the text vanishes after a few vh of scroll. */
+        var band = portraitMob.matches ? '-20% 0px -20% 0px' : '-45% 0px -45% 0px';
+
+        /* A step card only reads well once the stage is pinned. While the
+           stage is still scrolling into place, the first step overlaps its
+           activation window early, so its card is caught mid-fade, off its
+           settled position — barely readable. Every later step activates
+           only once the stage is already pinned, which is why they look
+           right. So we never light a card until the stage has reached the
+           top of the viewport, and we bootstrap the first (or any missed)
+           step the moment it does. */
+        function stagePinned() {
+            var stage = scene.querySelector('.sticky-scene__stage');
+            if (!stage) return false;
+            var rect = stage.getBoundingClientRect();
+            /* `top <= 0` alone remains true after a sticky stage has reached
+               its container's end. Require the whole viewport-height stage
+               too, so an active card cannot spill into the next section. */
+            return rect.top <= 1 && rect.bottom >= innerHeight - 1;
+        }
+        /* engaged = a card is lit while the stage is pinned. Reset whenever
+           the stage scrolls away, so re-entering the scene re-bootstraps. */
+        var engaged = false;
+        function deactivate() {
+            steps.forEach(function (s) { s.classList.remove('is-active'); });
+            delete scene.dataset.activeStep;
+            if (readout) readout.textContent = '';
+            engaged = false;
+        }
+        function activate(step) {
+            /* exclusive: only one step card is active at a time */
+            steps.forEach(function (s) { s.classList.remove('is-active'); });
+            step.classList.add('is-active');
+            scene.dataset.activeStep = step.getAttribute('data-step');
+            if (readout) {
+                readout.textContent = 'STEP ' + step.getAttribute('data-step') + ' / ' + total;
+            }
+            /* the mobile progress rail sweeps to this step's place */
+            var fill = step.querySelector('.step-progress i');
+            if (fill) {
+                var pi = parseInt(step.getAttribute('data-step'), 10) || 1;
+                fill.style.width = (total > 1 ? ((pi - 1) / (total - 1)) * 100 : 100) + '%';
+            }
+            engaged = true;
+            /* let page hooks react (window.VBScene.onStep) */
+            notifyHooks(scene, step, total);
+        }
+
+        var io = new IntersectionObserver(function (es) {
+            es.forEach(function (e) {
+                /* wait until the stage is pinned; the observer re-fires on
+                   later band entries (steps 2..n) once it is */
+                if (!e.isIntersecting || !stagePinned()) return;
+                activate(e.target);
+            });
+        }, { rootMargin: band });
+
+        /* While the stage pins, step 1 was deliberately blocked — so its
+           card would otherwise stay dark until a later band entry fires. As
+           soon as the stage reaches the top, light the step sitting at the
+           viewport center, then hand back to the observer. Running only
+           while nothing is engaged keeps it from racing the observer during
+           normal scroll (it never re-flips a step the observer already
+           set). */
+        var ticking = false;
+        function bootstrap() {
+            if (engaged || !stagePinned()) return;
+            var c = innerHeight / 2;
+            for (var i = 0; i < steps.length; i++) {
+                var r = steps[i].getBoundingClientRect();
+                if (r.top <= c && r.bottom >= c) {
+                    activate(steps[i]);
+                    return;
+                }
+            }
+        }
+        function onScroll() {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(function () {
+                ticking = false;
+                if (!stagePinned()) {
+                    deactivate();
+                    return;
+                }
+                bootstrap();
+            });
+        }
+        addEventListener('scroll', onScroll, { passive: true });
+        addEventListener('resize', onScroll);
+        bootstrap(); /* in case the scene is already in view on load */
+
+        steps.forEach(function (s) {
+            /* The article is a full-height transparent track over the pinned
+               stage; its content is wrapped in .step-card, the visual card
+               (see the base stylesheet). The wrap exists only with JS — the no-JS
+               document keeps .step as a plain card. */
+            if (!s.querySelector(':scope > .step-card')) {
+                /* Step labels are conventional, so make them a default. A
+                   post can still supply a custom .step-k when it needs one. */
+                if (!s.querySelector(':scope > .step-k')) {
+                    var label = document.createElement('span');
+                    var number = parseInt(s.getAttribute('data-step'), 10) || 1;
+                    label.className = 'step-k';
+                    label.textContent = 'STEP ' + (number < 10 ? '0' : '') + number + ' / ' +
+                        (total < 10 ? '0' : '') + total;
+                    s.insertBefore(label, s.firstChild);
+                }
+                var card = document.createElement('div');
+                card.className = 'step-card';
+                /* mobile bottom-sheet progress rail (hidden on desktop) */
+                var prog = document.createElement('div');
+                prog.className = 'step-progress';
+                prog.innerHTML = '<i></i>';
+                card.appendChild(prog);
+                while (s.firstChild) card.appendChild(s.firstChild);
+                s.appendChild(card);
+            }
+            io.observe(s);
+        });
+
+        /* Keep the public init() safe to call after dynamically adding
+           scenes. It must not duplicate observers or global listeners for
+           scenes that have already been wired. */
+    }
+
+    /* On portrait phones the step card docks at the bottom of the pinned
+       stage, so the diagram must center in the space above it and never run
+       underneath (which is what cropped it). Measure the tallest card and
+       expose its height + breathing room as --card-reserve on the stage;
+       the portrait CSS pads the diagram with that value and centers it.
+       Desktop and landscape ignore this. */
+    function measureCardReserve() {
+        if (!portraitMob.matches) return;
+        document.querySelectorAll('.sticky-scene').forEach(function (scene) {
+            var stage = scene.querySelector('.sticky-scene__stage');
+            if (!stage) return;
+            var max = 0;
+            scene.querySelectorAll('.step-card').forEach(function (c) {
+                var h = c.getBoundingClientRect().height;
+                if (h > max) max = h;
+            });
+            /* card bottom gap (18px) + a little air above it */
+            stage.style.setProperty('--card-reserve', (max + 30) + 'px');
+        });
+    }
+
+    /* optional page hooks */
+    var hooks = [];
+    function notifyHooks(scene, step, total) {
+        for (var i = 0; i < hooks.length; i++) {
+            hooks[i](scene, step, parseInt(step.getAttribute('data-step'), 10), total);
+        }
+    }
+
+    function init() {
+        document.querySelectorAll('.sticky-scene').forEach(wireScene);
+        measureCardReserve();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init(); /* defer scripts run after parse → DOM is ready */
+    }
+
+    window.VBScene = {
+        init: init,
+        refresh: measureCardReserve,
+        onStep: function (fn) { if (typeof fn === 'function') hooks.push(fn); }
+    };
+    addEventListener('resize', measureCardReserve);
+    addEventListener('orientationchange', measureCardReserve);
+    addEventListener('load', measureCardReserve);
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', measureCardReserve);
+    }
+})();
+
+</script>
+    <script src="../js/post-progress.js" defer></script>
+    <script src="../js/post-nav.js" defer></script>
+  <script>
+    /* Offline library: load the notebook fresh when online, fall back to
+       the last known copy when not. See /sw.js. */
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').catch(function () {});
+      });
+    }
+  </script>
+</body>
+
+</html>
