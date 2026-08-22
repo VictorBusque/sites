@@ -1,0 +1,5 @@
+[out:json][timeout:90];
+(
+  way["highway"~"^(motorway|trunk|primary|secondary|tertiary|residential|living_street|unclassified|motorway_link|trunk_link|primary_link|secondary_link)$"](41.387,2.142,41.404,2.178);
+);
+out body geom;

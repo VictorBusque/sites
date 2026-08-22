@@ -16,7 +16,7 @@
 - [ ] How does durable object work? -> Merging WAL + S3.
 - [ ] How does a blockchain work?
 - [ ] How does a push notification system work?
-- [ ] How does Google Maps calculate the best route?
+- [x] How does Google Maps calculate the best route?
 - [ ] How does Kubernetes work?
 - [ ] How does Kafka scale to trillions of messages?
 - [ ] How does an online payment actually happen?

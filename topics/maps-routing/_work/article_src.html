@@ -1,0 +1,1590 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+
+    <!-- Primary meta -->
+    <title>How Google Maps Finds the Fastest Route — Víctor Busqué</title>
+    <meta name="description" content="Watch a real Barcelona grid become a priced graph, flood with Dijkstra, aim with A*, collapse with hierarchy — every count computed live in your browser.">
+    <meta name="author" content="Víctor Busqué">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://engineering.victorbusque.com/blog/how-google-maps-routes.html">
+
+    <!-- Favicons / PWA (absolute paths resolve from /blog/) -->
+    <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/img/favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#101010">
+    <meta name="apple-mobile-web-app-title" content="VB Posts">
+    <meta name="application-name" content="VB Posts">
+    <meta name="color-scheme" content="light dark">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Víctor Busqué — Curiosities">
+    <meta property="og:title" content="How Google Maps Finds the Fastest Route — Víctor Busqué">
+    <meta property="og:description" content="Watch a real Barcelona grid become a priced graph, flood with Dijkstra, aim with A*, collapse with hierarchy — every count computed live in your browser.">
+    <meta property="og:url" content="https://engineering.victorbusque.com/blog/how-google-maps-routes.html">
+    <meta property="og:image" content="https://engineering.victorbusque.com/img/og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="How Google Maps Finds the Fastest Route — Víctor Busqué">
+    <meta name="twitter:description" content="Watch a real Barcelona grid become a priced graph, flood with Dijkstra, aim with A*, collapse with hierarchy — every count computed live in your browser.">
+    <meta name="twitter:image" content="https://engineering.victorbusque.com/img/og.png">
+
+    <!-- Performance: preconnect to font CDN -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Structured data — matches js/posts.js, the site's single post manifest -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": "How Google Maps Finds the Fastest Route",
+      "description": "Watch a real Barcelona grid become a priced graph, flood with Dijkstra, aim with A*, collapse with hierarchy — every count computed live in your browser.",
+      "datePublished": "2026-09",
+      "author": { "@id": "https://engineering.victorbusque.com/#person" },
+      "publisher": { "@id": "https://engineering.victorbusque.com/#person" },
+      "url": "https://engineering.victorbusque.com/blog/how-google-maps-routes.html",
+      "mainEntityOfPage": "https://engineering.victorbusque.com/blog/how-google-maps-routes.html",
+      "inLanguage": "en",
+      "keywords": ["Google Maps", "Dijkstra", "A*", "Routing", "OpenStreetMap"],
+      "articleSection": "Algorithms · Maps"
+    }
+    </script>
+
+    <!-- The .js gate: enables the scene overlay layout. Without it (no JS,
+         reduced motion) scenes render as a plain document — stage first,
+         steps stacked. Must run before the body parses. -->
+    <script>document.documentElement.className += ' js';</script>
+    <link rel="stylesheet" href="../css/post-progress.css">
+    <link rel="stylesheet" href="../css/post-nav.css">
+    <script>
+/* ── Inlined site runtime helpers (window.VB) ────────────────────────
+   This copy belongs to this article alone. It exists while the page
+   parses so page scripts can use it immediately. ── */
+(function () {
+    'use strict';
+
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function esc(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function mulberry32(seed) {
+        var a = seed | 0;
+        return function () {
+            a |= 0; a = a + 0x6D2B79F5 | 0;
+            var t = Math.imul(a ^ a >>> 15, 1 | a);
+            t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+            return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        };
+    }
+
+    function onReady(fn) {
+        if (window.VBScene) { fn(); return; }
+        document.addEventListener('DOMContentLoaded', function () { fn(); });
+    }
+
+    window.VB = {
+        reduceMotion: reduceMotion,
+        esc: esc,
+        mulberry32: mulberry32,
+        fmt: {
+            pct: function (p, d) { return (p * 100).toFixed(d == null ? 1 : d) + '%'; },
+            ordinal: function (n) { var s = ['TH', 'ST', 'ND', 'RD'], v = n % 100; return s[(v - 20) % 10] || s[v] || s[0]; },
+            sup: function (n) { var D = '⁰¹²³⁴⁵⁶⁷⁸⁹'; return (n < 0 ? '⁻' : '') + String(Math.abs(n)).split('').map(function (c) { return D[+c]; }).join(''); }
+        },
+        motion: {
+            retrig: function (el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); },
+            countUp: function (el, txt) { el.textContent = txt; }
+        },
+        onReady: onReady
+    };
+})();
+</script>
+
+    <style>
+/* ════════════════════════════════════════════════════════════════════
+   THE FLOOD AND THE ARROW — the map-room instrument panel.
+   Paper prose sections; dark cartography stages carrying a real street
+   graph; hairline streets and mono chips are the only ornament. Skeleton
+   contracts (sticky scenes, step cards, mobile bottom sheet,
+   reduced-motion collapse) follow the site's scaffold; the skin is this
+   article's alone.
+
+   Map coordinates are integers on a ~1 m grid (1e-5°), viewBox width
+   ~3,200–4,100 units. Stroke widths below are in those units: at desktop
+   scale (~0.3 px/unit) they render as hairlines; the mobile and hero
+   blocks below rescale them.
+   ════════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Unbounded:wght@400;500;600;700&display=swap');
+
+/* ── tokens ── */
+:root {
+    --ink: #101010;
+    --paper: #f2f0e9;
+    --paper-2: #eae7dc;
+    --blue: #546cff;
+    --acid: #c7ff3d;
+    --orange: #ff6b2c;
+    --muted: #716f68;
+    --line: #111111;
+
+    --stage: #0d0f14;
+    --stage-2: #14171e;
+    --grid: #ffffff0a;
+
+    --ease-out: cubic-bezier(.16, 1, .3, 1);
+    --ease-in: cubic-bezier(.55, 0, .85, .36);
+    --ease-swift: cubic-bezier(.4, 0, .2, 1);
+    --t-fast: 180ms;
+    --t-med: 400ms;
+    --t-slow: 800ms;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+body {
+    background: var(--paper);
+    color: var(--ink);
+    font: 18px/1.74 "Newsreader", Georgia, serif;
+    -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--acid); color: var(--ink); }
+a { color: inherit; }
+.mono, code { font-family: "DM Mono", monospace; }
+
+.skip-link {
+    position: fixed; left: 12px; top: -60px; z-index: 300;
+    background: var(--ink); color: var(--acid);
+    font: 11px "DM Mono"; letter-spacing: .12em;
+    padding: 10px 16px; text-decoration: none;
+    transition: top var(--t-fast) var(--ease-out);
+}
+.skip-link:focus { top: 12px; }
+
+/* ── reveals ── */
+.reveal { opacity: 0; transform: translateY(22px); transition: opacity .9s var(--ease-out), transform .9s var(--ease-out); }
+.reveal.seen { opacity: 1; transform: none; }
+
+/* ── hero — the control room with the finished route ── */
+.hero {
+    min-height: 100svh; position: relative; overflow: hidden;
+    background:
+        radial-gradient(1200px 700px at 78% 30%, #1b202b 0%, transparent 60%),
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+        var(--stage);
+    background-size: auto, 32px 32px, 32px 32px, auto;
+    color: #fff;
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+    align-items: center;
+    gap: 4vw;
+    padding: 12vh 6vw 10vh;
+}
+.hero-kicker { font: 10px "DM Mono"; letter-spacing: .22em; color: var(--acid); margin-bottom: 26px; }
+.hero h1 {
+    font-family: "Unbounded", sans-serif;
+    font-weight: 500;
+    font-size: clamp(30px, 4.6vw, 58px);
+    line-height: 1.04;
+    letter-spacing: -.04em;
+}
+.hero h1 em { font-family: "Instrument Serif", serif; font-style: italic; font-weight: 400; color: var(--acid); }
+.hero .h-line { display: block; overflow: hidden; }
+.hero .h-line > span { display: inline-block; transform: translateY(110%); animation: rise 1s var(--ease-out) forwards; }
+.hero .h-line:nth-child(2) > span { animation-delay: .12s; }
+.hero .h-line:nth-child(3) > span { animation-delay: .24s; }
+@keyframes rise { to { transform: translateY(0); } }
+.hero .dek {
+    max-width: 54ch; margin-top: 28px;
+    font-size: 19px; line-height: 1.6; color: #c9c6bd;
+    opacity: 0; animation: fade-rise .9s var(--ease-out) .5s forwards;
+}
+.hero-meta {
+    display: flex; gap: 26px; flex-wrap: wrap; margin-top: 34px;
+    font: 10px "DM Mono"; letter-spacing: .16em; color: #8a8790;
+    opacity: 0; animation: fade-rise .9s var(--ease-out) .7s forwards;
+}
+.hero-meta b { color: #fff; font-weight: 500; }
+@keyframes fade-rise { to { opacity: 1; } }
+
+/* the hero map plate — the corridor, route settled, as a framed plate */
+.hero-spec {
+    position: relative; justify-self: center;
+    width: min(34vw, 420px); aspect-ratio: 4/3;
+    background: var(--stage);
+    border: 1px solid #ffffff1f;
+    box-shadow: 0 30px 80px -30px rgba(0,0,0,.8), 0 0 0 1px #ffffff14;
+    opacity: 0; transform: scale(.96); animation: spec-in 1.1s var(--ease-out) .35s forwards;
+}
+@keyframes spec-in { to { opacity: 1; transform: none; } }
+.hero-spec svg { display: block; width: 100%; height: 100%; }
+.hero-spec::before, .hero-spec::after,
+.hero-spec .mark-b::before, .hero-spec .mark-b::after {
+    content: ""; position: absolute; width: 18px; height: 18px;
+    border: 1px solid var(--acid);
+}
+.hero-spec::before { top: -9px; left: -9px; border-width: 1px 0 0 1px; }
+.hero-spec::after { top: -9px; right: -9px; border-width: 1px 1px 0 0; }
+.hero-spec .mark-b::before { bottom: -9px; left: -9px; border-width: 0 0 1px 1px; }
+.hero-spec .mark-b::after { bottom: -9px; right: -9px; border-width: 0 1px 1px 0; }
+.hero-spec-label {
+    position: absolute; left: 50%; bottom: -44px; transform: translateX(-50%);
+    white-space: nowrap;
+    font: 9px "DM Mono"; letter-spacing: .18em; color: #8a8790;
+}
+.hero-spec-label b { color: var(--acid); font-weight: 500; }
+.hero-cue {
+    position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
+    width: 1px; height: 44px; background: linear-gradient(#fff0, #ffffff88);
+    animation: cue 2.2s var(--ease-swift) infinite;
+}
+@keyframes cue { 0% { transform: translateX(-50%) scaleY(.4); transform-origin: top; } 55% { transform: translateX(-50%) scaleY(1); } 100% { transform: translateX(-50%) scaleY(.4); } }
+
+/* ── prose ── */
+.prose { max-width: 720px; margin: 0 auto; padding: 12vh 4vw 0; }
+.prose > p { font-size: 18px; line-height: 1.74; color: #33322e; margin-bottom: 1.5em; }
+.prose > p strong { font-weight: 600; }
+.prose h2 {
+    font-family: "Unbounded", sans-serif; font-weight: 500;
+    font-size: clamp(25px, 3.4vw, 38px); letter-spacing: -.045em; line-height: 1.05;
+    margin: 11vh 0 20px; display: flex; align-items: baseline; gap: 18px;
+}
+.prose h2 .sec-no { font: 10px "DM Mono"; letter-spacing: .14em; color: var(--orange); align-self: center; }
+.prose .callout {
+    border-left: 4px solid var(--acid); background: var(--paper-2);
+    padding: 22px 26px; margin: 5vh 0; font: italic 23px/1.45 "Instrument Serif";
+}
+.prose .callout em { font-style: normal; }
+.prose .aside {
+    font: 11px/1.7 "DM Mono"; color: #777;
+    border-top: 1px solid #d8d4c6; padding-top: 12px; margin: 6vh 0;
+}
+.prose .aside a { color: var(--blue); }
+
+/* ── sticky scenes — the site contract ── */
+.sticky-scene { position: relative; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-top: 10vh; }
+.js .sticky-scene { padding-bottom: 100vh; padding-bottom: 100svh; }
+.sticky-scene__stage {
+    background-color: var(--stage);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 32px 32px;
+    color: #fff; position: relative; overflow: hidden; min-height: 60vh;
+}
+.js .sticky-scene__stage { position: sticky; top: 0; height: 100vh; height: 100svh; min-height: 0; }
+.sticky-scene__stage::after {
+    content: ""; position: absolute; width: 200px; height: 200px;
+    border: 1px solid #ffffff12; border-radius: 50%;
+    right: -100px; bottom: -100px; pointer-events: none;
+}
+.scene-head {
+    display: flex; align-items: center; gap: 16px;
+    border-bottom: 1px solid #ffffff1a; padding: 12px 4vw;
+    position: relative; z-index: 5;
+    background: #0d0f14cc;
+}
+.scene-no { font: 10px "DM Mono"; letter-spacing: .14em; color: var(--orange); }
+.scene-name { font: 10px "DM Mono"; letter-spacing: .18em; }
+.scene-readout { font: 10px "DM Mono"; color: #777; margin-left: auto; }
+.js .sticky-scene__steps { position: relative; margin-top: -100vh; margin-top: -100svh; pointer-events: none; z-index: 1; }
+.js .sticky-scene__steps > * { min-height: 100vh; min-height: 100svh; display: flex; align-items: center; padding: 0 4vw; }
+.step { max-width: 420px; background: var(--paper); border: 1px solid var(--line); padding: 26px 28px; color: var(--ink); }
+.js .step { background: none; border: 0; padding: 0; max-width: none; pointer-events: none; }
+.js .step.is-active { pointer-events: auto; }
+.step-card {
+    width: 100%; max-width: 420px; background: var(--paper);
+    border: 1px solid var(--line); padding: 26px 28px; color: var(--ink);
+    opacity: 0; transform: translateY(26px);
+    transition: opacity var(--t-slow) var(--ease-out), transform var(--t-slow) var(--ease-out);
+}
+.js .step.is-active .step-card { opacity: 1; transform: none; }
+.step-progress { display: none; }
+.step-k { font: 9px "DM Mono"; letter-spacing: .16em; color: var(--orange); display: block; margin-bottom: 10px; }
+.step p { font-size: 16.5px; line-height: 1.6; color: #33322e; }
+.step p + p { margin-top: .8em; }
+.step p b { font-weight: 600; }
+.step .mono { font-size: 13.5px; }
+
+/* stage internals — this article's diagram grammar */
+.map-stage {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: 66px 2vw 3vh;
+}
+.map-svg { width: 100%; height: 100%; display: block; }
+.map-svg .st-loc { stroke: #ffffff12; stroke-width: 2; fill: none; }
+.map-svg .st-ter { stroke: #ffffff1c; stroke-width: 2.8; fill: none; }
+.map-svg .st-art { stroke: #ffffff2b; stroke-width: 3.6; fill: none; }
+.map-svg .st-loc, .map-svg .st-ter, .map-svg .st-art { transition: opacity var(--t-slow) var(--ease-out), stroke var(--t-slow) var(--ease-out); }
+
+/* dots: search state, drawn as round-capped stroked points.
+   frontier = bright blue; settled = dim blue; ghost = pale */
+.map-svg .dots { stroke: #546cff59; stroke-width: 6; fill: none; stroke-linecap: round; transition: opacity var(--t-slow) var(--ease-out), stroke var(--t-med) var(--ease-swift); }
+.map-svg .dots.frontier { stroke: #9db0ff; }
+.map-svg .dots.ghost { stroke: #ffffff17; stroke-width: 3.6; }
+.map-svg .route {
+    stroke: var(--acid); stroke-width: 6; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+}
+.map-svg .route-glow { stroke: #c7ff3d24; stroke-width: 13; fill: none; stroke-linecap: round; }
+.map-svg .route-old { stroke: #c7ff3d38; stroke-width: 4; fill: none; stroke-dasharray: 10 12; }
+.map-svg .jam-street { stroke: var(--orange); stroke-width: 5.4; fill: none; }
+.map-svg .pin { fill: var(--orange); }
+.map-svg .pin-ring { stroke: var(--orange); stroke-width: 1.6; fill: none; }
+.map-svg .mlab {
+    font: 30px "DM Mono"; letter-spacing: .18em; fill: #c9c6bd;
+    paint-order: stroke; stroke: #0d0f14; stroke-width: 7px;
+}
+.map-svg .mlab.lab-o { fill: var(--orange); }
+.map-svg .mlab.lab-d { fill: var(--acid); }
+.map-svg .mlab { transition: opacity var(--t-med) var(--ease-out); }
+.ring { stroke: #9db0ff59; stroke-width: 1.6; fill: #546cff0d; stroke-dasharray: 8 10; }
+
+/* chips — mono readouts pinned to the stage; JS rewrites the values it
+   can compute, the authored values are the verified build-time ones */
+.chips {
+    position: absolute; top: 62px; right: 3vw; z-index: 4;
+    display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
+    pointer-events: none;
+}
+.chip {
+    font: 10px "DM Mono"; letter-spacing: .14em; color: #c9c6bd;
+    background: #0d0f14d9; border: 1px solid #ffffff22; padding: 7px 11px;
+    opacity: 0; transform: translateY(-6px);
+    transition: opacity var(--t-med) var(--ease-out), transform var(--t-med) var(--ease-out);
+}
+.chip b { color: var(--acid); font-weight: 500; }
+.chip.c-blue b { color: #9db0ff; }
+.chip.c-orange b { color: var(--orange); }
+
+/* no-JS static stage content */
+.stage-static { padding: 60px 4vw 40px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.js .stage-static { display: none; }
+.static-svg { width: min(52vh, 84vw); height: auto; border: 1px solid #ffffff1a; background: var(--stage-2); }
+.static-note { font: 10px/1.7 "DM Mono"; letter-spacing: .1em; color: #8a8790; text-align: center; max-width: 60ch; }
+.static-note b { color: var(--acid); font-weight: 500; }
+
+/* ── S01 · layer states (data-active-step keys everything) ── */
+#scene1 .dots-v { opacity: 0; }
+#scene1[data-active-step="2"] .dots-v, #scene1[data-active-step="3"] .dots-v,
+#scene1[data-active-step="4"] .dots-v, #scene1[data-active-step="5"] .dots-v { opacity: 1; }
+#scene1 .ex-edge { stroke: var(--orange); stroke-width: 6.5; fill: none; opacity: 0; }
+#scene1[data-active-step="3"] .ex-edge, #scene1[data-active-step="4"] .ex-edge,
+#scene1[data-active-step="5"] .ex-edge { opacity: 1; }
+#scene1[data-active-step="4"] .st-loc { stroke: #ffffff26; }
+#scene1[data-active-step="4"] .st-art { stroke: #c7ff3d3d; }
+#scene1[data-active-step="4"] .st-ter { stroke: #9db0ff38; }
+#scene1 .pin-o, #scene1 .pin-d, #scene1 .pin-ring, #scene1 .mlab { opacity: 0; }
+#scene1[data-active-step="1"] .pin-o,
+#scene1[data-active-step="5"] .pin-o, #scene1[data-active-step="5"] .pin-d,
+#scene1[data-active-step="5"] .pin-ring, #scene1[data-active-step="5"] .mlab { opacity: 1; }
+#scene1 .pin-ring { transform-box: fill-box; transform-origin: center; animation: ping 2.8s var(--ease-swift) infinite; }
+@keyframes ping {
+    0% { transform: scale(.6); opacity: .9; } 70% { transform: scale(1.6); opacity: 0; } 100% { opacity: 0; }
+}
+#scene1[data-active-step="1"] .chip.c1, #scene1[data-active-step="2"] .chip.c2,
+#scene1[data-active-step="3"] .chip.c3, #scene1[data-active-step="4"] .chip.c4,
+#scene1[data-active-step="5"] .chip.c5 { opacity: 1; transform: none; }
+
+/* ── S02 · the flood — slices cumulative; newest slice is the frontier ── */
+#scene2 .dj { opacity: 0; }
+#scene2[data-active-step="2"] .dj-s1, #scene2[data-active-step="3"] .dj-s1, #scene2[data-active-step="4"] .dj-s1, #scene2[data-active-step="5"] .dj-s1,
+#scene2[data-active-step="3"] .dj-s2, #scene2[data-active-step="4"] .dj-s2, #scene2[data-active-step="5"] .dj-s2,
+#scene2[data-active-step="4"] .dj-s3, #scene2[data-active-step="5"] .dj-s3 { opacity: 1; }
+#scene2[data-active-step="2"] .dj-s1 { stroke: #9db0ff; }
+#scene2[data-active-step="3"] .dj-s1, #scene2[data-active-step="4"] .dj-s2, #scene2[data-active-step="5"] .dj-s2 { stroke: #546cff59; }
+#scene2[data-active-step="3"] .dj-s2, #scene2[data-active-step="4"] .dj-s3 { stroke: #9db0ff; }
+#scene2[data-active-step="5"] .dj-s3 { stroke: #546cff38; }
+#scene2 .st-loc, #scene2 .st-ter, #scene2 .st-art { opacity: .55; }
+#scene2 .route, #scene2 .route-glow { opacity: 0; }
+#scene2[data-active-step="5"] .route, #scene2[data-active-step="5"] .route-glow { opacity: 1; }
+#scene2 .route { stroke-dasharray: 3600; stroke-dashoffset: 3600; }
+#scene2[data-active-step="5"] .route { animation: draw 1.1s var(--ease-out) forwards; }
+#scene2 .route-glow { stroke-dasharray: 3600; stroke-dashoffset: 3600; }
+#scene2[data-active-step="5"] .route-glow { animation: draw 1.1s var(--ease-out) forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+#scene2[data-active-step="1"] .chip.c1, #scene2[data-active-step="2"] .chip.c2,
+#scene2[data-active-step="3"] .chip.c3, #scene2[data-active-step="4"] .chip.c4,
+#scene2[data-active-step="5"] .chip.c5 { opacity: 1; transform: none; }
+
+/* ── S03 · the arrow ── */
+#scene3 .as { opacity: 0; }
+#scene3[data-active-step="2"] .as-s1, #scene3[data-active-step="3"] .as-s1, #scene3[data-active-step="4"] .as-s1, #scene3[data-active-step="5"] .as-s1,
+#scene3[data-active-step="3"] .as-s2, #scene3[data-active-step="4"] .as-s2, #scene3[data-active-step="5"] .as-s2,
+#scene3[data-active-step="4"] .as-s3, #scene3[data-active-step="5"] .as-s3 { opacity: 1; }
+#scene3[data-active-step="2"] .as-s1 { stroke: #9db0ff; }
+#scene3[data-active-step="3"] .as-s1, #scene3[data-active-step="4"] .as-s2, #scene3[data-active-step="5"] .as-s2 { stroke: #546cff59; }
+#scene3[data-active-step="3"] .as-s2, #scene3[data-active-step="4"] .as-s3 { stroke: #9db0ff; }
+#scene3[data-active-step="5"] .as-s3 { stroke: #546cff38; }
+#scene3 .ghost { opacity: 0; }
+#scene3[data-active-step="3"] .ghost, #scene3[data-active-step="4"] .ghost, #scene3[data-active-step="5"] .ghost { opacity: 1; }
+#scene3 .route, #scene3 .route-glow { opacity: 0; }
+#scene3[data-active-step="4"] .route, #scene3[data-active-step="4"] .route-glow,
+#scene3[data-active-step="5"] .route, #scene3[data-active-step="5"] .route-glow { opacity: 1; }
+#scene3 .st-loc, #scene3 .st-ter, #scene3 .st-art { opacity: .5; }
+#scene3[data-active-step="1"] .chip.c1, #scene3[data-active-step="2"] .chip.c2,
+#scene3[data-active-step="3"] .chip.c3, #scene3[data-active-step="4"] .chip.c4,
+#scene3[data-active-step="5"] .chip.c5 { opacity: 1; transform: none; }
+
+/* ── S04 · the skeleton ── */
+#scene4 .ring, #scene4 .dots-h { opacity: 0; }
+#scene4[data-active-step="3"] .ring, #scene4[data-active-step="4"] .ring, #scene4[data-active-step="5"] .ring,
+#scene4[data-active-step="3"] .dots-h, #scene4[data-active-step="4"] .dots-h, #scene4[data-active-step="5"] .dots-h { opacity: 1; }
+#scene4[data-active-step="3"] .st-loc, #scene4[data-active-step="4"] .st-loc, #scene4[data-active-step="5"] .st-loc { opacity: .16; }
+#scene4[data-active-step="3"] .st-art, #scene4[data-active-step="4"] .st-art, #scene4[data-active-step="5"] .st-art { stroke: #c7ff3d52; }
+#scene4[data-active-step="3"] .st-ter, #scene4[data-active-step="4"] .st-ter, #scene4[data-active-step="5"] .st-ter { opacity: .3; }
+#scene4 .route { opacity: 0; }
+#scene4[data-active-step="1"] .route, #scene4[data-active-step="5"] .route { opacity: 1; }
+#scene4[data-active-step="1"] .chip.c1, #scene4[data-active-step="2"] .chip.c2,
+#scene4[data-active-step="3"] .chip.c3, #scene4[data-active-step="4"] .chip.c4,
+#scene4[data-active-step="5"] .chip.c5 { opacity: 1; transform: none; }
+/* the contraction inset */
+.inset {
+    position: absolute; top: 62px; right: 3vw; z-index: 4;
+    width: min(300px, 30vw);
+    background: #0d0f14e0; border: 1px solid #ffffff22; padding: 12px 14px 10px;
+    opacity: 0; transform: translateY(-8px);
+    transition: opacity var(--t-med) var(--ease-out), transform var(--t-med) var(--ease-out);
+    pointer-events: none;
+}
+#scene4[data-active-step="4"] .inset, #scene4[data-active-step="5"] .inset { opacity: 1; transform: none; }
+.inset-cap { font: 9px "DM Mono"; letter-spacing: .16em; color: #8a8790; margin-top: 6px; }
+.inset-cap b { color: var(--acid); font-weight: 500; }
+.inset svg { width: 100%; height: auto; display: block; }
+.inset .node { fill: #14171e; stroke: #9db0ff; stroke-width: 1.6; }
+.inset .edge { stroke: #ffffff52; stroke-width: 1.6; fill: none; }
+.inset .shortcut { stroke: var(--acid); stroke-width: 2.4; fill: none; stroke-dasharray: 260; stroke-dashoffset: 260; }
+#scene4[data-active-step="4"] .shortcut, #scene4[data-active-step="5"] .shortcut { animation: draw .7s var(--ease-out) forwards; }
+.inset .vnode { transition: opacity var(--t-med) var(--ease-swift); }
+#scene4[data-active-step="4"] .vnode, #scene4[data-active-step="5"] .vnode { opacity: .12; }
+.inset .nlab { font: 10px "DM Mono"; fill: #c9c6bd; }
+
+/* ── S05 · the price of a street ── */
+#scene5 .jam-street { opacity: 0; }
+#scene5[data-active-step="1"] .jam-street, #scene5[data-active-step="2"] .jam-street,
+#scene5[data-active-step="3"] .jam-street, #scene5[data-active-step="4"] .jam-street,
+#scene5[data-active-step="5"] .jam-street { opacity: 1; }
+#scene5 .route-old { opacity: 0; }
+#scene5[data-active-step="2"] .route-old, #scene5[data-active-step="3"] .route-old,
+#scene5[data-active-step="4"] .route-old, #scene5[data-active-step="5"] .route-old { opacity: 1; }
+#scene5 .route, #scene5 .route-glow { opacity: 0; }
+#scene5[data-active-step="3"] .route, #scene5[data-active-step="3"] .route-glow,
+#scene5[data-active-step="4"] .route, #scene5[data-active-step="4"] .route-glow,
+#scene5[data-active-step="5"] .route, #scene5[data-active-step="5"] .route-glow { opacity: 1; }
+#scene5 .dots-j { opacity: 0; stroke: #546cff3d; }
+#scene5[data-active-step="4"] .dots-j, #scene5[data-active-step="5"] .dots-j { opacity: 1; }
+#scene5 .mlab { opacity: 0; }
+#scene5[data-active-step="1"] .mlab-ros, #scene5[data-active-step="2"] .mlab-ros,
+#scene5[data-active-step="3"] .mlab-ros, #scene5[data-active-step="4"] .mlab-ros,
+#scene5[data-active-step="5"] .mlab-ros { opacity: 1; }
+#scene5[data-active-step="3"] .mlab-val, #scene5[data-active-step="4"] .mlab-val, #scene5[data-active-step="5"] .mlab-val { opacity: 1; }
+#scene5 .st-loc, #scene5 .st-ter, #scene5 .st-art { opacity: .5; }
+#scene5[data-active-step="1"] .chip.c1, #scene5[data-active-step="2"] .chip.c2,
+#scene5[data-active-step="3"] .chip.c3, #scene5[data-active-step="4"] .chip.c4,
+#scene5[data-active-step="5"] .chip.c5 { opacity: 1; transform: none; }
+
+/* scene 4 chips dock bottom-left on desktop (the inset owns the top-right) */
+@media (min-width: 851px) {
+    #scene4 .chips { top: auto; bottom: 26px; right: auto; left: 3vw; align-items: flex-start; }
+}
+
+/* ── scoreboard ── */
+.board {
+    margin-top: 10vh; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    background-color: var(--stage);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 32px 32px;
+    color: #fff; padding: 70px 4vw 60px;
+}
+.board-inner { max-width: 1000px; margin: 0 auto; }
+.board-head { display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #ffffff1a; padding-bottom: 12px; margin-bottom: 38px; }
+.board-duel {
+    display: grid; grid-template-columns: 1fr auto 1fr; gap: 4vw; align-items: center;
+    margin-bottom: 46px;
+}
+.duel-num { font: italic clamp(44px, 7.2vw, 96px)/1 "Instrument Serif"; letter-spacing: -.02em; }
+.duel-num.d-big { color: #9db0ff; }
+.duel-num.d-small { color: var(--acid); }
+.duel-mid { font: 10px/1.9 "DM Mono"; letter-spacing: .16em; color: #8a8790; text-align: center; }
+.duel-mid .arr { font-size: 22px; color: #fff; display: block; }
+.duel-cap { font: 9.5px "DM Mono"; letter-spacing: .15em; color: #8a8790; margin-top: 10px; }
+.duel-cap b { color: #fff; font-weight: 500; }
+.board table { width: 100%; border-collapse: collapse; font: 12px "DM Mono"; }
+.board th, .board td { border: 1px solid #ffffff1f; padding: 9px 12px; text-align: left; color: #c9c6bd; }
+.board th { color: #8a8790; font-size: 9px; letter-spacing: .15em; background: #ffffff08; }
+.board td b { color: #fff; font-weight: 500; }
+.board tr.hl td { border-color: #c7ff3d55; }
+.board tr.hl td b { color: var(--acid); }
+.board .ratio-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
+.ratio {
+    font: 11px "DM Mono"; letter-spacing: .12em; color: var(--acid);
+    border: 1px solid #c7ff3d4d; padding: 9px 14px; background: #c7ff3d0d;
+}
+.board-note { font: 10px/1.8 "DM Mono"; letter-spacing: .08em; color: #8a8790; margin-top: 28px; }
+.board-note b { color: #c9c6bd; font-weight: 500; }
+
+/* ── breather ── */
+.breather { padding: 16vh 4vw; text-align: center; }
+.breather-line { font: italic clamp(26px, 3.6vw, 40px)/1.3 "Instrument Serif"; max-width: 22ch; margin: 0 auto; }
+.breather-line em { color: var(--blue); font-style: italic; }
+
+/* ── footer ── */
+.foot {
+    margin-top: 10vh; padding: 5vh 4vw 4vh; border-top: 1px solid var(--line);
+    display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+    font: 10px "DM Mono"; color: var(--muted);
+}
+.foot a { color: var(--blue); text-decoration: none; }
+
+/* ── hero plate scales (small svg → thicker strokes, bigger pins) ── */
+.hero-spec .st-loc { stroke-width: 3.4; }
+.hero-spec .st-ter { stroke-width: 4.4; }
+.hero-spec .st-art { stroke-width: 5.6; }
+.hero-spec .route { stroke-width: 16; }
+.hero-spec .route-glow { stroke-width: 30; }
+.hero-spec .pin { transform: scale(3.4); transform-box: fill-box; transform-origin: center; }
+
+/* ── portrait phones: stage becomes a column, card docks bottom ── */
+@media (max-width: 850px) and (min-height: 521px) {
+    .js .sticky-scene__stage { display: flex; flex-direction: column; padding-top: 62px; }
+    .js .sticky-scene__stage .scene-head { flex: 0 0 auto; width: 100%; padding: 8px 4vw; }
+    .js .sticky-scene__stage > :not(.scene-head) {
+        position: static !important; flex: 1 1 auto; width: 100%; min-height: 0;
+        justify-content: center !important; align-items: center;
+        padding: 10px 4vw calc(var(--card-reserve, 36vh) + 4px) !important;
+    }
+    .js .sticky-scene__steps > * { min-height: 100vh; min-height: 100svh; align-items: flex-end; }
+    .js .step-card {
+        width: 100%; max-width: 560px; border-radius: 18px 18px 14px 14px;
+        box-shadow: 0 20px 44px -24px rgba(0,0,0,.55);
+        padding: 12px 20px 18px; max-height: 44vh; overflow-y: auto;
+        overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+        opacity: 0; transform: translateY(52px);
+    }
+    .js .step.is-active .step-card { opacity: 1; transform: none; }
+    .step-progress { display: block; height: 3px; background: #ffffff22; border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
+    .step-progress i { display: block; height: 100%; width: 0; background: var(--orange); transition: width var(--t-med) var(--ease-swift); }
+}
+@media (max-width: 850px) {
+    .hero { grid-template-columns: 1fr; gap: 8vh; padding-top: 16vh; }
+    .hero-spec { width: min(78vw, 360px); }
+    .hero-cue { display: none; }
+    /* map strokes rescale for contain-mode framing (~0.1 px/unit) */
+    .map-svg .st-loc { stroke-width: 8; }
+    .map-svg .st-ter { stroke-width: 11; }
+    .map-svg .st-art { stroke-width: 14; }
+    .map-svg .dots { stroke-width: 20; }
+    .map-svg .dots.ghost { stroke-width: 13; }
+    .map-svg .route { stroke-width: 22; }
+    .map-svg .route-glow { stroke-width: 40; }
+    .map-svg .route-old { stroke-width: 16; stroke-dasharray: 34 40; }
+    .map-svg .jam-street { stroke-width: 20; }
+    .map-svg .ring { stroke-width: 6; stroke-dasharray: 26 32; }
+    .map-svg .pin { transform: scale(2.6); transform-box: fill-box; transform-origin: center; }
+    .map-svg .pin-ring { transform: scale(2.6); transform-box: fill-box; transform-origin: center; stroke-width: .8; }
+    .map-svg .mlab { font-size: 84px; stroke-width: 18px; }
+    .map-svg .ex-edge { stroke-width: 22; }
+    .chips { top: 56px; max-width: 52vw; }
+    /* scene 4: the inset owns the top-right corner on phones */
+    #scene4 .chips { top: 56px; bottom: auto; right: auto; left: 3vw; align-items: flex-start; max-width: 44vw; }
+    .inset { width: min(220px, 44vw); top: 56px; }
+    .board-duel { grid-template-columns: 1fr; text-align: center; gap: 18px; }
+    .duel-mid .arr { transform: rotate(90deg); }
+}
+@media (max-width: 480px) {
+    .chips { max-width: 62vw; }
+    .chip { font-size: 9px; padding: 6px 9px; }
+    .hero h1 { font-size: clamp(26px, 8.4vw, 34px); }
+    .board { padding: 56px 4vw 44px; }
+    .board table { font-size: 10.5px; }
+    .board th, .board td { padding: 7px 8px; }
+    .map-svg .mlab { font-size: 96px; }
+    #scene4 .chips { max-width: 40vw; }
+}
+
+/* ── reduced motion: the plain document ── */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+    }
+    .reveal, .h-line > span, .hero .dek, .hero-meta, .hero-spec { opacity: 1 !important; transform: none !important; }
+    .js .sticky-scene__stage { position: relative; height: auto; min-height: 50vh; }
+    .js .sticky-scene { padding-bottom: 0; }
+    .js .sticky-scene__steps { margin-top: 0; }
+    .js .sticky-scene__steps > * { min-height: auto; display: block; padding: 0 4vw; }
+    .js .step { opacity: 1 !important; transform: none !important; max-width: none; background: none; border: 0; padding: 30px 0; pointer-events: auto; }
+    .js .step-card {
+        opacity: 1 !important; transform: none !important; background: none; border: 0; padding: 0; max-width: none;
+        border-radius: 0 !important; box-shadow: none !important; overflow: visible !important; max-height: none !important;
+    }
+    .step-progress { display: none !important; }
+    .hero-cue { display: none; }
+    /* every layer finds its final, most informative state */
+    #scene1 .dots-v, #scene1 .ex-edge, #scene1 .pin-o, #scene1 .pin-d, #scene1 .pin-ring, #scene1 .mlab { opacity: 1 !important; }
+    #scene1 .pin-ring { animation: none !important; opacity: .5 !important; }
+    #scene2 .dj, #scene2 .route, #scene2 .route-glow { opacity: 1 !important; }
+    #scene2 .dj { stroke: #546cff42 !important; }
+    #scene2 .route, #scene2 .route-glow { stroke-dashoffset: 0 !important; }
+    #scene3 .as, #scene3 .ghost, #scene3 .route, #scene3 .route-glow { opacity: 1 !important; }
+    #scene3 .as { stroke: #546cff66 !important; }
+    #scene4 .ring, #scene4 .dots-h, #scene4 .route { opacity: 1 !important; }
+    #scene4 .st-loc { opacity: .16 !important; }
+    #scene4 .st-art { stroke: #c7ff3d52 !important; }
+    #scene4 .st-ter { opacity: .3 !important; }
+    #scene4 .inset { opacity: 1 !important; }
+    #scene4 .shortcut { stroke-dashoffset: 0 !important; }
+    #scene5 .jam-street, #scene5 .route-old, #scene5 .route, #scene5 .route-glow, #scene5 .dots-j, #scene5 .mlab { opacity: 1 !important; }
+    .chip { opacity: 1 !important; transform: none !important; }
+}
+    </style>
+</head>
+
+<body data-vb-progress-start="#c7ff3d" data-vb-progress-mid="#546cff" data-vb-progress-end="#ff6b2c">
+
+    <!-- the shared street geometry: one real Eixample slice, used by every
+         scene and by the hero plate. © OpenStreetMap contributors. -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <defs>
+            <path id="stLoc" d="%%DEFS_LOC%%"/>
+            <path id="stTer" d="%%DEFS_TER%%"/>
+            <path id="stArt" d="%%DEFS_ART%%"/>
+        </defs>
+    </svg>
+
+    <a class="skip-link" href="#article">Skip to content</a>
+
+    <header class="hero">
+        <div>
+            <div class="hero-kicker">NOTE 12 · ALGORITHMS · MAPS · OPENSTREETMAP</div>
+            <h1>
+                <span class="h-line"><span>The flood</span></span>
+                <span class="h-line"><span>and the <em>arrow.</em></span></span>
+            </h1>
+            <p class="dek">Watch a real Barcelona grid become a priced graph, flood with Dijkstra, aim with A*, collapse with hierarchy — every count computed live in your browser.</p>
+            <div class="hero-meta">
+                <span>SEP <b>2026</b></span>
+                <span>~<b>13</b> MIN</span>
+                <span><b>5</b> SCENES + <b>1</b> SCOREBOARD</span>
+                <span>MODE: <b>COMPUTED LIVE</b></span>
+            </div>
+        </div>
+        <div class="hero-spec">
+            <span class="mark-b" aria-hidden="true"></span>
+            <svg viewBox="%%VB_CORR%%" role="img" aria-label="The settled route across Barcelona's Eixample, from Carrer de Còrsega to Carrer de Sardenya">
+                <use href="#stLoc" class="st-loc"/>
+                <use href="#stTer" class="st-ter"/>
+                <use href="#stArt" class="st-art"/>
+                <path class="route-glow" d="%%ROUTE%%"/>
+                <path class="route" d="%%ROUTE%%"/>
+                <circle class="pin" cx="%%OX%%" cy="%%OY%%" r="7"/>
+                <circle class="pin" cx="%%DX%%" cy="%%DY%%" r="7"/>
+            </svg>
+            <div class="hero-spec-label">CÒRSEGA → SARDENYA · <b>3,464 M · 53 JUNCTIONS</b></div>
+        </div>
+        <div class="hero-cue" aria-hidden="true"></div>
+    </header>
+
+    <main id="article">
+        <section class="prose">
+            <h2><span class="sec-no">01</span>The question you're actually asking</h2>
+            <p>Google says that every day, people drive <strong>more than a billion
+                kilometers</strong> with Google Maps open, across more than 220 countries and
+                territories. More than two billion people use it each month. Each of them, at
+                some point, taps a dot and a destination — and a route appears, in a blink,
+                priced in minutes.</p>
+            <p>Nothing about that blink is a lookup. There is no book of answers to consult:
+                the possible routes between two points in a city are too many to enumerate,
+                let alone store. What appears instead is <strong>a computation</strong> — run
+                against a strange, stripped-down picture of the city, finished before you
+                notice it started.</p>
+            <p>One honesty note before we start: <strong>Google has never published the
+                algorithms inside its routing engine.</strong> What it publishes is the data
+                side — live traffic, learned patterns, predicted arrival times. The machinery
+                any router at this scale must run on, though, is public science, built in the
+                open by researchers and by routing engines whose source you can read. So this
+                page rebuilds that machinery in front of you, on a real place: the Eixample
+                district of Barcelona, <span class="mono">1,281</span> intersections and
+                <span class="mono">1,814</span> street segments from OpenStreetMap, embedded
+                in this file. Every count you will see is computed by this page, in your
+                browser, as you scroll — and the street you start on is called Còrsega, while
+                the one you'll finish on is called Sardenya.</p>
+            <div class="callout">The map is not a picture. It is a question about a graph —
+                and the whole engineering problem is answering it <em>without reading the
+                whole world.</em></div>
+        </section>
+
+        <!-- ═══ ACT 01 · THE GRAPH ═══ -->
+        <section class="sticky-scene" data-scene id="scene1">
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 01</span>
+                    <span class="scene-name">THE GRAPH</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="map-stage">
+                    <svg class="map-svg" viewBox="%%VB_FULL%%" preserveAspectRatio="xMidYMid slice"
+                         data-vbx="%%VB_FULL%%" data-vbx-narrow="%%VB_CORR%%" data-par="xMidYMid slice">
+                        <use href="#stLoc" class="st-loc"/>
+                        <use href="#stTer" class="st-ter"/>
+                        <use href="#stArt" class="st-art"/>
+                        <path class="dots dots-v" id="dotsAll" d="%%DOTS_ALL%%"/>
+                        <path class="ex-edge" d="%%EX_EDGE%%"/>
+                        <circle class="pin pin-o" cx="%%OX%%" cy="%%OY%%" r="7"/>
+                        <circle class="pin-ring" cx="%%OX%%" cy="%%OY%%" r="13"/>
+                        <circle class="pin pin-d" cx="%%DX%%" cy="%%DY%%" r="7"/>
+                        <circle class="pin-ring" cx="%%DX%%" cy="%%DY%%" r="13"/>
+                        <text class="mlab lab-o" x="%%OX%%" y="%%OYB%%">CÒRSEGA · ORIGIN</text>
+                        <text class="mlab lab-d" x="%%DXL%%" y="%%DYT%%">SARDENYA · TARGET</text>
+                    </svg>
+                </div>
+                <div class="chips">
+                    <span class="chip c1 c-blue">INTERSECTIONS · <b>1,281</b></span>
+                    <span class="chip c2 c-blue">SEGMENTS · <b>1,814</b></span>
+                    <span class="chip c3 c-orange">THIS EDGE · <b>133 M</b></span>
+                    <span class="chip c4">PRICE = METERS ÷ CLASS SPEED</span>
+                    <span class="chip c5 c-orange">STRAIGHT LINE · <b>2,459 M</b></span>
+                </div>
+                <div class="stage-static">
+                    <svg class="static-svg" viewBox="%%VB_FULL%%">
+                        <use href="#stLoc" class="st-loc"/>
+                        <use href="#stTer" class="st-ter"/>
+                        <use href="#stArt" class="st-art"/>
+                    </svg>
+                    <p class="static-note">THE EIXAMPLE AS A ROUTER SEES IT — <b>1,281
+                        INTERSECTIONS, 1,814 SEGMENTS</b>, © OPENSTREETMAP CONTRIBUTORS. THE
+                        STEP CARDS BELOW CARRY EVERY NUMBER; WITH JAVASCRIPT ON, EACH ONE IS
+                        RECOMPUTED LIVE.</p>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>This is a real slice of Barcelona — the Eixample — drawn from
+                        <b>1,814 real street segments</b>. To your eyes, a drawing. To a
+                        router, neither.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>A router keeps only the places where streets meet or end:
+                        <b>1,281 intersections</b>. Each becomes a vertex — a dot with a
+                        position and nothing else.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p>Each stretch of street between two intersections becomes an
+                        <b>edge</b>. This one — Carrer de Còrsega leaving our origin — is
+                        <b>133 m</b> long, and one-way.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <p>Then every edge gets a <b>price in seconds</b>: length ÷ speed by
+                        street class. Avenues 50, side streets 40, residential 30, living
+                        streets 20 km/h — illustrative free-flow prices, ours, stated.</p>
+                </article>
+                <article class="step" data-step="5">
+                    <p>The question is set: the <b>cheapest total price</b> from Còrsega,
+                        bottom left, to Sardenya, top right — <b>2,459 m</b> apart as the
+                        crow flies. Everything from here on is this one question.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="prose">
+            <h2><span class="sec-no">02</span>Dijkstra, before computers were ready</h2>
+            <p>In 1956, Edsger W. Dijkstra wanted to show off a new computer by computing
+                routes between Dutch cities. He told the story plainly, decades later:
+                “What's the shortest way to travel from Rotterdam to Groningen? It is the
+                algorithm for the shortest path, which I designed in about 20 minutes.” A
+                café, his fiancée, no pencil. The algorithm was published in 1959, and it
+                still works exactly as he drew it in his head.</p>
+            <p>Here is the whole idea. Hold every intersection at an estimated price of
+                infinity, except the origin at zero. Then repeat one move forever:
+                <strong>take the cheapest unsettled intersection and settle it</strong> —
+                its estimate becomes final — and offer each of its neighbors a new estimate
+                through it, keeping whichever route is cheaper. That offer is called a
+                relaxation, and it is the only way information moves.</p>
+            <p>Two properties make this the reference solution. Settled means settled: no
+                later discovery can improve a settled price, because any alternative route
+                must arrive through something more expensive first. And it works whenever
+                prices don't go negative — travel times never do. What Dijkstra's algorithm
+                gives you is not just an answer but a <strong>proof</strong>: when your
+                destination settles, no cheaper route exists. The question is what that
+                proof costs to run.</p>
+        </section>
+
+        <!-- ═══ ACT 02 · THE FLOOD ═══ -->
+        <section class="sticky-scene" data-scene id="scene2">
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 02</span>
+                    <span class="scene-name">THE FLOOD</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="map-stage">
+                    <svg class="map-svg" viewBox="%%VB_FULL%%" preserveAspectRatio="xMidYMid slice"
+                         data-vbx="%%VB_FULL%%" data-vbx-narrow="%%VB_CORR%%" data-par="xMidYMid slice">
+                        <use href="#stLoc" class="st-loc"/>
+                        <use href="#stTer" class="st-ter"/>
+                        <use href="#stArt" class="st-art"/>
+                        <path class="dots dj dj-s1" id="djS1" d="%%DJ_S1%%"/>
+                        <path class="dots dj dj-s2" id="djS2" d="%%DJ_S2%%"/>
+                        <path class="dots dj dj-s3" id="djS3" d="%%DJ_S3%%"/>
+                        <path class="route-glow" d="%%ROUTE%%"/>
+                        <path class="route" d="%%ROUTE%%"/>
+                        <circle class="pin pin-o" cx="%%OX%%" cy="%%OY%%" r="7"/>
+                        <circle class="pin pin-d" cx="%%DX%%" cy="%%DY%%" r="7"/>
+                    </svg>
+                </div>
+                <div class="chips">
+                    <span class="chip c1 c-blue">SETTLED · <b>0 / 1,281</b></span>
+                    <span class="chip c2 c-blue">SETTLED · <b>337</b> · NEAREST FIRST</span>
+                    <span class="chip c3 c-blue">SETTLED · <b>787</b> · STILL BLIND</span>
+                    <span class="chip c4 c-orange">SETTLED · <b>1,123 / 1,281 — 88%</b></span>
+                    <span class="chip c5">ANSWER · <b>3,464 M · 4.4 MIN</b></span>
+                </div>
+                <div class="stage-static">
+                    <svg class="static-svg" viewBox="%%VB_FULL%%">
+                        <use href="#stLoc" class="st-loc"/>
+                        <use href="#stTer" class="st-ter"/>
+                        <use href="#stArt" class="st-art"/>
+                    </svg>
+                    <p class="static-note">DIJKSTRA SETTLES <b>1,123 OF 1,281</b>
+                        INTERSECTIONS BEFORE REACHING SARDENYA, THEN RETURNS THE PROVABLY
+                        CHEAPEST ROUTE: <b>3,464 M, 4.4 MIN</b>. WITH JAVASCRIPT ON, THE
+                        FLOOD AND THE COUNTS ARE COMPUTED AS YOU SCROLL.</p>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>Start at Còrsega with price zero; every other intersection starts at
+                        infinity. The rule never changes: <b>settle the cheapest unsettled
+                        vertex</b>.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>Each settlement is permanent, and it re-prices that intersection's
+                        neighbors. Growth follows one law: <b>by price, in every
+                        direction</b>.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p>Watch what the search does not know: <b>where you are going</b>. The
+                        flood spends real work behind you and sideways from you — streets no
+                        route to Sardenya could ever use.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <p>Before Sardenya settles, the search has settled <b>1,123 of the
+                        1,281 intersections</b> — 88% of the neighborhood, to answer one
+                        question.</p>
+                </article>
+                <article class="step" data-step="5">
+                    <p>Sardenya settles at <b>3,464 m, 4.4 minutes</b> — provably the
+                        cheapest. Now scale the same flood to an 18-million-vertex Europe:
+                        it reads <b>9.3 million vertices per query</b>. Correct, and far too
+                        slow.</p>
+                </article>
+            </div>
+        </section>
+
+        <!-- ═══ ACT 03 · THE ARROW ═══ -->
+        <section class="sticky-scene" data-scene id="scene3">
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 03</span>
+                    <span class="scene-name">THE ARROW</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="map-stage">
+                    <svg class="map-svg" viewBox="%%VB_CORR%%" preserveAspectRatio="xMaxYMid slice"
+                         data-vbx="%%VB_CORR%%" data-vbx-narrow="%%VB_CORR_N%%" data-par="xMaxYMid slice">
+                        <use href="#stLoc" class="st-loc"/>
+                        <use href="#stTer" class="st-ter"/>
+                        <use href="#stArt" class="st-art"/>
+                        <path class="dots ghost" id="djAll" d="%%DJ_ALL%%"/>
+                        <path class="dots as as-s1" id="asS1" d="%%AS_S1%%"/>
+                        <path class="dots as as-s2" id="asS2" d="%%AS_S2%%"/>
+                        <path class="dots as as-s3" id="asS3" d="%%AS_S3%%"/>
+                        <path class="route-glow" d="%%ROUTE%%"/>
+                        <path class="route" d="%%ROUTE%%"/>
+                        <circle class="pin pin-o" cx="%%OX%%" cy="%%OY%%" r="7"/>
+                        <circle class="pin pin-d" cx="%%DX%%" cy="%%DY%%" r="7"/>
+                    </svg>
+                </div>
+                <div class="chips">
+                    <span class="chip c1 c-blue">BOUND · <b>h = STRAIGHT LINE ÷ 50 KM/H</b></span>
+                    <span class="chip c2 c-blue">A* SETTLED · <b>109</b></span>
+                    <span class="chip c3 c-blue">GHOST · <b>1,123 READ BY DIJKSTRA</b></span>
+                    <span class="chip c4">A* SETTLED · <b>311 — 3.6× LESS</b></span>
+                    <span class="chip c5">SAME ROUTE · <b>3,464 M · 4.4 MIN</b></span>
+                </div>
+                <div class="stage-static">
+                    <svg class="static-svg" viewBox="%%VB_CORR%%">
+                        <use href="#stLoc" class="st-loc"/>
+                        <use href="#stTer" class="st-ter"/>
+                        <use href="#stArt" class="st-art"/>
+                    </svg>
+                    <p class="static-note">A* SETTLES <b>311</b> INTERSECTIONS WHERE
+                        DIJKSTRA SETTLED <b>1,123</b> — THE GHOST DOTS — AND RETURNS THE
+                        IDENTICAL, PROVABLY CHEAPEST ROUTE.</p>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>Change nothing about the search. Add one number per intersection: a
+                        <b>lower bound on time-to-go</b> — straight-line distance ÷ 50 km/h,
+                        the fastest price on this map. This is A*, from 1968.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>The bound is <b>admissible</b>: it can never overestimate, because no
+                        street beats the fastest street. So the queue may prefer
+                        intersections that make progress — it just can't lie.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p>The flood collapses into a <b>corridor</b>. Behind it, the ghost:
+                        everything Dijkstra read that A* never touches.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <p><b>311 settled instead of 1,123</b> — 3.6× less work — and the route
+                        is identical: <b>3,464 m, 4.4 min</b>. The optimality proof
+                        survives.</p>
+                </article>
+                <article class="step" data-step="5">
+                    <p>But a corridor still widens with distance. Across a continent,
+                        straight-line bounds leave <b>millions</b> of intersections in the
+                        search. The next idea stops aiming at the map — and rewrites the map
+                        itself.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="breather">
+            <p class="breather-line reveal">Correct was never the problem.<br><em>Fast</em> was.</p>
+        </section>
+
+        <section class="prose">
+            <h2><span class="sec-no">03</span>The skeleton of a continent</h2>
+            <p>Road networks are not flat. A 2015 survey of the field puts it in one
+                sentence: “Sufficiently long shortest paths eventually converge to a small
+                arterial network of important roads.” That is not an accident — it is what
+                motorways and avenues are <em>for</em>. Any route far enough from its ends
+                lives almost entirely on the skeleton.</p>
+            <p>Production routers exploit this openly. Valhalla, an open routing engine,
+                stores the world at three levels: motorways, trunks and primaries at the
+                top; secondary and tertiary streets in the middle; residential streets at
+                the bottom. A long query climbs to the coarse level, crosses, and descends —
+                most of the city never enters the search at all.</p>
+            <p>In 2008, Robert Geisberger, Peter Sanders, Dominik Schultes and Daniel
+                Delling turned the idea into a theorem-grade machine: <strong>Contraction
+                Hierarchies</strong>. Instead of trusting road classes — a human label —
+                preprocessing computes each intersection's importance from the map's own
+                shortest paths, then removes the unimportant ones, bridging their neighbors
+                with shortcuts. Minutes of preprocessing buy queries that touch a few
+                hundred intersections. On a continent. The scoreboard below shows what that
+                is worth.</p>
+        </section>
+
+        <!-- ═══ ACT 04 · THE SKELETON ═══ -->
+        <section class="sticky-scene" data-scene id="scene4">
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 04</span>
+                    <span class="scene-name">THE SKELETON</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="map-stage">
+                    <svg class="map-svg" viewBox="%%VB_CORR%%" preserveAspectRatio="xMaxYMid slice"
+                         data-vbx="%%VB_CORR%%" data-vbx-narrow="%%VB_CORR_N%%" data-par="xMaxYMid slice">
+                        <use href="#stLoc" class="st-loc"/>
+                        <use href="#stTer" class="st-ter"/>
+                        <use href="#stArt" class="st-art"/>
+                        <ellipse class="ring" cx="%%OX%%" cy="%%OY%%" rx="479" ry="359"/>
+                        <ellipse class="ring" cx="%%DX%%" cy="%%DY%%" rx="479" ry="359"/>
+                        <path class="dots dots-h" id="hAll" d="%%H_ALL%%"/>
+                        <path class="route-glow" d="%%ROUTE%%"/>
+                        <path class="route" d="%%ROUTE%%"/>
+                        <circle class="pin pin-o" cx="%%OX%%" cy="%%OY%%" r="7"/>
+                        <circle class="pin pin-d" cx="%%DX%%" cy="%%DY%%" r="7"/>
+                    </svg>
+                </div>
+                <div class="inset">
+                    <svg viewBox="0 0 260 140">
+                        <path class="edge" d="M30 108 L130 32"/>
+                        <path class="edge" d="M130 32 L230 108"/>
+                        <path class="shortcut" d="M30 108 C110 128, 150 128, 230 108"/>
+                        <circle class="node vnode" cx="130" cy="32" r="11"/>
+                        <circle class="node" cx="30" cy="108" r="11"/>
+                        <circle class="node" cx="230" cy="108" r="11"/>
+                        <text class="nlab" x="30" y="132">u</text>
+                        <text class="nlab" x="226" y="132">w</text>
+                        <text class="nlab" x="124" y="18">v</text>
+                    </svg>
+                    <div class="inset-cap">CONTRACTION — REMOVE <b>v</b>, ADD SHORTCUT <b>u → w</b></div>
+                </div>
+                <div class="chips">
+                    <span class="chip c1">ROUTE ON ARTERIALS · <b>85%</b></span>
+                    <span class="chip c2">VALHALLA · <b>LEVELS 0 / 1 / 2</b></span>
+                    <span class="chip c3 c-blue">PRUNED SEARCH · <b>428 SETTLED</b></span>
+                    <span class="chip c4">IMPORTANCE · <b>COMPUTED, NOT LABELED</b></span>
+                    <span class="chip c5">QUERY · <b>UP · ACROSS · DOWN</b></span>
+                </div>
+                <div class="stage-static">
+                    <svg class="static-svg" viewBox="%%VB_CORR%%">
+                        <use href="#stLoc" class="st-loc"/>
+                        <use href="#stTer" class="st-ter"/>
+                        <use href="#stArt" class="st-art"/>
+                    </svg>
+                    <p class="static-note">WITH LOCAL STREETS PRUNED TO <b>400 M</b> AROUND
+                        ORIGIN AND TARGET, THE SEARCH SETTLES <b>428</b> INTERSECTIONS
+                        INSTEAD OF 1,123 — AND STILL RETURNS THE SAME OPTIMAL ROUTE HERE.
+                        CONTRACTION HIERARCHIES MAKE THE IDEA EXACT.</p>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>Our route already knows about the skeleton: <b>85% of its length is
+                        arterial</b>. Long answers don't live on side streets.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>Open engines bake this in: Valhalla keeps motorways and primaries at
+                        level 0, secondaries at 1, residential at 2 — <b>search coarse
+                        first</b>, descend at the ends.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p>Model it here: local streets exist only within <b>400 m</b> of origin
+                        and destination. The search settles <b>428</b> instead of 1,123 —
+                        same optimal route, in this demo. But pruning by class has <b>no
+                        guarantee</b> in general.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <p>Contraction Hierarchies earn the guarantee: importance is
+                        <b>computed from the map's own shortest paths</b>, then unimportant
+                        intersections are contracted away — neighbors bridged by
+                        shortcuts.</p>
+                </article>
+                <article class="step" data-step="5">
+                    <p>A query then runs <b>up, across, down</b>: locals to the skeleton,
+                        skeleton to the destination's exit. Continental queries settle
+                        hundreds, not millions — the scoreboard is next.</p>
+                </article>
+            </div>
+        </section>
+
+        <!-- ═══ ACT 05 · THE SCOREBOARD ═══ -->
+        <section class="board">
+            <div class="board-inner">
+                <div class="board-head">
+                    <span class="scene-no">ACT 05</span>
+                    <span class="scene-name">THE SCOREBOARD</span>
+                    <span class="scene-readout" style="margin-left:auto">WESTERN EUROPE · 18.0 M VERTICES</span>
+                </div>
+                <div class="board-duel reveal">
+                    <div>
+                        <div class="duel-num d-big">9,326,696</div>
+                        <div class="duel-cap">VERTICES SCANNED PER QUERY — <b>DIJKSTRA, 1959</b></div>
+                    </div>
+                    <div class="duel-mid">SAME GRAPH<br>SAME ANSWER<span class="arr">→</span>SAME PROOF</div>
+                    <div>
+                        <div class="duel-num d-small">280</div>
+                        <div class="duel-cap">VERTICES SCANNED PER QUERY — <b>CH, 2008</b></div>
+                    </div>
+                </div>
+                <table class="reveal">
+                    <thead>
+                        <tr><th>METHOD</th><th>SCANNED / QUERY</th><th>AVG TIME</th><th>PREPROCESS</th><th>SPACE</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Dijkstra</td><td><b>9,326,696</b></td><td><b>2,195,080 µs</b></td><td>—</td><td>0.4 GiB</td></tr>
+                        <tr><td>Bidirectional Dijkstra</td><td>4,914,804</td><td>1,205,660 µs</td><td>—</td><td>0.4 GiB</td></tr>
+                        <tr><td>CRP (re-priceable)</td><td>2,766</td><td>1,650 µs</td><td>1 h</td><td>0.9 GiB</td></tr>
+                        <tr class="hl"><td>Contraction Hierarchies</td><td><b>280</b></td><td><b>110 µs</b></td><td><b>5 min</b></td><td>0.4 GiB</td></tr>
+                        <tr><td>Transit-node routing</td><td>—</td><td>2.09 µs</td><td>22 min</td><td>2.5 GiB</td></tr>
+                        <tr><td>Hub labels</td><td>—</td><td>0.56 µs</td><td>37 min</td><td>18.8 GiB</td></tr>
+                    </tbody>
+                </table>
+                <div class="ratio-row">
+                    <span class="ratio" id="ratioScans"></span>
+                    <span class="ratio" id="ratioTime"></span>
+                    <span class="ratio" id="ratioPrep"></span>
+                </div>
+                <p class="board-note">PER-QUERY AVERAGES ON THE STANDARD WESTERN EUROPE ROAD
+                    NETWORK BENCHMARK — 18.0 MILLION VERTICES, 42.5 MILLION DIRECTED ARCS,
+                    TRAVEL-TIME COSTS, RANDOM POINT-TO-POINT QUERIES, SINGLE THREAD. SOURCE:
+                    BAST, DELLING, GOLDBERG, MÜLLER-HANNEMANN, PAJOR, SANDERS, WAGNER AND
+                    WERNECK, <b>“ROUTE PLANNING IN TRANSPORTATION NETWORKS”</b> (2015),
+                    TABLE 1. THE RATIOS ABOVE ARE COMPUTED BY THIS PAGE FROM THOSE PUBLISHED
+                    NUMBERS.</p>
+            </div>
+        </section>
+
+        <section class="prose">
+            <h2><span class="sec-no">04</span>Prices that breathe</h2>
+            <p>Everything so far assumed one price list. Real routers live with a new one
+                every few minutes. Google describes its own system plainly: live conditions
+                come from <strong>aggregate location data of people driving</strong> — not
+                sensors — and future conditions come from machine learning that blends live
+                traffic with years of patterns: the same freeway holds 65 km/h at 7 a.m. and
+                15 at 5 p.m., and the model knows both. Road quality, closures, tolls and
+                driver reports adjust prices too, before any search runs.</p>
+            <p>The prediction layer is where the engineering turned openly modern. Google
+                and DeepMind split the world's roads into <strong>Supersegments</strong> —
+                chains of segments that share traffic — and train a graph neural network
+                that predicts the travel time of each: terabytes of traffic in, one model
+                for all of them. Google says its arrival estimates have been consistently
+                accurate for over 97% of trips, and that the partnership cut the remaining
+                misses by up to half in cities like Berlin, Tokyo and São Paulo. Those are
+                Google's own numbers about itself — but the mechanism is published, and it
+                is a graph, again.</p>
+            <p>The routing machinery is built for this. Research systems like CRP —
+                customizable route planning, from Microsoft, run in production at Bing —
+                separate the map's structure from its <em>metric</em>, so a whole continent
+                can be re-priced for new traffic in minutes without rebuilding anything.
+                OSRM, the open router, ships the same idea as an option. Re-pricing is not
+                an afterthought in this world; it is the design center.</p>
+        </section>
+
+        <!-- ═══ ACT 06 · THE PRICE OF A STREET ═══ -->
+        <section class="sticky-scene" data-scene id="scene5">
+            <div class="sticky-scene__stage" aria-hidden="true">
+                <div class="scene-head">
+                    <span class="scene-no">ACT 06</span>
+                    <span class="scene-name">THE PRICE OF A STREET</span>
+                    <span class="scene-readout" data-readout></span>
+                </div>
+                <div class="map-stage">
+                    <svg class="map-svg" viewBox="%%VB_CORR%%" preserveAspectRatio="xMaxYMid slice"
+                         data-vbx="%%VB_CORR%%" data-vbx-narrow="%%VB_CORR_N%%" data-par="xMaxYMid slice">
+                        <use href="#stLoc" class="st-loc"/>
+                        <use href="#stTer" class="st-ter"/>
+                        <use href="#stArt" class="st-art"/>
+                        <path class="jam-street" d="%%ROSSELLO%%"/>
+                        <path class="route-old" d="%%ROUTE%%"/>
+                        <path class="dots dots-j" id="jAll" d="%%J_ALL%%"/>
+                        <path class="route-glow" d="%%ROUTE_JAM%%"/>
+                        <path class="route" d="%%ROUTE_JAM%%"/>
+                        <circle class="pin pin-o" cx="%%OX%%" cy="%%OY%%" r="7"/>
+                        <circle class="pin pin-d" cx="%%DX%%" cy="%%DY%%" r="7"/>
+                        <text class="mlab mlab-ros" x="%%ROSLX%%" y="%%ROSLY%%">ROSSELLÓ ×2.5</text>
+                        <text class="mlab mlab-val" x="%%VALLX%%" y="%%VALLY%%">VALÈNCIA</text>
+                    </svg>
+                </div>
+                <div class="chips">
+                    <span class="chip c1 c-orange">ROSSELÓ JAM · <b>×2.5 (ILLUSTRATIVE)</b></span>
+                    <span class="chip c2 c-orange">OLD ROUTE NOW · <b>6.4 MIN</b></span>
+                    <span class="chip c3">ROSSELÓ USE · <b>1,104 M → 135 M</b></span>
+                    <span class="chip c4 c-blue">SETTLED · <b>1,037 — AIMING WEAKENS</b></span>
+                    <span class="chip c5">NEW BEST · <b>3,726 M · 5.9 MIN</b></span>
+                </div>
+                <div class="stage-static">
+                    <svg class="static-svg" viewBox="%%VB_CORR%%">
+                        <use href="#stLoc" class="st-loc"/>
+                        <use href="#stTer" class="st-ter"/>
+                        <use href="#stArt" class="st-art"/>
+                    </svg>
+                    <p class="static-note">WITH CARRER DEL ROSSELLÓ JAMMED ×2.5, THE ROUTE
+                        ABANDONS IT — <b>1,104 M DOWN TO 135 M</b> — AND TAKES CARRER DE
+                        VALÈNCIA INSTEAD: <b>3,726 M, 5.9 MIN</b>, THE NEW PROVABLY CHEAPEST
+                        ANSWER.</p>
+                </div>
+            </div>
+            <div class="sticky-scene__steps">
+                <article class="step" data-step="1">
+                    <p>Same graph, same request. But the spine of our route — Carrer del
+                        Rosselló, <b>1,104 m</b> of it — jams. We price it <b>×2.5</b>: an
+                        illustrative jam, ours, stated.</p>
+                </article>
+                <article class="step" data-step="2">
+                    <p>Nothing reruns the world. The search reads the <b>same streets with
+                        new numbers</b> — and the old route now costs <b>6.4 minutes</b>
+                        instead of 4.4.</p>
+                </article>
+                <article class="step" data-step="3">
+                    <p>So the line moves. Rosselló drops from 1,104 m of route to
+                        <b>135 m</b>; Carrer de València, one block south, carries
+                        <b>2,276 m</b>. Same origin, same destination, <b>new best
+                        answer</b>.</p>
+                </article>
+                <article class="step" data-step="4">
+                    <p>Notice the search itself worked harder: <b>1,037 settled</b>
+                        instead of 311. When prices defy distance, <b>aiming gets
+                        weaker</b> — the bound still holds, but it says less.</p>
+                </article>
+                <article class="step" data-step="5">
+                    <p>In production the new price list arrives continuously — crowdsourced
+                        conditions, learned patterns, driver reports — and the blue line
+                        quietly steps around a jam that <b>hasn't started yet</b>.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="prose">
+            <h2><span class="sec-no">05</span>The answer, in order</h2>
+            <p>Put the whole machine back together. A city becomes a <strong>graph</strong>:
+                dots and priced lines. A correct search — <strong>Dijkstra's flood</strong>
+                — settles it nearest-first and proves its answer, at a cost that grows with
+                the world. An <strong>admissible bound</strong> — the arrow — collapses the
+                flood into a corridor without touching the proof. The map's own
+                <strong>hierarchy</strong>, contracted and preprocessed, shrinks a continent
+                to a few hundred touches per query. And <strong>traffic</strong> enters not
+                as a new mechanism but as a new price list, arriving continuously, learned
+                from the cars ahead of you.</p>
+            <p>None of this needs a data center the size of a continent, by the way. A
+                street graph is small enough to live in your pocket: Google Maps can guide
+                an offline route entirely on your phone, as long as the whole route fits
+                inside the saved area — no live traffic, no alternatives, just the graph and
+                the search, on their own. (Where the blue dot on that map comes from is
+                <a href="../blog/gnss.html">its own story</a>.)</p>
+            <p>And the honest boundary, one last time: Google has never published the exact
+                algorithm behind its blue line. It doesn't need to — the physics are
+                public. Every fast router you can read — Valhalla, OSRM, GraphHopper,
+                running today on OpenStreetMap's commons of 10.8 billion mapped nodes —
+                answers with the ideas you just watched: aim the search, honor the
+                skeleton, precompute what the world will ask, re-price when it changes. The
+                next time the line appears in a blink, you know what that blink cost, and
+                when it was paid for.</p>
+            <div class="callout">A route is a question about a priced graph. The blink of
+                the answer was <em>paid for in advance</em> — hours of preparation for every
+                millisecond of asking.</div>
+            <div class="aside">DATA — THE STREET GRAPH IS A REAL OPENSTREETMAP EXTRACT OF
+                BARCELONA'S EIXAMPLE (© OPENSTREETMAP CONTRIBUTORS, ODbL, SNAPSHOT
+                2026-08-21), EMBEDDED IN THIS FILE: 1,281 INTERSECTIONS, 1,814 SEGMENTS.
+                FREE-FLOW SPEEDS BY STREET CLASS ARE ILLUSTRATIVE AND LABELED AS SUCH.
+                EVERY COUNT, LENGTH, AND TIME ON THIS PAGE IS COMPUTED BY THE PAGE FROM THAT
+                EMBEDDED DATA — VERIFIED OFFLINE BY THE SAME ENGINE AT BUILD TIME.
+                SOURCES — E. W. DIJKSTRA, “A NOTE ON TWO PROBLEMS IN CONNEXION WITH
+                GRAPHS” (1959); HART, NILSSON &amp; RAPHAEL, “A FORMAL BASIS FOR THE
+                HEURISTIC DETERMINATION OF MINIMUM COST PATHS” (1968); GEISBERGER, SANDERS,
+                SCHULTES &amp; DELLING, “CONTRACTION HIERARCHIES” (2008); BAST ET AL.,
+                “ROUTE PLANNING IN TRANSPORTATION NETWORKS” (2015); VALHALLA DOCUMENTATION;
+                GOOGLE &amp; DEEPMIND PUBLISHED BLOGS ON TRAFFIC AND ETA PREDICTION.</div>
+        </section>
+    </main>
+
+    <footer class="foot">
+        <span>THE FLOOD AND THE ARROW — NOTE 12</span>
+        <span><a href="../index.html">Víctor Busqué — A Notebook of Curiosities</a></span>
+    </footer>
+
+    <script>
+/* ════════════════════════════════════════════════════════════════════
+   PAGE SCRIPT — the map, the engine, and the honest readouts.
+   The street graph below is real OpenStreetMap data in compact arrays:
+   X/Y point coordinates on a 1e-5° grid (~1 m), V maps vertex → point,
+   E holds [u, v, length_m, flags] with the speed class in bits 0–2,
+   one-way bits 8/16, and the arterial bit 32. The engine is the
+   canonical binary-heap search with monotone counter tie-breaks —
+   identical to the offline engine that verified this article's numbers,
+   so the page recomputes every number it displays.
+   ════════════════════════════════════════════════════════════════════ */
+(function () {
+    'use strict';
+
+    var MAP = %%MAP%%;
+    var SPEED = [50, 40, 50, 40, 40, 30, 20, 30];   // km/h by speed index
+    var VMAX = 50 * 1000 / 3600;                     // m/s — fastest class
+    var X = MAP.X, Y = MAP.Y, V = MAP.V, E = MAP.E, O = MAP.O, D = MAP.D;
+    var N = V.length;
+
+    /* adjacency with real one-way directions */
+    var G = [];
+    for (var i0 = 0; i0 < N; i0++) G.push([]);
+    E.forEach(function (e, i) {
+        var t = e[2] / (SPEED[e[3] & 7] * 1000 / 3600);
+        if (!(e[3] & 16)) G[e[0]].push([e[1], e[2], t, i]);
+        if (!(e[3] & 8)) G[e[1]].push([e[0], e[2], t, i]);
+    });
+
+    function hav(a, b) {
+        return Math.hypot((X[V[b]] - X[V[a]]) * 0.8346, (Y[V[b]] - Y[V[a]]) * 1.1132);
+    }
+
+    /* canonical search — binary heap, monotone counter tie-break */
+    function search(astar, jamMult) {
+        var dist = new Array(N).fill(Infinity);
+        var prev = new Array(N).fill(-1);
+        var done = new Array(N).fill(false);
+        var settled = [];
+        var hf = [], hu = [], hc = [], ctr = 0;
+        function less(i, j) { return hf[i] < hf[j] || (hf[i] === hf[j] && hc[i] < hc[j]); }
+        function swap(i, j) {
+            var t; t = hf[i]; hf[i] = hf[j]; hf[j] = t;
+            t = hu[i]; hu[i] = hu[j]; hu[j] = t;
+            t = hc[i]; hc[i] = hc[j]; hc[j] = t;
+        }
+        function push(f, u) {
+            hf.push(f); hu.push(u); hc.push(ctr++);
+            var i = hf.length - 1;
+            while (i > 0) { var p = (i - 1) >> 1; if (less(i, p)) { swap(i, p); i = p; } else break; }
+        }
+        function pop() {
+            var top = hu[0], lf = hf.pop(), lu = hu.pop(), lc = hc.pop();
+            if (hf.length) {
+                hf[0] = lf; hu[0] = lu; hc[0] = lc;
+                var i = 0;
+                for (;;) {
+                    var l = 2 * i + 1, r = l + 1, m = i;
+                    if (l < hf.length && less(l, m)) m = l;
+                    if (r < hf.length && less(r, m)) m = r;
+                    if (m === i) break;
+                    swap(i, m); i = m;
+                }
+            }
+            return top;
+        }
+        dist[O] = 0;
+        push(astar ? hav(O, D) / VMAX : 0, O);
+        while (hf.length) {
+            var u = pop();
+            if (done[u]) continue;
+            done[u] = true; settled.push(u);
+            if (u === D) break;
+            for (var k = 0; k < G[u].length; k++) {
+                var v = G[u][k][0], t = G[u][k][2], ei = G[u][k][3];
+                if (done[v]) continue;
+                var nd = dist[u] + t * (jamMult && jamMult[ei] ? jamMult[ei] : 1);
+                if (nd < dist[v]) {
+                    dist[v] = nd; prev[v] = u;
+                    push(nd + (astar ? hav(v, D) / VMAX : 0), v);
+                }
+            }
+        }
+        var path = [], x = D;
+        while (x !== -1) { path.push(x); x = prev[x]; }
+        return { settled: settled, path: path, t: dist[D] };
+    }
+
+    /* hierarchy-pruned search: locals usable only within R meters of O/D */
+    function scoped(R) {
+        var nearO = [], nearD = [];
+        for (var i = 0; i < N; i++) {
+            nearO.push(hav(O, i) <= R); nearD.push(hav(D, i) <= R);
+        }
+        var dist = new Array(N).fill(Infinity);
+        var prev = new Array(N).fill(-1);
+        var done = new Array(N).fill(false);
+        var settled = [];
+        var hf = [], hu = [], hc = [], ctr = 0;
+        function push(f, u) {
+            hf.push(f); hu.push(u); hc.push(ctr++);
+            var i = hf.length - 1;
+            while (i > 0) {
+                var p = (i - 1) >> 1;
+                if (hf[i] < hf[p] || (hf[i] === hf[p] && hc[i] < hc[p])) {
+                    var t = hf[i]; hf[i] = hf[p]; hf[p] = t;
+                    t = hu[i]; hu[i] = hu[p]; hu[p] = t;
+                    t = hc[i]; hc[i] = hc[p]; hc[p] = t;
+                    i = p;
+                } else break;
+            }
+        }
+        function pop() {
+            var top = hu[0], lf = hf.pop(), lu = hu.pop(), lc = hc.pop();
+            if (hf.length) {
+                hf[0] = lf; hu[0] = lu; hc[0] = lc;
+                var i = 0;
+                for (;;) {
+                    var l = 2 * i + 1, r = l + 1, m = i;
+                    if (l < hf.length && (hf[l] < hf[m] || (hf[l] === hf[m] && hc[l] < hc[m]))) m = l;
+                    if (r < hf.length && (hf[r] < hf[m] || (hf[r] === hf[m] && hc[r] < hc[m]))) m = r;
+                    if (m === i) break;
+                    var t = hf[i]; hf[i] = hf[m]; hf[m] = t;
+                    t = hu[i]; hu[i] = hu[m]; hu[m] = t;
+                    t = hc[i]; hc[i] = hc[m]; hc[m] = t;
+                    i = m;
+                }
+            }
+            return top;
+        }
+        dist[O] = 0; push(0, O);
+        while (hf.length) {
+            var u = pop();
+            if (done[u]) continue;
+            done[u] = true; settled.push(u);
+            if (u === D) break;
+            for (var k = 0; k < G[u].length; k++) {
+                var v = G[u][k][0], t = G[u][k][2], ei = G[u][k][3];
+                if (done[v]) continue;
+                var art = (E[ei][3] & 32) !== 0;
+                if (!art && !nearO[v] && !nearD[v]) continue;
+                var nd = dist[u] + t;
+                if (nd < dist[v]) { dist[v] = nd; prev[v] = u; push(nd, v); }
+            }
+        }
+        return { settled: settled, t: dist[D] };
+    }
+
+    var dj = search(false);
+    var as = search(true);
+    var hier = scoped(400);
+    var jamMult = {};
+    MAP.JAM.forEach(function (i) { jamMult[i] = 2.5; });
+    var jam = search(true, jamMult);
+
+    /* route stats: edges of each route, lengths, arterial and Rosselló use */
+    function routeEdges(path) {
+        var edges = [];
+        var fwd = path.slice().reverse();
+        for (var i = 0; i + 1 < fwd.length; i++) {
+            var a = fwd[i], b = fwd[i + 1];
+            for (var k = 0; k < G[a].length; k++) {
+                if (G[a][k][0] === b) { edges.push(G[a][k][3]); break; }
+            }
+        }
+        return edges;
+    }
+    function price(edges, mult) {
+        var s = 0;
+        edges.forEach(function (ei) {
+            s += E[ei][2] / (SPEED[E[ei][3] & 7] / 3.6) * (mult && mult[ei] ? mult[ei] : 1);
+        });
+        return s;
+    }
+    var edgesD = routeEdges(dj.path);
+    var edgesJ = routeEdges(jam.path);
+    var lenD = 0, artD = 0, rosD = 0;
+    edgesD.forEach(function (ei) {
+        lenD += E[ei][2];
+        if (E[ei][3] & 32) artD += E[ei][2];
+        if (jamMult[ei]) rosD += E[ei][2];
+    });
+    var lenJ = 0, rosJ = 0;
+    edgesJ.forEach(function (ei) {
+        lenJ += E[ei][2];
+        if (jamMult[ei]) rosJ += E[ei][2];
+    });
+    var oldJamMin = price(edgesD, jamMult) / 60;
+
+    /* ── dots geometry — stroked round points, one path per group ── */
+    function dotsPath(vertices) {
+        var s = '';
+        vertices.forEach(function (vi) {
+            s += 'M' + X[V[vi]] + ' ' + Y[V[vi]] + 'l1 0';
+        });
+        return s;
+    }
+    var ceil = Math.ceil;
+    var djS1 = dj.settled.slice(0, ceil(0.30 * dj.settled.length));
+    var djS2 = dj.settled.slice(djS1.length, ceil(0.70 * dj.settled.length));
+    var djS3 = dj.settled.slice(djS2.length);
+    var asS1 = as.settled.slice(0, ceil(0.35 * as.settled.length));
+    var asS2 = as.settled.slice(asS1.length, ceil(0.70 * as.settled.length));
+    var asS3 = as.settled.slice(asS2.length);
+    var allV = [];
+    for (var a = 0; a < N; a++) allV.push(a);
+
+    function put(id, d) {
+        var el = document.getElementById(id);
+        if (el) el.setAttribute('d', d);
+    }
+    put('dotsAll', dotsPath(allV));
+    put('djS1', dotsPath(djS1));
+    put('djS2', dotsPath(djS2));
+    put('djS3', dotsPath(djS3));
+    put('djAll', dotsPath(dj.settled));
+    put('asS1', dotsPath(asS1));
+    put('asS2', dotsPath(asS2));
+    put('asS3', dotsPath(asS3));
+    put('hAll', dotsPath(hier.settled));
+    put('jAll', dotsPath(jam.settled));
+
+    /* route draw animation: exact dash lengths from real geometry */
+    ['scene2'].forEach(function (sid) {
+        var scene = document.getElementById(sid);
+        if (!scene) return;
+        scene.querySelectorAll('.route, .route-glow').forEach(function (p) {
+            try {
+                var len = p.getTotalLength();
+                p.style.strokeDasharray = len;
+                p.style.strokeDashoffset = len;
+            } catch (err) { /* keep the authored fallback length */ }
+        });
+    });
+
+    /* ── readouts: chips re-written from live computation ── */
+    function fmt(n) { return n.toLocaleString('en-US'); }
+    function sceneChip(sceneId, step, html) {
+        var scene = document.getElementById(sceneId);
+        if (!scene) return;
+        var chip = scene.querySelector('.chip.c' + step);
+        if (chip) chip.innerHTML = html;
+    }
+    sceneChip('scene1', 1, 'INTERSECTIONS · <b>' + fmt(N) + '</b>');
+    sceneChip('scene1', 2, 'SEGMENTS · <b>' + fmt(E.length) + '</b>');
+    var exE = E[edgesD[0]];
+    sceneChip('scene1', 3, 'THIS EDGE · <b>' + fmt(Math.round(exE[2])) + ' M · ' +
+        (exE[2] / (SPEED[exE[3] & 7] / 3.6)).toFixed(1) + ' S</b>');
+    sceneChip('scene1', 5, 'STRAIGHT LINE · <b>' + fmt(Math.round(hav(O, D))) + ' M</b>');
+    sceneChip('scene2', 1, 'SETTLED · <b>0 / ' + fmt(N) + '</b>');
+    sceneChip('scene2', 2, 'SETTLED · <b>' + fmt(djS1.length) + '</b> · NEAREST FIRST');
+    sceneChip('scene2', 3, 'SETTLED · <b>' + fmt(djS1.length + djS2.length) + '</b> · STILL BLIND');
+    sceneChip('scene2', 4, 'SETTLED · <b>' + fmt(dj.settled.length) + ' / ' + fmt(N) +
+        ' — ' + Math.round(dj.settled.length / N * 100) + '%</b>');
+    sceneChip('scene2', 5, 'ANSWER · <b>' + fmt(Math.round(lenD)) + ' M · ' +
+        (dj.t / 60).toFixed(1) + ' MIN</b>');
+    sceneChip('scene3', 2, 'A* SETTLED · <b>' + fmt(asS1.length) + '</b>');
+    sceneChip('scene3', 3, 'GHOST · <b>' + fmt(dj.settled.length) + ' READ BY DIJKSTRA</b>');
+    sceneChip('scene3', 4, 'A* SETTLED · <b>' + fmt(as.settled.length) + ' — ' +
+        (dj.settled.length / as.settled.length).toFixed(1) + '× LESS</b>');
+    sceneChip('scene3', 5, 'SAME ROUTE · <b>' + fmt(Math.round(lenD)) + ' M · ' + (as.t / 60).toFixed(1) + ' MIN</b>');
+    sceneChip('scene4', 1, 'ROUTE ON ARTERIALS · <b>' + Math.round(artD / lenD * 100) + '%</b>');
+    sceneChip('scene4', 3, 'PRUNED SEARCH · <b>' + fmt(hier.settled.length) + ' SETTLED</b>');
+    sceneChip('scene5', 1, 'ROSSELÓ JAM · <b>×2.5 (ILLUSTRATIVE)</b>');
+    sceneChip('scene5', 2, 'OLD ROUTE NOW · <b>' + oldJamMin.toFixed(1) + ' MIN</b>');
+    sceneChip('scene5', 3, 'ROSSELÓ USE · <b>' + fmt(Math.round(rosD)) + ' M → ' + fmt(Math.round(rosJ)) + ' M</b>');
+    sceneChip('scene5', 4, 'SETTLED · <b>' + fmt(jam.settled.length) + ' — AIMING WEAKENS</b>');
+    sceneChip('scene5', 5, 'NEW BEST · <b>' + fmt(Math.round(lenJ)) + ' M · ' + (jam.t / 60).toFixed(1) + ' MIN</b>');
+
+    /* scoreboard ratios — arithmetic on the published Table 1 numbers */
+    var SCAN_D = 9326696, SCAN_CH = 280, T_D = 2195080, T_CH = 110, PREP = 5;
+    var r1 = document.getElementById('ratioScans');
+    if (r1) r1.innerHTML = '×' + fmt(Math.round(SCAN_D / SCAN_CH)) + ' FEWER VERTICES SCANNED';
+    var r2 = document.getElementById('ratioTime');
+    if (r2) r2.innerHTML = '×' + fmt(Math.round(T_D / T_CH)) + ' FASTER PER QUERY';
+    var r3 = document.getElementById('ratioPrep');
+    if (r3) r3.innerHTML = 'BOUGHT BY ' + PREP + ' MINUTES OF PREPROCESSING';
+
+    /* hero label — recomputed, in case the world changes under us */
+    var heroLabel = document.querySelector('.hero-spec-label');
+    if (heroLabel) heroLabel.innerHTML = 'CÒRSEGA → SARDENYA · <b>' + fmt(Math.round(lenD)) +
+        ' M · ' + fmt(dj.path.length) + ' JUNCTIONS</b>';
+
+    /* framing: desktop slices the map into the stage; narrow screens
+       contain the whole view instead, with a tighter viewBox */
+    function frame() {
+        var narrow = window.matchMedia('(max-width: 850px)').matches;
+        document.querySelectorAll('.map-svg[data-vbx]').forEach(function (svg) {
+            svg.setAttribute('viewBox', narrow ? svg.getAttribute('data-vbx-narrow')
+                                               : svg.getAttribute('data-vbx'));
+            svg.setAttribute('preserveAspectRatio', narrow ? 'xMidYMid meet'
+                                                           : svg.getAttribute('data-par'));
+        });
+    }
+    frame();
+    window.addEventListener('resize', frame);
+})();
+</script>
+<script src="../js/post-progress.js" defer></script>
+<script src="../js/post-nav.js" defer></script>
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+            navigator.serviceWorker.register('/sw.js').catch(function () {});
+        });
+    }
+</script>
+
+</body>
+
+</html>

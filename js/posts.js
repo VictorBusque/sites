@@ -20,6 +20,15 @@
    JSON so the checker can parse it directly. */
 window.VB_POSTS = [
     {
+        "slug": "blog/how-google-maps-routes.html",
+        "no": "12",
+        "title": "How Google Maps Finds the Fastest Route",
+        "date": "2026-09",
+        "topic": "Algorithms · Maps",
+        "tags": ["Google Maps", "Dijkstra", "A*", "Routing", "OpenStreetMap"],
+        "deck": "Watch a real Barcelona grid become a priced graph, flood with Dijkstra, aim with A*, collapse with hierarchy — every count computed live in your browser."
+    },
+    {
         "slug": "blog/how-qr-codes-work.html",
         "no": "11",
         "title": "How a QR Code Works",
